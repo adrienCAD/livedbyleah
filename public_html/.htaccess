@@ -1,0 +1,13 @@
+# Lived by Leah site rules.
+Options -Indexes
+
+# TURN THIS ON after the free SSL certificate is installed (remove the leading # on the 3 lines):
+#RewriteEngine On
+#RewriteCond %{HTTPS} off
+#RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
