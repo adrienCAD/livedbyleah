@@ -1,3 +1,4 @@
+@font-face { font-family: "Myfont"; src: url("/assets/fonts/Myfont-Digits.ttf") format("truetype"); font-display: swap; }
 /* Lived by Leah. Palette: Golden Pollen, Mustard, Frosted Blue, Blue Grey, Porcelain. */
 :root {
   --pollen: #FDC921;
@@ -11,7 +12,7 @@
   --danger: #B3261E;
   --font-display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
   --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-pixel: "Press Start 2P", "Courier New", monospace;
+  --font-pixel: "Myfont", "DM Sans", sans-serif;
   --sidebar-w: 248px;
 }
 * { box-sizing: border-box; }
@@ -121,7 +122,7 @@ td.actions form { display: inline; }
 .game canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; touch-action: none; }
 .game-hud {
   position: absolute; z-index: 2; left: 8px; top: 8px; display: flex; gap: 10px;
-  font-family: var(--font-pixel); font-size: 10px; color: var(--ink);
+  font-family: var(--font-pixel); font-size: 15px; color: var(--ink);
 }
 .game-hud span { background: var(--porcelain); border: 2px solid var(--ink); padding: 5px 7px; }
 .game-overlay {
@@ -132,13 +133,13 @@ td.actions form { display: inline; }
 .game-overlay p { margin: 0; }
 .game-overlay input { max-width: 260px; }
 .game-overlay label { font-size: 13px; font-weight: 700; }
-.pixel { font-family: var(--font-pixel); font-size: 18px; line-height: 1.5; }
+.pixel { font-family: var(--font-pixel); font-size: 30px; line-height: 1.5; }
 .hint { color: var(--muted); font-size: 14px; }
 .touch { display: none; }
 @media (pointer: coarse) {
   .touch { display: flex; gap: 8px; justify-content: space-between; padding: 8px; background: var(--frost); border-top: 4px solid var(--ink); }
   .touch button {
-    flex: 1; min-height: 52px; font-family: var(--font-pixel); font-size: 11px; background: var(--pollen);
+    flex: 1; min-height: 52px; font-family: var(--font-pixel); font-size: 17px; background: var(--pollen);
     border: 2px solid var(--ink); border-radius: 6px; color: var(--ink); touch-action: none; user-select: none; -webkit-user-select: none;
   }
 }
@@ -159,3 +160,24 @@ td.actions form { display: inline; }
   .content { padding: 64px 16px 48px; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+/* Vlog drawer */
+.drawer-btn {
+  margin-top: 8px; font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer;
+  background: var(--frost, #99D6EA); border: 2px solid var(--ink); border-radius: 8px; padding: 6px 10px;
+}
+.drawer-btn[aria-expanded="true"] { background: var(--pollen); }
+.drawer {
+  grid-column: 1 / -1; position: relative; background: #fff; border: 3px solid var(--ink);
+  border-radius: 12px; padding: 20px 22px; box-shadow: 4px 4px 0 var(--bluegrey);
+}
+.drawer h3 { font-size: 18px; margin: 0 0 6px; }
+.drawer .why { max-width: 68ch; margin: 0 0 18px; white-space: pre-line; }
+.drawer-close {
+  position: absolute; top: 8px; right: 10px; width: 36px; height: 36px; font-size: 26px; line-height: 1;
+  background: none; border: 0; cursor: pointer; color: var(--ink);
+}
+.drawer .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+.comment { margin: 0 0 10px; padding: 8px 12px; background: var(--porcelain); border-left: 4px solid var(--pollen); border-radius: 4px; }
+.comment p { margin: 0 0 4px; font-size: 15px; overflow-wrap: anywhere; }
+.comment footer { font-size: 13px; color: var(--muted); font-weight: 700; }

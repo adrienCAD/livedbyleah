@@ -1,4 +1,4 @@
-// Surf Cleanup: a small 8-bit side-scrolling game. Placeholder art drawn from pixel maps.
+// Surf Cleanup: a small 8-bit side-scrolling game. Leah's surfer art is assets/img/surfer.png; items are placeholder pixel maps.
 (function () {
   'use strict';
 
@@ -53,6 +53,9 @@
     'CCCCCC',
     '.CCCC.'
   ];
+
+  var SURFER = new Image();
+  SURFER.src = '/assets/img/surfer.png';
 
   var keys = { left: false, right: false, jump: false };
   var state = 'start';
@@ -218,14 +221,10 @@
   function drawPlayer() {
     var sx = player.x - camX;
     var tilt = player.grounded ? Math.round(player.vx) : 0;
-    // board
-    ctx.fillStyle = '#FFFDF7';
-    ctx.fillRect(Math.round(sx - 14), Math.round(player.y), 52, 7);
-    ctx.fillStyle = '#FDC921';
-    ctx.fillRect(Math.round(sx - 14), Math.round(player.y + 2), 52, 3);
-    ctx.fillStyle = '#6798C0';
-    ctx.fillRect(Math.round(sx + 34), Math.round(player.y + 1), 4, 5);
-    sprite(LEAH, sx + 2 + tilt, player.y - 30, PX);
+    // Leah's own pixel art (surfer + board in one image); board bottom sits on the water line
+    if (SURFER.complete && SURFER.naturalWidth) {
+      ctx.drawImage(SURFER, Math.round(sx - 16 + tilt), Math.round(player.y + 7 - SURFER.naturalHeight));
+    }
   }
 
   function draw() {
@@ -284,7 +283,7 @@
   // ---- Certificate (drawn in the browser, nothing is sent or stored) ----
   document.getElementById('certBtn').addEventListener('click', function () {
     var name = (el.name.value || '').trim() || 'Beach Hero';
-    var load = document.fonts && document.fonts.load ? document.fonts.load('20px "Press Start 2P"') : Promise.resolve();
+    var load = document.fonts && document.fonts.load ? document.fonts.load('20px "Myfont"') : Promise.resolve();
     load.catch(function () {}).then(function () { makeCertificate(name); });
   });
 
@@ -297,27 +296,23 @@
     g.fillStyle = '#99D6EA'; g.fillRect(0, 36, c.width, 14); g.fillRect(0, c.height - 50, c.width, 14);
     g.strokeStyle = '#1E3248'; g.lineWidth = 6; g.strokeRect(50, 70, c.width - 100, c.height - 140);
     g.textAlign = 'center'; g.fillStyle = '#1E3248';
-    var pix = '"Press Start 2P", "Courier New", monospace';
-    g.font = '34px ' + pix; g.fillText('CERTIFICATE', c.width / 2, 190);
-    g.font = '22px ' + pix; g.fillText('OF BEACH CLEANUP', c.width / 2, 245);
+    var pix = '"Myfont", "DM Sans", sans-serif';
+    g.font = '56px ' + pix; g.fillText('CERTIFICATE', c.width / 2, 190);
+    g.font = '34px ' + pix; g.fillText('OF BEACH CLEANUP', c.width / 2, 245);
     g.font = '20px sans-serif'; g.fillText('This certifies that', c.width / 2, 340);
-    var size = 54;
+    var size = 84;
     g.font = size + 'px ' + pix;
     while (g.measureText(name).width > c.width - 260 && size > 20) { size -= 2; g.font = size + 'px ' + pix; }
     g.fillStyle = '#6798C0'; g.fillText(name, c.width / 2, 430);
     g.fillStyle = '#1E3248'; g.font = '20px sans-serif';
     g.fillText('collected every seashell and picked up every piece of trash', c.width / 2, 510);
     g.fillText('in Leah\'s Surf Cleanup game.', c.width / 2, 545);
-    // little pixel Leah and shell
-    var px = 6, lx = 540, ly = 600;
-    for (var r = 0; r < LEAH.length; r++) {
-      for (var cc = 0; cc < LEAH[r].length; cc++) {
-        var ch = LEAH[r].charAt(cc);
-        if (ch !== '.') { g.fillStyle = COLORS[ch]; g.fillRect(lx + cc * px, ly + r * px, px, px); }
-      }
+    // Leah's surfer pixel art
+    if (SURFER.complete && SURFER.naturalWidth) {
+      g.imageSmoothingEnabled = false;
+      g.drawImage(SURFER, c.width / 2 - SURFER.naturalWidth, 565, SURFER.naturalWidth * 2, SURFER.naturalHeight * 2);
     }
-    g.fillStyle = '#FDC921'; g.fillRect(lx - 24, ly + 60, 100, 12);
-    g.fillStyle = '#1E3248'; g.font = '14px ' + pix;
+    g.fillStyle = '#1E3248'; g.font = '24px ' + pix;
     g.fillText(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), c.width / 2, 712);
     g.fillText('livedbyleah.com', c.width / 2, 748);
     c.toBlob(function (blob) {
