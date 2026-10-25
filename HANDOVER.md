@@ -3,7 +3,7 @@
 Read CLAUDE.md first for permanent architecture. This file records what happened and what is open.
 
 ## Status (as of 2026-10-25)
-- Live and deployed on livedbyleah.com through update 5 (Update C). `main` on GitHub matches.
+- Live and deployed through update 8 (Update F), confirmed working by Adrien. `main` on GitHub matches.
 - Fonts confirmed working after a hard refresh.
 - Leah played a real run, reached Level 5, and then lost. She did not finish (see Feedback).
 
@@ -99,7 +99,7 @@ Keep building the site: a vlog hub (Watch Vlogs, Fans, Games, plus a private Wri
 
 3. CURRENT STATE
 Done and deployed (through livedbyleah-update5.zip = "Update C", merged to main; HTTPS redirect on since 2026-10-25): vlog drawer and comments, Instagram links, Shantell Sans, the full game with Leah's art, wave physics, UFO and heart, gun in hand, and shells. Fonts confirmed working after a hard refresh. Leah played for real, reached Level 5 and lost.
-Update D (fan club + level-based hall of fame, livedbyleah-update6.zip) is deployed and confirmed working; merged to main. Update E (fans list with last seen, settings gear, delete account, livedbyleah-update7.zip) is deployed and confirmed working; merged to main. In progress: Update F (fan counter, points ranking, screenshot proofs, full last name, one-time username with support requests) is built and tested locally on branch update-f as livedbyleah-update8.zip. Not yet deployed.
+Update D (fan club + level-based hall of fame, livedbyleah-update6.zip) is deployed and confirmed working; merged to main. Update E (fans list with last seen, settings gear, delete account, livedbyleah-update7.zip) is deployed and confirmed working; merged to main. In progress: Update F (fan counter, points ranking, screenshot proofs, full last name, one-time username with support requests) is deployed (livedbyleah-update8.zip), confirmed working, and merged to main.
 Open:
 - Paste the TikTok links per vlog via the gear icon.
 - Replace my placeholder shells (and the code-drawn shark and UFO) with Leah's art.
