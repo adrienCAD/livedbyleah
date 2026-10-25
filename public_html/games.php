@@ -7,7 +7,7 @@ require __DIR__ . '/inc/layout.php';
 page_header('Games', 'games');
 ?>
 <h1>Surf cleanup</h1>
-<p class="lede">Clean the beach, collect the shells, build a water gun, then surf five waves and beat the sharks. Your total time goes in the hall of fame.</p>
+<p class="lede">Clean the beach, collect the shells, build a water gun, then surf five waves and beat the sharks. You are ranked by the highest level you reach, then by your time. Fans play under their own username.</p>
 
 <div class="game" id="game">
   <div class="game-hud">
@@ -26,16 +26,15 @@ page_header('Games', 'games');
     <p class="pixel">GAME OVER</p>
     <p id="overMsg"></p>
     <p class="hint" id="overInfo"></p>
+    <p class="hint" id="overNote"></p>
     <button type="button" id="retryBtn" class="btn">Try again</button>
   </div>
   <div class="game-overlay" id="gameWin" hidden>
     <p class="pixel">YOU DID IT!</p>
     <p id="winTime">Your time: 0:00.0</p>
-    <label for="playerName">Your name for the hall of fame and certificate</label>
-    <input id="playerName" type="text" maxlength="30" autocomplete="off">
+    <p class="hint" id="winWho"></p>
     <div class="row">
-      <button type="button" id="submitBtn" class="btn">Add me to the hall of fame</button>
-      <button type="button" id="certBtn" class="btn ghost">Download certificate</button>
+      <button type="button" id="certBtn" class="btn">Download certificate</button>
       <button type="button" id="againBtn" class="btn ghost">Play again</button>
     </div>
     <p class="hint" id="winNote"></p>
@@ -51,7 +50,8 @@ page_header('Games', 'games');
 
 <section class="hof">
   <h2>Hall of fame</h2>
+  <p class="hint">Ranked by level reached, then best time. <span id="hofJoin"><a href="/fans.php?v=join">Join the fan club</a> to play under your own username.</span></p>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/game.js?v=3"></script>'); ?>
+<?php page_footer('<script src="/assets/js/game.js?v=4"></script>'); ?>

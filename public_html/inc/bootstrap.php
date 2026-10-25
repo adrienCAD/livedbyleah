@@ -103,12 +103,44 @@ function db(): PDO {
             $add('Last day in Veracruz', 'DavwHFVOMcA', 'LZpbEPJpq8U');
             $pdo->prepare('INSERT INTO settings (k, v) VALUES ("seed_extra_1", "1")')->execute();
         }
+        // Fans (public sign-ups). Separate from `users`, which holds only Leah and the admins.
+        $pdo->exec('CREATE TABLE IF NOT EXISTS fans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+            password_hash TEXT NOT NULL,
+            first_name TEXT NOT NULL,
+            last_initial TEXT NOT NULL,
+            username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+            confirmed INTEGER NOT NULL DEFAULT 0,
+            confirm_hash TEXT,
+            reset_hash TEXT,
+            reset_expires INTEGER NOT NULL DEFAULT 0,
+            fails INTEGER NOT NULL DEFAULT 0,
+            locked_until INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )');
         $pdo->exec('CREATE TABLE IF NOT EXISTS scores (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             ms INTEGER NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )');
+        // Upgrade scores: one best result per player (pkey), tagged to a fan when logged in.
+        // Older rows are full clears, so they default to level 5, won.
+        $scols = array_column($pdo->query('PRAGMA table_info(scores)')->fetchAll(), 'name');
+        if (!in_array('pkey', $scols, true)) {
+            $pdo->exec('ALTER TABLE scores ADD COLUMN pkey TEXT');
+        }
+        if (!in_array('fan_id', $scols, true)) {
+            $pdo->exec('ALTER TABLE scores ADD COLUMN fan_id INTEGER REFERENCES fans(id) ON DELETE CASCADE');
+        }
+        if (!in_array('level', $scols, true)) {
+            $pdo->exec('ALTER TABLE scores ADD COLUMN level INTEGER NOT NULL DEFAULT 5');
+        }
+        if (!in_array('won', $scols, true)) {
+            $pdo->exec('ALTER TABLE scores ADD COLUMN won INTEGER NOT NULL DEFAULT 1');
+        }
+        $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS scores_pkey ON scores(pkey)');
     }
     return $pdo;
 }

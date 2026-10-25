@@ -34,10 +34,16 @@ Read CLAUDE.md first for permanent architecture. This file records what happened
 ### HTTPS redirect (2026-10-25)
 - SSL active. Adrien un-commented the 3 redirect lines in `.htaccess` directly on the server (cPanel File Manager). http now redirects to https automatically. The repo `.htaccess` now matches, so future zips keep it on.
 
+### Update D (`livedbyleah-update6.zip`, 2026-10-25, branch `update-d`)
+- Fan club: join, email confirmation, login, lost-password reset, username choice, 13+ checkbox. Admin Fans page (username, email, confirm, reset name, remove).
+- Hall of fame now ranks by level reached then time, one best result per player, saved on game over and win. Guests get a funny surfer name. Certificate only for a full clear.
+- Needs checking on the live host: that PHP `mail()` delivers (sign up with a real email). If not, use Confirm in admin/fans.php and tell me.
+- Tested locally (scripted): sign-up, confirm, login, reset, username rules, scores, ranking, admin, migration of old scores.
+
 ## Open items
 - Paste the TikTok links per vlog via ⚙.
 - Replace my placeholder shells with Leah's own art. (The shark and UFO are also code-drawn.)
-- Fans tab: sign-up, ranking, under-13 rules, points.
+- Fans: points and campaigns still to specify. Confirm email delivery on the live host after Update D.
 - Campaigns.
 - Editor role for Alessandro.
 - Confirm `setup.php` is deleted from the server (not confirmed this session).
@@ -72,15 +78,15 @@ Keep building the site: a vlog hub (Watch Vlogs, Fans, Games, plus a private Wri
 - Comments: YouTube automatic via the Data API (key stored in Settings, cached 6 h, link comments skipped). TikTok and Instagram comments are pasted by Leah (they cannot be fetched). Names show as first name + last initial.
 - A vlog needs at least one link, so Instagram-only and TikTok-only vlogs are allowed. An admin-only gear icon edits links.
 - Game: 5 levels, one total timer, public Top 10 hall of fame (server rejects impossible times), 3 lives in total (max 5 with the UFO heart). Level 1 is the beach (4 trash + 4 shells, then a 4-piece gun puzzle). Levels 2-5 are surfing: left/right keep the board level (nose down = faster and right, nose up = slower and left), up = jump, up again = double jump + trick, Space = water gun along the board direction. UFO in levels 3-5: follows slowly, 3 s underneath = abduction, leaves after 10 s, 2 hits kill it and drop a +1 life heart. Touch controls and 8-bit sound.
-- Fan rules (under-13 handling, ranking, points) are for a later phase.
+- Fans: see CLAUDE.md (Fans section). Points and campaigns are for a later phase.
 
 3. CURRENT STATE
 Done and deployed (through livedbyleah-update5.zip = "Update C", merged to main; HTTPS redirect on since 2026-10-25): vlog drawer and comments, Instagram links, Shantell Sans, the full game with Leah's art, wave physics, UFO and heart, gun in hand, and shells. Fonts confirmed working after a hard refresh. Leah played for real, reached Level 5 and lost.
-In progress: none.
+In progress: Update D (fan club + level-based hall of fame) is built and tested locally on branch update-d as livedbyleah-update6.zip. Not yet deployed or merged to main; merge once Adrien confirms it works live.
 Open:
 - Paste the TikTok links per vlog via the gear icon.
 - Replace my placeholder shells (and the code-drawn shark and UFO) with Leah's art.
-- Fans tab: sign-up, ranking, under-13 rules, points.
+- Fans: points and campaigns still to specify. Confirm email delivery on the live host after Update D.
 - Campaigns.
 - Editor role for Alessandro.
 - Confirm setup.php is deleted from the server and that the YouTube API key is set in admin/settings.php.
@@ -104,5 +110,5 @@ Open:
 1. Read CLAUDE.md and HANDOVER.md. Ask me what is next, or pick the first open item I name.
 2. Ask me (and Leah) how the Level 5 run went. Then tune difficulty in LEVELS if needed.
 3. Build the next update on a new branch (update-d), test locally with php -S and Playwright, delete data/site.sqlite, merge to main, push, build livedbyleah-update6.zip, and add a dated entry to HANDOVER.md.
-4. Before the Fans phase, ask me the sign-up, under-13, ranking and points rules in one batch of questions.
+4. Before the points and campaigns phase, ask me the rules in one batch of questions.
 ```

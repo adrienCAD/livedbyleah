@@ -62,7 +62,6 @@
     time: document.getElementById('hudTime'),
     level: document.getElementById('hudLevel'),
     goal: document.getElementById('hudGoal'),
-    name: document.getElementById('playerName'),
     mute: document.getElementById('muteBtn'),
     fire: document.getElementById('fireBtn'),
     touch: document.getElementById('touch')
@@ -797,23 +796,50 @@
     return fetch('/api/scores.php', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .then(function (r) { return r.json(); });
   }
-  function renderHof(list, mine) {
+  var me = { name: 'Surfer', fan: false };
+  function renderHof(list) {
     var ol = document.getElementById('hof');
     if (!ol) { return; }
     ol.textContent = '';
     if (!list || !list.length) { var li0 = document.createElement('li'); li0.className = 'hint'; li0.textContent = 'No times yet. Be the first!'; ol.appendChild(li0); return; }
     list.forEach(function (r) {
       var li = document.createElement('li');
-      if (mine && r.name === mine.name && r.ms === mine.ms) { li.className = 'me'; }
+      if (r.mine) { li.className = 'me'; }
       var tt = document.createElement('span'); tt.className = 't'; tt.textContent = fmt(r.ms);
+      var lv = document.createElement('span'); lv.className = 'lv'; lv.textContent = r.won ? 'Cleared all 5' : 'Level ' + r.level;
       li.appendChild(document.createTextNode(r.name + ' '));
+      li.appendChild(lv);
       li.appendChild(tt);
       ol.appendChild(li);
     });
   }
+  function setMe(m) {
+    if (!m) { return; }
+    me = m;
+    var j = document.getElementById('hofJoin');
+    if (j) { j.hidden = !!m.fan; }
+  }
   function loadHof() {
     fetch('/api/scores.php', { credentials: 'same-origin' }).then(function (r) { return r.json(); })
-      .then(function (d) { renderHof(d.top); }).catch(function () { renderHof([]); });
+      .then(function (d) { setMe(d.me); renderHof(d.top); }).catch(function () { renderHof([]); });
+  }
+  function joinLink(parent) {
+    parent.appendChild(document.createTextNode(' '));
+    var a = document.createElement('a'); a.href = '/fans.php?v=join'; a.textContent = 'Join the fan club to play under your own username.';
+    parent.appendChild(a);
+  }
+  // Saves the result of a run (game over or win) under the player's name, then shows how it went.
+  function saveRun(won, noteEl) {
+    noteEl.textContent = '';
+    api({ action: 'submit', nonce: runNonce, ms: Math.round(clockMs), level: level, won: won }).then(function (d) {
+      if (d.error) { noteEl.textContent = d.error; return; }
+      setMe(d.me); renderHof(d.top);
+      if (!d.saved) { noteEl.textContent = 'Clear the beach to get on the hall of fame.'; return; }
+      var txt = d.improved ? 'Saved to the hall of fame as ' + me.name + '.'
+        : 'Your best is still ' + (d.best.won ? 'all 5 levels' : 'level ' + d.best.level) + ' in ' + fmt(d.best.ms) + '.';
+      noteEl.textContent = txt;
+      if (!me.fan) { joinLink(noteEl); }
+    }).catch(function () { noteEl.textContent = 'Could not reach the server.'; });
   }
 
   function beginRun() {
@@ -831,33 +857,23 @@
     snarkIdx++;
     document.getElementById('overInfo').textContent = 'You reached level ' + level + ' in ' + fmt(clockMs) + '.';
     el.over.hidden = false;
+    saveRun(false, document.getElementById('overNote'));
   }
 
-  var finalMs = 0, submitted = false;
+  var finalMs = 0;
   function gameWon() {
-    mode = 'win'; clockRunning = false; finalMs = Math.round(clockMs); submitted = false;
+    mode = 'win'; clockRunning = false; finalMs = Math.round(clockMs); level = TOTAL_LEVELS;
     setMusic('none'); play('win');
     document.getElementById('winTime').textContent = 'Your time: ' + fmt(finalMs);
+    document.getElementById('winWho').textContent = 'Playing as ' + me.name + '.';
     document.getElementById('winNote').textContent = '';
-    document.getElementById('submitBtn').disabled = false;
     el.win.hidden = false;
+    saveRun(true, document.getElementById('winNote'));
   }
 
   document.getElementById('startBtn').addEventListener('click', beginRun);
   document.getElementById('retryBtn').addEventListener('click', beginRun);
   document.getElementById('againBtn').addEventListener('click', beginRun);
-  document.getElementById('submitBtn').addEventListener('click', function () {
-    if (submitted) { return; }
-    var btn = this, note = document.getElementById('winNote');
-    btn.disabled = true;
-    api({ action: 'submit', nonce: runNonce, name: el.name.value, ms: finalMs }).then(function (d) {
-      if (d.error) { note.textContent = d.error; btn.disabled = false; return; }
-      submitted = true;
-      note.textContent = 'You are in the hall of fame as ' + d.name + '.';
-      renderHof(d.top, { name: d.name, ms: finalMs });
-    }).catch(function () { note.textContent = 'Could not reach the server. Try again.'; btn.disabled = false; });
-  });
-
   // ------------------------------------------------------------------ loop and input
   function loop(now) {
     if (!lastTime) { lastTime = now; }
@@ -913,7 +929,7 @@
 
   // ------------------------------------------------------------------ certificate (drawn in the browser, nothing is stored)
   document.getElementById('certBtn').addEventListener('click', function () {
-    var name = (el.name.value || '').trim() || 'Beach Hero';
+    var name = me.name || 'Beach Hero';
     var load = document.fonts && document.fonts.load ? document.fonts.load('20px "Myfont"') : Promise.resolve();
     load.catch(function () {}).then(function () { makeCertificate(name, finalMs); });
   });
@@ -966,7 +982,8 @@
       info: function () { return { mode: mode, level: level, lives: lives, S: S && { resolved: S.resolved, spawned: S.spawned, ang: S.ang, h: S.h, ufo: S.ufo && S.ufo.state }, ms: clockMs }; },
       S: function () { return S; },
       lives: function (n) { lives = n; },
-      won: function () { clockMs = 61000 + Math.random() * 1000; gameWon(); }
+      over: function (ms) { if (ms) { clockMs = ms; } gameOver(); },
+      won: function (ms) { clockMs = ms || 61000 + Math.random() * 1000; gameWon(); }
     };
   }
 

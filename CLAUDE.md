@@ -19,10 +19,10 @@ Adrien is new to hosting. Explain things simply, in short steps. Keep replies cr
 - Palette: Golden Pollen #FDC921, Mustard #FDD85D, Frosted Blue #99D6EA, Blue Grey #6798C0, Porcelain #FFFDF7, ink #1E3248.
 
 ## Site map
-- Tabs: Watch Vlogs (public home, `/vlogs.php`), Fans (`/fans.php`, placeholder), Games (`/games.php`).
+- Tabs: Watch Vlogs (public home, `/vlogs.php`), Fans (`/fans.php`, sign-up and login), Games (`/games.php`).
 - Writing Process (`/writing.php`) is a private tab, shown only when `is_admin()` (Leah or admin).
 - `/index.php` redirects to `/vlogs.php`. `/creative.php` is a 301 to `/games.php`.
-- Admin (`/admin/`): Dashboard, Vlogs, Writing posts, Comments, Hall of fame, Settings.
+- Admin (`/admin/`): Dashboard, Vlogs, Writing posts, Comments, Fans, Hall of fame, Settings.
 - `setup.php` is for first setup only. It must NOT exist on the server.
 
 ## Code rules
@@ -34,7 +34,7 @@ Adrien is new to hosting. Explain things simply, in short steps. Keep replies cr
 - Cache-bust JS and CSS with `?v=N` in the includes when you change them (browsers cache hard).
 
 ## Database and migrations (SQLite, `data/site.sqlite`)
-- Tables: users, vlogs (title, youtube_id, tiktok_url, instagram_url, why, yt_fetched, sort_order), posts, comments (UNIQUE source+ext_id, hidden flag), settings (key/value), scores (id, name, ms, created_at).
+- Tables: users (admins only), fans (public sign-ups), vlogs (title, youtube_id, tiktok_url, instagram_url, why, yt_fetched, sort_order), posts, comments (UNIQUE source+ext_id, hidden flag), settings (key/value), scores (id, name, ms, created_at, pkey, fan_id, level, won).
 - Migrations live inside `db()` in `inc/bootstrap.php`, with no migration tool:
   - `CREATE TABLE IF NOT EXISTS`.
   - `PRAGMA table_info` then `ALTER TABLE ... ADD COLUMN`.
@@ -62,13 +62,20 @@ Canvas 640x360, pixel art, no libraries. 5 levels, one total timer, 3 lives acro
 - Level config is in `LEVELS` (amp, freq, waveGain, gust, instab, speed, swim, gap, ufoFollow). Waves grow taller and steeper with the level. Tune difficulty there.
 - UFO (levels 3-5): follows slowly. Staying underneath it 3 s abducts Leah (lose a life, timer resets if she leaves). It leaves after 10 s. Two hits kill it, and it drops a heart that circles the screen for ~8 s (catch = +1 life).
 - Losing a life restarts the current level (timer keeps running). 0 lives gives one of 8 rotating snarky messages.
-- Hall of fame: `api/scores.php`. POST `start` returns a nonce (in session). POST `submit` {nonce, name, ms} is rejected if ms < 45000, or ms > elapsed + 3000, or > 4 h. Public Top 10. `admin/scores.php` deletes entries.
-- Certificate is drawn client-side on a canvas with Myfont and shows the time.
+- Hall of fame: `api/scores.php`. POST `start` returns a nonce (in session). POST `submit` {nonce, ms, level, won} is rejected if ms is below 45000 (win) or 9000 x (level-1) (not won), or ms > elapsed + 3000, or > 4 h. Level 1 is not saved. Public Top 10. `admin/scores.php` deletes entries.
+- Certificate (full clears only) is drawn client-side on a canvas with Myfont, with the player's name and time.
 - Art in `assets/img/art/`: Leah's trash (bottle, rings, water, bag) and gun parts (gun, tank, barrel, nut, handle) are hers. The 4 shells (scallop, spiral, clam, conch) are PLACEHOLDERS to replace with Leah's art. Surfer is `assets/img/surfer.png` (59x52, hers). Shark and UFO are code-drawn placeholders.
-- Test hook: open `/games.php?debug=1` to get `window.__lbl` (level(n, ufo), puzzle(), S(), info(), won(), god mode via `__lbl.god = true`). `won()` fakes the clock, so the server rejects its score. That is expected.
+- Test hook: open `/games.php?debug=1` to get `window.__lbl` (level(n, ufo), puzzle(), S(), info(), won(ms), over(ms), god mode via `__lbl.god = true`). `won()` with no argument fakes the clock, so the server rejects its score. Pass a time under the real elapsed time (for example `won(47500)` after waiting 48 s) to test saving.
 
-## Fan rules (LATER PHASE, not built)
-Fans sign up. Under-13 handling, ranking and points are still to be specified. Names show publicly as first name + last initial. Do not collect more data than needed.
+## Fans (built in Update D)
+- Code: `fans.php` (all views), `inc/fans.php` (helpers), `admin/fans.php`. Fans live in the `fans` table, separate from admins. Session key `fan_id`.
+- Visitors see "you are not a fan yet" with Join and Log in. Join: first name, first letter of last name, email, password (min 10, max 64; the page shows a tip like Purple-Wave-Tacos-42), and a required "I am 13 or older" checkbox. No birth date is stored.
+- Email must be confirmed (link by email) before login. "I lost my password" sends a 1 hour reset link; using it also confirms the email. Login locks an account for 5 minutes after 8 wrong tries.
+- Email is sent with PHP `mail()` from noreply@livedbyleah.com. On localhost it is written to `data/outbox.log` instead. If mail does not arrive on the host, an admin can press Confirm in `/admin/fans.php`.
+- Default username = first name + last initial ("Mia K.", numbered if taken). Fans can pick a nickname on the Fans page (3-20 chars, letters/numbers/space/. _ -). Admin sees username and email, can reset a username to the default, confirm by hand, or remove a fan (their hall of fame entry goes too).
+- Games: signed-in fans are saved under their username. Visitors who are not signed in get a funny placeholder name ("Gnarly Surfer Dude 42") for the session and a prompt to join.
+- Hall of fame: one best result per player. Saved on game over (level 2 or higher) and on a win. Rank = cleared all 5 first, then highest level reached, then fastest time. Shows "Level N" or "Cleared all 5". Only a full clear shows the certificate (it uses the player's name). Older scores were migrated as level 5, cleared.
+- Still to do: points and campaigns.
 
 ## Deploy routine (Adrien does this by hand)
 1. Build a zip of `public_html` EXCLUDING `data/*`, `setup.php` and `.DS_Store`:

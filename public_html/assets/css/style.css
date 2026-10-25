@@ -206,5 +206,10 @@ td.actions form { display: inline; }
 .hof { max-width: 460px; margin-top: 28px; }
 .hof ol { margin: 0; padding-left: 28px; display: grid; gap: 4px; }
 .hof li { padding: 4px 8px; border-bottom: 1px dashed var(--line); }
+.hof li .lv { font-size: 12px; color: var(--muted); margin-left: 6px; }
 .hof li .t { float: right; font-variant-numeric: tabular-nums; font-weight: 700; }
 .hof li.me { background: #FFF1B8; }
+
+.fan-join { text-align: left; }
+.fan-join p { margin: 0 0 12px; }
+.hint a { color: var(--ink); font-weight: 700; }
