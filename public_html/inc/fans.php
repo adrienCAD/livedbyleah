@@ -100,10 +100,10 @@ function send_reset_email(int $fanId, string $email): bool {
 function guest_player(): array {
     if (empty($_SESSION['guest'])) {
         $a = ['Gnarly', 'Wavy', 'Sandy', 'Salty', 'Sunny', 'Radical', 'Breezy', 'Coral', 'Tubular', 'Mellow'];
-        $b = ['Surfer Dude', 'Surfer Dudette', 'Shell Collector', 'Beach Bum', 'Kelp Rider', 'Wave Hopper', 'Sandcastle King', 'Seagull Pal', 'Board Buddy', 'Tide Chaser'];
+        $b = ['SurferDude', 'SurferDudette', 'ShellCollector', 'BeachBum', 'KelpRider', 'WaveHopper', 'SandcastleKing', 'SeagullPal', 'BoardBuddy', 'TideChaser'];
         $_SESSION['guest'] = [
             'key' => 'g' . bin2hex(random_bytes(8)),
-            'name' => $a[random_int(0, count($a) - 1)] . ' ' . $b[random_int(0, count($b) - 1)] . ' ' . random_int(10, 99),
+            'name' => $a[random_int(0, count($a) - 1)] . $b[random_int(0, count($b) - 1)],   // e.g. TubularBeachBum
         ];
     }
     return $_SESSION['guest'];
