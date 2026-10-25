@@ -85,4 +85,4 @@ Never overwrite or delete `data/site.sqlite` (it holds Leah's content, comments 
 
 ## Known constraints
 - TikTok blocks fetching, so TikTok links cannot be matched automatically. They are pasted via the ⚙ icon.
-- `.htaccess` has the HTTPS redirect commented out until SSL is active (3 lines to un-comment).
+- `.htaccess` has the HTTPS redirect ON (SSL active, confirmed 2026-10-25). Do not comment it out.

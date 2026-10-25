@@ -31,9 +31,11 @@ Read CLAUDE.md first for permanent architecture. This file records what happened
 - Leah's new trash art and 4-piece gun puzzle (matches her assembled gun). Shells back (4, placeholders).
 - Scripted bot test (130 ms reaction) held the board on all levels. UFO, heart and abduction timing were verified by script only.
 
+### HTTPS redirect (2026-10-25)
+- SSL active. Adrien un-commented the 3 redirect lines in `.htaccess` directly on the server (cPanel File Manager). http now redirects to https automatically. The repo `.htaccess` now matches, so future zips keep it on.
+
 ## Open items
 - Paste the TikTok links per vlog via ⚙.
-- Un-comment the 3 HTTPS lines in `.htaccess` once SSL is active.
 - Replace my placeholder shells with Leah's own art. (The shark and UFO are also code-drawn.)
 - Fans tab: sign-up, ranking, under-13 rules, points.
 - Campaigns.

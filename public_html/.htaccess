@@ -1,10 +1,10 @@
 # Lived by Leah site rules.
 Options -Indexes
 
-# TURN THIS ON after the free SSL certificate is installed (remove the leading # on the 3 lines):
-#RewriteEngine On
-#RewriteCond %{HTTPS} off
-#RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+# HTTPS redirect: ON (SSL active since 2026-10-25).
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
 
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
