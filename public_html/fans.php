@@ -33,17 +33,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'join') {
         $view = 'join';
         $first = trim((string)preg_replace('/\s+/u', ' ', (string)($_POST['first_name'] ?? '')));
-        $initial = mb_strtoupper(mb_substr(trim((string)($_POST['last_initial'] ?? '')), 0, 1));
+        $last = trim((string)preg_replace('/\s+/u', ' ', (string)($_POST['last_name'] ?? '')));
+        $initial = mb_strtoupper(mb_substr($last, 0, 1));
         $pass = (string)($_POST['password'] ?? '');
-        $old = ['first_name' => $first, 'last_initial' => $initial, 'email' => $email];
+        $old = ['first_name' => $first, 'last_name' => $last, 'email' => $email];
         if (empty($_POST['age13'])) {
             $errors[] = 'You need to be 13 or older to join the fan club.';
         }
         if (!preg_match('/^[\p{L}][\p{L} .\'-]{0,19}$/u', $first)) {
             $errors[] = 'Enter your first name (letters only, up to 20).';
         }
-        if (!preg_match('/^\p{L}$/u', $initial)) {
-            $errors[] = 'Enter just the first letter of your last name.';
+        if (!preg_match('/^[\p{L}][\p{L} .\'-]{0,29}$/u', $last)) {
+            $errors[] = 'Enter your last name (letters only, up to 30).';
         }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 120) {
             $errors[] = 'Enter a valid email address.';
@@ -59,8 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         if (!$errors) {
-            db()->prepare('INSERT INTO fans (email, password_hash, first_name, last_initial, username) VALUES (?, ?, ?, ?, ?)')
-                ->execute([$email, password_hash($pass, PASSWORD_DEFAULT), $first, $initial, default_username($first, $initial)]);
+            db()->prepare('INSERT INTO fans (email, password_hash, first_name, last_name, last_initial, username) VALUES (?, ?, ?, ?, ?, ?)')
+                ->execute([$email, password_hash($pass, PASSWORD_DEFAULT), $first, $last, $initial, default_username($first, $initial)]);
             $id = (int)db()->lastInsertId();
             if (send_confirm_email($id, $email, $first)) {
                 flash('Almost there! We sent a link to ' . $email . '. Click it to confirm your email, then log in. Check your spam folder too.');
@@ -140,14 +141,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $view = 'settings';
         $me = current_fan();
         [$name, $err] = clean_username((string)($_POST['username'] ?? ''));
+        if ($me['username_locked']) {
+            $err = 'Your username is locked. Ask support below if you need a change.';
+        }
         if ($err === '' && username_taken($name, (int)$me['id'])) {
             $err = 'Someone already has that username. Try another one.';
         }
         if ($err !== '') {
             $errors[] = $err;
         } else {
-            db()->prepare('UPDATE fans SET username = ? WHERE id = ?')->execute([$name, $me['id']]);
-            flash('Your username is now ' . $name . '.');
+            // First time they choose a name: it is now locked.
+            db()->prepare('UPDATE fans SET username = ?, username_locked = 1 WHERE id = ?')->execute([$name, $me['id']]);
+            flash('Your username is now ' . $name . '. It is locked, so choose well!');
+            redirect('/fans.php?v=settings');
+        }
+    } elseif ($action === 'support' && current_fan()) {
+        $view = 'settings';
+        $me = current_fan();
+        [$name, $err] = clean_username((string)($_POST['wanted'] ?? ''));
+        $why = mb_substr(trim((string)($_POST['reason'] ?? '')), 0, 300);
+        $st = db()->prepare("SELECT 1 FROM support_requests WHERE fan_id = ? AND status = 'pending'");
+        $st->execute([$me['id']]);
+        if (!$me['username_locked']) {
+            $err = 'Your username is not locked, you can change it yourself.';
+        } elseif ($st->fetchColumn()) {
+            $err = 'You already have a request waiting. Support will get to it soon.';
+        } elseif ($err === '' && $why === '') {
+            $err = 'Tell support why you need the change.';
+        } elseif ($err === '' && username_taken($name, (int)$me['id'])) {
+            $err = 'Someone already has that username. Try another one.';
+        }
+        if ($err !== '') {
+            $errors[] = $err;
+        } else {
+            db()->prepare('INSERT INTO support_requests (fan_id, wanted, reason) VALUES (?, ?, ?)')->execute([$me['id'], $name, $why]);
+            flash('Request sent. Support will look at it soon.');
             redirect('/fans.php?v=settings');
         }
     } elseif ($action === 'password' && current_fan()) {
@@ -163,13 +191,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('Password updated.');
             redirect('/fans.php?v=settings');
         }
+    } elseif ($action === 'proof' && current_fan()) {
+        $me = current_fan();
+        $plat = (string)($_POST['platform'] ?? '');
+        $kind = (string)($_POST['kind'] ?? '');
+        $vlogId = $kind === 'follow' ? 0 : (int)($_POST['vlog_id'] ?? 0);
+        $file = $_FILES['shot'] ?? null;
+        $err = '';
+        if (!isset(PROOF_PLATFORMS[$plat]) || !isset(PROOF_POINTS[$kind])) {
+            $err = 'Pick a platform and what you did.';
+        } elseif ($kind !== 'follow') {
+            $col = ['youtube' => 'youtube_id', 'instagram' => 'instagram_url', 'tiktok' => 'tiktok_url'][$plat];
+            $st = db()->prepare("SELECT 1 FROM vlogs WHERE id = ? AND COALESCE($col, '') != ''");
+            $st->execute([$vlogId]);
+            if (!$st->fetchColumn()) {
+                $err = 'Pick the vlog you liked or commented on (it must be on that platform).';
+            }
+        }
+        if ($err === '') {
+            $st = db()->prepare("SELECT 1 FROM proofs WHERE fan_id = ? AND platform = ? AND action = ? AND COALESCE(vlog_id, 0) = CAST(? AS INTEGER) AND status != 'rejected'");
+            $st->execute([$me['id'], $plat, $kind, $vlogId]);
+            if ($st->fetchColumn()) {
+                $err = 'You already sent that one. You can only earn each action once (once per vlog for likes and comments).';
+            }
+        }
+        if ($err === '') {
+            $st = db()->prepare("SELECT COUNT(*) FROM proofs WHERE fan_id = ? AND status = 'pending'");
+            $st->execute([$me['id']]);
+            if ((int)$st->fetchColumn() >= 10) {
+                $err = 'You have 10 screenshots waiting for review. Please wait until some are checked.';
+            }
+        }
+        $ext = '';
+        if ($err === '') {
+            if (!$file || $file['error'] === UPLOAD_ERR_NO_FILE) {
+                $err = 'Choose a screenshot to upload.';
+            } elseif ($file['error'] === UPLOAD_ERR_INI_SIZE || $file['error'] === UPLOAD_ERR_FORM_SIZE || $file['size'] > 5 * 1024 * 1024) {
+                $err = 'That image is too big. Try a smaller screenshot.';
+            } elseif ($file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'])) {
+                $err = 'The upload did not work. Please try again.';
+            } else {
+                $info = @getimagesize($file['tmp_name']);
+                $types = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
+                if (!$info || !isset($types[$info[2]])) {
+                    $err = 'Please upload a JPG, PNG or WebP image.';
+                } else {
+                    $ext = $types[$info[2]];
+                }
+            }
+        }
+        if ($err === '') {
+            $dir = __DIR__ . '/data/proofs';
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+            $name = bin2hex(random_bytes(12)) . '.' . $ext;
+            if (!@move_uploaded_file($file['tmp_name'], $dir . '/' . $name)) {
+                $err = 'Could not save the image. Please tell Leah or Adrien.';
+            } else {
+                db()->prepare('INSERT INTO proofs (fan_id, platform, action, vlog_id, file, points) VALUES (?, ?, ?, ?, ?, ?)')
+                    ->execute([$me['id'], $plat, $kind, $vlogId ?: null, $name, PROOF_POINTS[$kind]]);
+                flash('Thanks! Leah or Adrien will check your screenshot soon. You get the points once it is approved.');
+                redirect('/fans.php');
+            }
+        }
+        $errors[] = $err;
     } elseif ($action === 'delete_account' && current_fan()) {
         $view = 'settings';
         $me = current_fan();
         if (!password_verify((string)($_POST['current_password'] ?? ''), $me['password_hash'])) {
             $errors[] = 'Your password is not right, so the account was not deleted.';
         } else {
-            db()->prepare('DELETE FROM fans WHERE id = ?')->execute([$me['id']]);   // their hall of fame entry goes too
+            $st = db()->prepare('SELECT file FROM proofs WHERE fan_id = ? AND file IS NOT NULL');
+            $st->execute([$me['id']]);
+            foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $fn) {
+                @unlink(__DIR__ . '/data/proofs/' . basename((string)$fn));
+            }
+            db()->prepare('DELETE FROM fans WHERE id = ?')->execute([$me['id']]);   // their hall of fame entry and proofs go too
             unset($_SESSION['fan_id']);
             flash('Your account and hall of fame entry were deleted. Thanks for being a fan!');
             redirect('/fans.php');
@@ -193,6 +291,8 @@ $tip = 'Tip: join 3 or 4 random words with hyphens, add a number and a capital l
 page_header('Fans', 'fans');
 ?>
 <h1>Fans<?php if ($fan && !$resetOk && $view !== 'settings'): ?> <a class="gear" href="/fans.php?v=settings" aria-label="Settings" title="Settings">&#9881;</a><?php endif; ?></h1>
+<?php $nFans = fan_count(); ?>
+<p class="fan-count"><strong id="fanCount"><?= $nFans ?></strong> <span id="fanLabel"><?= $nFans === 1 ? 'fan' : 'fans' ?></span> in the club</p>
 <?php if ($msg): ?><p class="notice"><?= e($msg) ?></p><?php endif; ?>
 <?php foreach ($errors as $er): ?><p class="error"><?= e($er) ?></p><?php endforeach; ?>
 
@@ -207,13 +307,35 @@ page_header('Fans', 'fans');
 </div>
 
 <h2>Your username</h2>
+<?php if ($fan['username_locked']):
+    $rq = db()->prepare('SELECT wanted, status, note FROM support_requests WHERE fan_id = ? ORDER BY id DESC LIMIT 1');
+    $rq->execute([$fan['id']]);
+    $req = $rq->fetch(); ?>
+<p>Your username is <strong><?= e($fan['username']) ?></strong>. It is locked, because you already chose it.</p>
+<?php if ($req && $req['status'] === 'pending'): ?>
+<p class="notice">Your request for <strong><?= e($req['wanted']) ?></strong> is waiting for support.</p>
+<?php else: ?>
+<?php if ($req && $req['status'] === 'declined'): ?><p class="hint">Your last request for <?= e($req['wanted']) ?> was declined<?= $req['note'] ? ': ' . e($req['note']) : '' ?>.</p>
+<?php elseif ($req && $req['status'] === 'approved'): ?><p class="hint">Your last request was approved.</p><?php endif; ?>
+<h3>Need a change? Ask support</h3>
 <form method="post" action="/fans.php?v=settings" class="form">
+  <?= csrf_field() ?><input type="hidden" name="action" value="support">
+  <label for="wanted">The username you would like</label>
+  <input id="wanted" name="wanted" minlength="3" maxlength="20" required>
+  <label for="why">Why do you need the change?</label>
+  <textarea id="why" name="reason" maxlength="300" rows="3" required></textarea>
+  <button class="btn" type="submit">Send to support</button>
+</form>
+<?php endif; ?>
+<?php else: ?>
+<form method="post" action="/fans.php?v=settings" class="form" onsubmit="return confirm('You can only choose your username once. After that, only support can change it. Save it?');">
   <?= csrf_field() ?><input type="hidden" name="action" value="username">
   <label for="username">Name shown in the hall of fame and on the fans page</label>
   <input id="username" name="username" value="<?= e($fan['username']) ?>" minlength="3" maxlength="20" required>
-  <p class="hint">3 to 20 characters: letters, numbers, spaces, dots, dashes. Pick a nickname if you prefer not to show your name.</p>
+  <p class="hint"><strong>You can choose only once.</strong> After you save, it is locked and only support can change it. 3 to 20 characters: letters, numbers, spaces, dots, dashes. Pick a nickname if you prefer not to show your name.</p>
   <button class="btn" type="submit">Save username</button>
 </form>
+<?php endif; ?>
 
 <h2>Change password</h2>
 <form method="post" action="/fans.php?v=settings" class="form">
@@ -245,24 +367,86 @@ page_header('Fans', 'fans');
     $best = db()->prepare('SELECT level, won, ms FROM scores WHERE fan_id = ?');
     $best->execute([$fan['id']]);
     $b = $best->fetch();
-    $fans = db()->query('SELECT id, username, COALESCE(last_login, created_at) AS seen FROM fans WHERE confirmed = 1 ORDER BY seen DESC, id DESC LIMIT 200')->fetchAll();
+    $ranking = fan_ranking();
+    $mine = null;
+    foreach ($ranking as $r) {
+        if ($r['id'] === (int)$fan['id']) { $mine = $r; }
+    }
+    $vl = db()->query('SELECT id, title, youtube_id, instagram_url, tiktok_url FROM vlogs ORDER BY sort_order, id')->fetchAll();
+    $sub = db()->prepare('SELECT p.platform, p.action, p.status, p.points, p.note, p.created_at, v.title FROM proofs p LEFT JOIN vlogs v ON v.id = p.vlog_id WHERE p.fan_id = ? ORDER BY p.id DESC LIMIT 20');
+    $sub->execute([$fan['id']]);
+    $subs = $sub->fetchAll();
     ?>
 <p class="lede">Hey <strong><?= e($fan['username']) ?></strong>, you are part of the fan club. Everything you do on the site shows up under this name.</p>
-<div class="soon">
+<?php if ($mine): ?>
+<div class="soon rankcard">
+  <p><strong>You are fan #<?= (int)$mine['rank'] ?> with <?= (int)$mine['pts'] ?> points.</strong></p>
+  <p class="hint"><?= SIGNUP_POINTS ?> for joining + <?= (int)$mine['lvl_pts'] ?> for game levels + <?= (int)$mine['soc_pts'] ?> for approved screenshots.
   <?php if ($b): $s = intdiv((int)$b['ms'], 1000); ?>
-    <p><strong>Your best surf run:</strong> <?= $b['won'] ? 'cleared all 5 levels' : 'reached level ' . (int)$b['level'] ?> in <?= sprintf('%d:%02d', intdiv($s, 60), $s % 60) ?>.</p>
+    Best surf run: <?= $b['won'] ? 'cleared all 5 levels' : 'reached level ' . (int)$b['level'] ?> in <?= sprintf('%d:%02d', intdiv($s, 60), $s % 60) ?>.
   <?php else: ?>
-    <p>You have not played yet. <a href="/games.php">Go surf!</a></p>
-  <?php endif; ?>
+    You have not played yet. <a href="/games.php">Go surf!</a>
+  <?php endif; ?></p>
+</div>
+<?php endif; ?>
+
+<h2>How to climb the ranking</h2>
+<div class="soon">
+  <p>Everyone starts in sign-up order (first to join is #1). After that, points decide. If points are equal, the earlier sign-up stays ahead.</p>
+  <ul>
+    <li><strong>Join the club:</strong> <?= SIGNUP_POINTS ?> points</li>
+    <li><strong>Pass levels in the surf game:</strong> level 1 = 1 point, level 2 = 2 points, up to level 5 = 5 points (15 in total, each counted once). <a href="/games.php">Play now</a></li>
+    <li><strong>Like a vlog</strong> on YouTube, Instagram or TikTok: <?= PROOF_POINTS['like'] ?> points each</li>
+    <li><strong>Follow or subscribe</strong> on each platform: <?= PROOF_POINTS['follow'] ?> points each</li>
+    <li><strong>Comment on a vlog:</strong> <?= PROOF_POINTS['comment'] ?> points each</li>
+  </ul>
+  <p class="hint">For likes, follows and comments, send a screenshot. Leah or Adrien checks it and, if it is real, the points are added. The image is deleted after it is checked.</p>
 </div>
 
-<h2>The fans (<?= count($fans) ?>)</h2>
-<ul class="fanlist">
-<?php foreach ($fans as $f): ?>
-  <li<?= (int)$f['id'] === (int)$fan['id'] ? ' class="me"' : '' ?>><span class="nm"><?= e($f['username']) ?><?= (int)$f['id'] === (int)$fan['id'] ? ' (you)' : '' ?></span>
-    <span class="seen">last seen <?= e(ago($f['seen'])) ?></span></li>
+<details class="proofbox"<?= ($action ?? '') === 'proof' ? ' open' : '' ?>>
+  <summary>Send a screenshot to earn points</summary>
+  <form method="post" action="/fans.php" enctype="multipart/form-data" class="form" id="proofForm">
+    <?= csrf_field() ?><input type="hidden" name="action" value="proof">
+    <label for="pf">Where?</label>
+    <select id="pf" name="platform" required>
+      <?php foreach (PROOF_PLATFORMS as $k => $lab): ?><option value="<?= e($k) ?>"><?= e($lab) ?></option><?php endforeach; ?>
+    </select>
+    <label for="pk">What did you do?</label>
+    <select id="pk" name="kind" required>
+      <option value="like">Liked a vlog (<?= PROOF_POINTS['like'] ?> points)</option>
+      <option value="comment">Commented on a vlog (<?= PROOF_POINTS['comment'] ?> points)</option>
+      <option value="follow">Followed / subscribed (<?= PROOF_POINTS['follow'] ?> points)</option>
+    </select>
+    <label for="pv" id="pvLabel">Which vlog?</label>
+    <select id="pv" name="vlog_id">
+      <?php foreach ($vl as $v): ?>
+        <option value="<?= (int)$v['id'] ?>" data-youtube="<?= $v['youtube_id'] !== '' ? 1 : 0 ?>" data-instagram="<?= $v['instagram_url'] ? 1 : 0 ?>" data-tiktok="<?= $v['tiktok_url'] ? 1 : 0 ?>"><?= e($v['title']) ?></option>
+      <?php endforeach; ?>
+    </select>
+    <label for="ps">Screenshot</label>
+    <input id="ps" name="shot" type="file" accept="image/png,image/jpeg,image/webp" required>
+    <p class="hint">Show your like, comment or follow, with your account name visible. JPG, PNG or WebP.</p>
+    <button class="btn" type="submit">Send for review</button>
+  </form>
+</details>
+
+<?php if ($subs): ?>
+<h2>My screenshots</h2>
+<ul class="fanlist subs">
+<?php foreach ($subs as $x): ?>
+  <li><span class="nm"><?= e(PROOF_PLATFORMS[$x['platform']] ?? $x['platform']) ?>: <?= e(proof_action_label($x['platform'], $x['action'])) ?><?= $x['title'] ? ' - ' . e($x['title']) : '' ?></span>
+    <span class="seen st-<?= e($x['status']) ?>"><?= $x['status'] === 'approved' ? '+' . (int)$x['points'] . ' points' : ($x['status'] === 'pending' ? 'waiting for review' : 'not approved' . ($x['note'] ? ': ' . e($x['note']) : '')) ?></span></li>
 <?php endforeach; ?>
 </ul>
+<?php endif; ?>
+
+<h2>The fan ranking</h2>
+<ol class="fanlist ranking">
+<?php foreach ($ranking as $f): $me = $f['id'] === (int)$fan['id']; ?>
+  <li<?= $me ? ' class="me"' : '' ?>><span class="nm">#<?= (int)$f['rank'] ?> <?= e($f['username']) ?><?= $me ? ' (you)' : '' ?></span>
+    <span class="seen"><?= (int)$f['pts'] ?> points &middot; last seen <?= e(ago($f['seen'])) ?></span></li>
+<?php endforeach; ?>
+</ol>
 
 <?php elseif ($resetOk): /* ---------------- choose new password ---------------- */ ?>
 <h2>Choose a new password</h2>
@@ -280,9 +464,9 @@ page_header('Fans', 'fans');
   <?= csrf_field() ?><input type="hidden" name="action" value="join">
   <label for="fn">First name</label>
   <input id="fn" name="first_name" value="<?= e($old['first_name'] ?? '') ?>" maxlength="20" required autocomplete="given-name">
-  <label for="li">First letter of your last name</label>
-  <input id="li" name="last_initial" value="<?= e($old['last_initial'] ?? '') ?>" maxlength="1" required style="max-width:5em">
-  <p class="hint">Your public name will be your first name and that letter, like "Mia K." You can change it to a nickname later.</p>
+  <label for="ln">Last name</label>
+  <input id="ln" name="last_name" value="<?= e($old['last_name'] ?? '') ?>" maxlength="30" required autocomplete="family-name">
+  <p class="hint">Only Leah and the admins can see your full name. Everyone else sees your first name and the first letter of your last name, like "Mia K." You can pick a nickname once, later.</p>
   <label for="em">Email</label>
   <input id="em" name="email" type="email" value="<?= e($old['email'] ?? '') ?>" maxlength="120" required autocomplete="email">
   <p class="hint">Only used to confirm your account and reset your password. It is never shown to anyone.</p>
@@ -326,4 +510,4 @@ page_header('Fans', 'fans');
 </form>
 <?php endif; ?>
 <?php endif; ?>
-<?php page_footer('<script>document.querySelectorAll("time.localtime").forEach(function(t){var d=new Date(t.getAttribute("datetime"));if(!isNaN(d)){t.textContent=d.toLocaleString([],{dateStyle:"medium",timeStyle:"short"});}});</script>'); ?>
+<?php page_footer('<script src="/assets/js/fans.js?v=1"></script><script>document.querySelectorAll("time.localtime").forEach(function(t){var d=new Date(t.getAttribute("datetime"));if(!isNaN(d)){t.textContent=d.toLocaleString([],{dateStyle:"medium",timeStyle:"short"});}});</script>'); ?>

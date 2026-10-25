@@ -19,7 +19,7 @@ function page_header(string $title, string $active, string $extraHead = ''): voi
 <title><?= e($title) ?> | <?= e(SITE_NAME) ?></title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23FDC921'/%3E%3C/svg%3E">
 <link rel="preload" href="/assets/fonts/shantell-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/css/style.css?v=3">
+<link rel="stylesheet" href="/assets/css/style.css?v=4">
 <?= $extraHead ?>
 </head>
 <body>
@@ -60,7 +60,7 @@ function admin_header(string $title): void {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title><?= e($title) ?> | Admin</title>
-<link rel="stylesheet" href="/assets/css/style.css?v=3">
+<link rel="stylesheet" href="/assets/css/style.css?v=4">
 </head>
 <body class="admin">
 <div class="admin-wrap">
@@ -72,6 +72,10 @@ function admin_header(string $title): void {
       <a href="/admin/posts.php">Writing posts</a>
       <a href="/admin/comments.php">Comments</a>
       <a href="/admin/fans.php">Fans</a>
+      <?php $pp = (int)db()->query("SELECT COUNT(*) FROM proofs WHERE status = 'pending'")->fetchColumn(); ?>
+      <a href="/admin/proofs.php">Screenshots<?= $pp ? ' (' . $pp . ')' : '' ?></a>
+      <?php $ps = (int)db()->query("SELECT COUNT(*) FROM support_requests WHERE status = 'pending'")->fetchColumn(); ?>
+      <a href="/admin/support.php">Support<?= $ps ? ' (' . $ps . ')' : '' ?></a>
       <a href="/admin/scores.php">Hall of fame</a>
       <a href="/admin/settings.php">Settings</a>
       <a href="/vlogs.php">View site</a>
