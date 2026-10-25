@@ -65,8 +65,30 @@ function db(): PDO {
         if (!in_array('yt_fetched', $cols, true)) {
             $pdo->exec('ALTER TABLE vlogs ADD COLUMN yt_fetched INTEGER NOT NULL DEFAULT 0');
         }
+        // One-time: Instagram reel links supplied for the first 11 vlogs (matched by title). Only fills empty fields.
+        if (setting_raw($pdo, 'seed_instagram_1') === null && (int)$pdo->query('SELECT COUNT(*) FROM vlogs')->fetchColumn() > 0) {
+            $ig = 'https://www.instagram.com/lived.by.leah/reel/';
+            $map = [
+                'abqlA7-poII' => 'DecksXyJW4U', '449c6bkjmhU' => 'DeaCwU1Jj92', 'PEexZLWaLZA' => 'DeaeLZ2JaKc',
+                'XP_kddEoM_E' => 'DdSCNHQJEn2', 'r3SIxBH7fWo' => 'Da9JQVUBFNA', 'LZpbEPJpq8U' => 'DajOZN9paNP',
+                'yY-G90-_oyg' => 'DaeQ26yJQyn', 'Xc3uJR4Yh3Q' => 'DabYrfLMxzU', 'P-jAl9fL0yI' => 'DaQjtr1htAk',
+                'W3bvOMb92_0' => 'DZ2uCm3OuJj', 'H3Ued9RA0rY' => 'DZshoxKBbbJ',
+            ];
+            $up = $pdo->prepare('UPDATE vlogs SET instagram_url = ? WHERE youtube_id = ? AND (instagram_url IS NULL OR instagram_url = "")');
+            foreach ($map as $yt => $code) {
+                $up->execute([$ig . $code . '/', $yt]);
+            }
+            $pdo->prepare('INSERT INTO settings (k, v) VALUES ("seed_instagram_1", "1")')->execute();
+        }
     }
     return $pdo;
+}
+
+function setting_raw(PDO $pdo, string $k): ?string {
+    $s = $pdo->prepare('SELECT v FROM settings WHERE k = ?');
+    $s->execute([$k]);
+    $v = $s->fetchColumn();
+    return $v === false ? null : (string)$v;
 }
 
 function setting(string $k, string $default = ''): string {

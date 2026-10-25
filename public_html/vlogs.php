@@ -10,7 +10,9 @@ page_header('Watch Vlogs', 'vlogs');
 ?>
 <h1>Watch vlogs</h1>
 <p class="lede">Tap a vlog to play it here. Find more on
-  <a href="https://www.youtube.com/@Livedbyleah" target="_blank" rel="noopener">YouTube</a>, TikTok and Instagram.</p>
+  <a href="https://www.youtube.com/@Livedbyleah" target="_blank" rel="noopener">YouTube</a>,
+  <a href="https://www.tiktok.com/@livedbyleah" target="_blank" rel="noopener">TikTok</a> and
+  <a href="https://www.instagram.com/lived.by.leah/" target="_blank" rel="noopener">Instagram</a>.</p>
 
 <?php if (!$vlogs): ?>
   <p class="empty">No vlogs yet.</p>
@@ -28,6 +30,7 @@ page_header('Watch Vlogs', 'vlogs');
       <a href="https://www.youtube.com/shorts/<?= e($id) ?>" target="_blank" rel="noopener">YouTube</a>
       <?php if ($v['tiktok_url']): ?><a href="<?= e($v['tiktok_url']) ?>" target="_blank" rel="noopener">TikTok</a><?php endif; ?>
       <?php if ($v['instagram_url']): ?><a href="<?= e($v['instagram_url']) ?>" target="_blank" rel="noopener">Instagram</a><?php endif; ?>
+      <?php if (is_admin()): ?><a class="gear" href="/admin/vlogs.php?edit=<?= (int)$v['id'] ?>" title="Edit links (admin only)" aria-label="Edit links for <?= e($v['title']) ?>">&#9881;</a><?php endif; ?>
     </p>
     <button type="button" class="drawer-btn" aria-expanded="false" data-vlog="<?= e($id) ?>">Why I made this + comments</button>
   </article>

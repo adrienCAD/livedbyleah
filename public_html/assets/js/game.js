@@ -10,6 +10,7 @@
   var W = canvas.width, H = canvas.height;     // 640 x 360 view
   var WORLD = 3800;                            // level length in pixels
   var BASE_Y = 262;                            // average water line
+  var SC = 2;                                  // surfer art scale
   var PX = 3;                                  // pixel scale for sprites
 
   var COLORS = {
@@ -86,7 +87,7 @@
   }
 
   function reset() {
-    player = { x: 120, y: BASE_Y - 40, vx: 0, vy: 0, grounded: true };
+    player = { x: 120, y: BASE_Y - 40, vx: 0, vy: 0, grounded: true, face: 1, land: 0 };
     camX = 0;
     t = 0;
     collected = { shell: 0, trash: 0 };
@@ -124,6 +125,8 @@
     if (!keys.left && !keys.right) { player.vx *= Math.pow(0.9, k); }
     player.vx = Math.max(-maxV, Math.min(maxV, player.vx));
     player.x = Math.max(20, Math.min(WORLD - 40, player.x + player.vx * k));
+    if (player.vx > 0.4) { player.face = 1; } else if (player.vx < -0.4) { player.face = -1; }
+    if (player.land > 0) { player.land -= k; }
 
     var surf = surface(player.x) - 6;           // board sits slightly above the water line
     if (keys.jump && player.grounded) {
@@ -137,6 +140,7 @@
         player.y = surf;
         player.vy = 0;
         player.grounded = true;
+        player.land = 8;
       }
     } else {
       player.y = surf;
@@ -144,12 +148,12 @@
 
     camX = Math.max(0, Math.min(WORLD - W, player.x - 220));
 
-    var cx = player.x + 12, cy = player.y - 24;
+    var cx = player.x + 19, cy = player.y - 40;
     items.forEach(function (it) {
       if (it.got) { return; }
       var ix = it.x + 10, iy = BASE_Y - it.h;
       var dx = cx - ix, dy = cy - iy;
-      if (dx * dx + dy * dy < 26 * 26) {
+      if (dx * dx + dy * dy < 36 * 36) {
         it.got = true;
         collected[it.kind === 'shell' ? 'shell' : 'trash']++;
         updateHud();
@@ -221,9 +225,21 @@
   function drawPlayer() {
     var sx = player.x - camX;
     var tilt = player.grounded ? Math.round(player.vx) : 0;
-    // Leah's own pixel art (surfer + board in one image); board bottom sits on the water line
+    // Leah's pixel art at 2x. Mirrors when she heads left; squash/stretch + lean give it life.
     if (SURFER.complete && SURFER.naturalWidth) {
-      ctx.drawImage(SURFER, Math.round(sx - 16 + tilt), Math.round(player.y + 7 - SURFER.naturalHeight));
+      var w = SURFER.naturalWidth * SC, h = SURFER.naturalHeight * SC;
+      var air = !player.grounded;
+      var stretch = air ? 1 + Math.min(0.12, Math.abs(player.vy) * 0.015) : 1;
+      var squash = player.land > 0 ? 1 - 0.1 * (player.land / 8) : 1;
+      var sy = stretch * squash, sxs = (2 - sy) > 1.05 ? 1.05 : (2 - sy);
+      var bob = player.grounded ? Math.sin(t * 0.18) * 1.5 : 0;
+      var lean = player.grounded ? player.vx * 0.012 : player.vy * 0.012 * player.face;
+      ctx.save();
+      ctx.translate(Math.round(sx + 19), Math.round(player.y + 12 + bob));   // board bottom-centre
+      ctx.rotate(lean);
+      ctx.scale(player.face * sxs, sy);
+      ctx.drawImage(SURFER, -w / 2, -h, w, h);
+      ctx.restore();
     }
   }
 
