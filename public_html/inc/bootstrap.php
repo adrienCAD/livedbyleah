@@ -126,6 +126,14 @@ function db(): PDO {
         if (!in_array('prev_login', $fcols, true)) {
             $pdo->exec('ALTER TABLE fans ADD COLUMN prev_login TEXT');
         }
+        // Full last name (admins only; the public name stays first name + initial). Older fans have only the initial.
+        if (!in_array('last_name', $fcols, true)) {
+            $pdo->exec('ALTER TABLE fans ADD COLUMN last_name TEXT');
+        }
+        // 1 once the fan has chosen their own username. After that only a support request can change it.
+        if (!in_array('username_locked', $fcols, true)) {
+            $pdo->exec('ALTER TABLE fans ADD COLUMN username_locked INTEGER NOT NULL DEFAULT 0');
+        }
         $pdo->exec('CREATE TABLE IF NOT EXISTS scores (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -163,6 +171,18 @@ function db(): PDO {
             reviewed_at TEXT
         )');
         $pdo->exec('CREATE INDEX IF NOT EXISTS proofs_fan ON proofs(fan_id, status)');
+        // Fan asks support to change a locked username. Shows as a pending task in the admin.
+        $pdo->exec('CREATE TABLE IF NOT EXISTS support_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fan_id INTEGER NOT NULL REFERENCES fans(id) ON DELETE CASCADE,
+            wanted TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT "pending",
+            note TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            resolved_at TEXT
+        )');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS support_fan ON support_requests(fan_id, status)');
     }
     return $pdo;
 }

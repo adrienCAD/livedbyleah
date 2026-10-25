@@ -74,6 +74,8 @@ function admin_header(string $title): void {
       <a href="/admin/fans.php">Fans</a>
       <?php $pp = (int)db()->query("SELECT COUNT(*) FROM proofs WHERE status = 'pending'")->fetchColumn(); ?>
       <a href="/admin/proofs.php">Screenshots<?= $pp ? ' (' . $pp . ')' : '' ?></a>
+      <?php $ps = (int)db()->query("SELECT COUNT(*) FROM support_requests WHERE status = 'pending'")->fetchColumn(); ?>
+      <a href="/admin/support.php">Support<?= $ps ? ' (' . $ps . ')' : '' ?></a>
       <a href="/admin/scores.php">Hall of fame</a>
       <a href="/admin/settings.php">Settings</a>
       <a href="/vlogs.php">View site</a>

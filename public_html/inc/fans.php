@@ -189,3 +189,13 @@ function fan_ranking(): array {
 function pending_proofs(): int {
     return (int)db()->query('SELECT COUNT(*) FROM proofs WHERE status = \'pending\'')->fetchColumn();
 }
+
+// Full name for admins: older fans only have the initial.
+function fan_full_name(array $f): string {
+    $last = trim((string)($f['last_name'] ?? ''));
+    return $f['first_name'] . ' ' . ($last !== '' ? $last : $f['last_initial'] . '.');
+}
+
+function pending_support(): int {
+    return (int)db()->query("SELECT COUNT(*) FROM support_requests WHERE status = 'pending'")->fetchColumn();
+}

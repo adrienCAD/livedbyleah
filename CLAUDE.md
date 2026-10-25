@@ -22,7 +22,7 @@ Adrien is new to hosting. Explain things simply, in short steps. Keep replies cr
 - Tabs: Watch Vlogs (public home, `/vlogs.php`), Fans (`/fans.php`, sign-up and login), Games (`/games.php`).
 - Writing Process (`/writing.php`) is a private tab, shown only when `is_admin()` (Leah or admin).
 - `/index.php` redirects to `/vlogs.php`. `/creative.php` is a 301 to `/games.php`.
-- Admin (`/admin/`): Dashboard, Vlogs, Writing posts, Comments, Fans, Hall of fame, Settings.
+- Admin (`/admin/`): Dashboard, Vlogs, Writing posts, Comments, Fans, Screenshots, Support, Hall of fame, Settings.
 - `setup.php` is for first setup only. It must NOT exist on the server.
 
 ## Code rules
@@ -34,7 +34,7 @@ Adrien is new to hosting. Explain things simply, in short steps. Keep replies cr
 - Cache-bust JS and CSS with `?v=N` in the includes when you change them (browsers cache hard).
 
 ## Database and migrations (SQLite, `data/site.sqlite`)
-- Tables: users (admins only), fans (public sign-ups), vlogs (title, youtube_id, tiktok_url, instagram_url, why, yt_fetched, sort_order), posts, comments (UNIQUE source+ext_id, hidden flag), settings (key/value), scores (id, name, ms, created_at, pkey, fan_id, level, won).
+- Tables: users (admins only), fans (public sign-ups), proofs, support_requests, vlogs (title, youtube_id, tiktok_url, instagram_url, why, yt_fetched, sort_order), posts, comments (UNIQUE source+ext_id, hidden flag), settings (key/value), scores (id, name, ms, created_at, pkey, fan_id, level, won).
 - Migrations live inside `db()` in `inc/bootstrap.php`, with no migration tool:
   - `CREATE TABLE IF NOT EXISTS`.
   - `PRAGMA table_info` then `ALTER TABLE ... ADD COLUMN`.
@@ -69,10 +69,10 @@ Canvas 640x360, pixel art, no libraries. 5 levels, one total timer, 3 lives acro
 
 ## Fans (built in Updates D, E and F)
 - Code: `fans.php` (all views), `inc/fans.php` (helpers), `admin/fans.php`. Fans live in the `fans` table, separate from admins. Session key `fan_id`.
-- Visitors see "you are not a fan yet" with Join and Log in. Join: first name, first letter of last name, email, password (min 10, max 64; the page shows a tip like Purple-Wave-Tacos-42), and a required "I am 13 or older" checkbox. No birth date is stored.
+- Visitors see "you are not a fan yet" with Join and Log in. Join: first name, full last name (stored in `fans.last_name`, visible to admins only; older fans have only `last_initial`), email, password (min 10, max 64; the page shows a tip like Purple-Wave-Tacos-42), and a required "I am 13 or older" checkbox. No birth date is stored.
 - Email must be confirmed (link by email) before login. "I lost my password" sends a 1 hour reset link; using it also confirms the email. Login locks an account for 5 minutes after 8 wrong tries.
 - Email is sent with PHP `mail()` from noreply@livedbyleah.com. On localhost it is written to `data/outbox.log` instead. If mail does not arrive on the host, an admin can press Confirm in `/admin/fans.php`.
-- Default username = first name + last initial ("Mia K.", numbered if taken). Fans can pick a nickname on the Fans page (3-20 chars, letters/numbers/space/. _ -). Admin sees username and email, can reset a username to the default, confirm by hand, or remove a fan (their hall of fame entry goes too).
+- Default username = first name + last initial ("Mia K.", numbered if taken). Fans can pick a nickname in Settings (3-20 chars, letters/numbers/space/. _ -) ONCE: the first save sets `fans.username_locked = 1` (the auto default does not count). After that a fan can only send a support request (`support_requests`: wanted name + reason, one pending at a time). Admin sees it in `admin/support.php` (Support badge in the menu and a dashboard card) and approves (sets the name) or declines with a note; the fan sees the status in Settings. Admin can also Unlock username or Reset username (back to default, unlocked) on the Fans page. Admin sees username and email, can reset a username to the default, confirm by hand, or remove a fan (their hall of fame entry goes too).
 - Games: signed-in fans are saved under their username. Visitors who are not signed in get a funny placeholder name ("GnarlySurferDude", no spaces or numbers) for the session and a prompt to join.
 - Hall of fame: one best result per player. Saved on game over (level 2 or higher) and on a win. Rank = cleared all 5 first, then highest level reached, then fastest time. Shows "Level N" or "Cleared all 5". Only a full clear shows the certificate (it uses the player's name). Older scores were migrated as level 5, cleared.
 - Fans page for a logged-in fan (Update E): the list of fans (public username + "last seen", most recent first; visible to logged-in fans only, never emails) and a gear (`/fans.php?v=settings`). Settings: account info (fan since, this visit, previous login), change username, change password, log out, and "Delete my account" (needs the password; removes the fan and their hall of fame entry).

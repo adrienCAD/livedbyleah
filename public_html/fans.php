@@ -33,17 +33,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'join') {
         $view = 'join';
         $first = trim((string)preg_replace('/\s+/u', ' ', (string)($_POST['first_name'] ?? '')));
-        $initial = mb_strtoupper(mb_substr(trim((string)($_POST['last_initial'] ?? '')), 0, 1));
+        $last = trim((string)preg_replace('/\s+/u', ' ', (string)($_POST['last_name'] ?? '')));
+        $initial = mb_strtoupper(mb_substr($last, 0, 1));
         $pass = (string)($_POST['password'] ?? '');
-        $old = ['first_name' => $first, 'last_initial' => $initial, 'email' => $email];
+        $old = ['first_name' => $first, 'last_name' => $last, 'email' => $email];
         if (empty($_POST['age13'])) {
             $errors[] = 'You need to be 13 or older to join the fan club.';
         }
         if (!preg_match('/^[\p{L}][\p{L} .\'-]{0,19}$/u', $first)) {
             $errors[] = 'Enter your first name (letters only, up to 20).';
         }
-        if (!preg_match('/^\p{L}$/u', $initial)) {
-            $errors[] = 'Enter just the first letter of your last name.';
+        if (!preg_match('/^[\p{L}][\p{L} .\'-]{0,29}$/u', $last)) {
+            $errors[] = 'Enter your last name (letters only, up to 30).';
         }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 120) {
             $errors[] = 'Enter a valid email address.';
@@ -59,8 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         if (!$errors) {
-            db()->prepare('INSERT INTO fans (email, password_hash, first_name, last_initial, username) VALUES (?, ?, ?, ?, ?)')
-                ->execute([$email, password_hash($pass, PASSWORD_DEFAULT), $first, $initial, default_username($first, $initial)]);
+            db()->prepare('INSERT INTO fans (email, password_hash, first_name, last_name, last_initial, username) VALUES (?, ?, ?, ?, ?, ?)')
+                ->execute([$email, password_hash($pass, PASSWORD_DEFAULT), $first, $last, $initial, default_username($first, $initial)]);
             $id = (int)db()->lastInsertId();
             if (send_confirm_email($id, $email, $first)) {
                 flash('Almost there! We sent a link to ' . $email . '. Click it to confirm your email, then log in. Check your spam folder too.');
@@ -140,14 +141,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $view = 'settings';
         $me = current_fan();
         [$name, $err] = clean_username((string)($_POST['username'] ?? ''));
+        if ($me['username_locked']) {
+            $err = 'Your username is locked. Ask support below if you need a change.';
+        }
         if ($err === '' && username_taken($name, (int)$me['id'])) {
             $err = 'Someone already has that username. Try another one.';
         }
         if ($err !== '') {
             $errors[] = $err;
         } else {
-            db()->prepare('UPDATE fans SET username = ? WHERE id = ?')->execute([$name, $me['id']]);
-            flash('Your username is now ' . $name . '.');
+            // First time they choose a name: it is now locked.
+            db()->prepare('UPDATE fans SET username = ?, username_locked = 1 WHERE id = ?')->execute([$name, $me['id']]);
+            flash('Your username is now ' . $name . '. It is locked, so choose well!');
+            redirect('/fans.php?v=settings');
+        }
+    } elseif ($action === 'support' && current_fan()) {
+        $view = 'settings';
+        $me = current_fan();
+        [$name, $err] = clean_username((string)($_POST['wanted'] ?? ''));
+        $why = mb_substr(trim((string)($_POST['reason'] ?? '')), 0, 300);
+        $st = db()->prepare("SELECT 1 FROM support_requests WHERE fan_id = ? AND status = 'pending'");
+        $st->execute([$me['id']]);
+        if (!$me['username_locked']) {
+            $err = 'Your username is not locked, you can change it yourself.';
+        } elseif ($st->fetchColumn()) {
+            $err = 'You already have a request waiting. Support will get to it soon.';
+        } elseif ($err === '' && $why === '') {
+            $err = 'Tell support why you need the change.';
+        } elseif ($err === '' && username_taken($name, (int)$me['id'])) {
+            $err = 'Someone already has that username. Try another one.';
+        }
+        if ($err !== '') {
+            $errors[] = $err;
+        } else {
+            db()->prepare('INSERT INTO support_requests (fan_id, wanted, reason) VALUES (?, ?, ?)')->execute([$me['id'], $name, $why]);
+            flash('Request sent. Support will look at it soon.');
             redirect('/fans.php?v=settings');
         }
     } elseif ($action === 'password' && current_fan()) {
@@ -279,13 +307,35 @@ page_header('Fans', 'fans');
 </div>
 
 <h2>Your username</h2>
+<?php if ($fan['username_locked']):
+    $rq = db()->prepare('SELECT wanted, status, note FROM support_requests WHERE fan_id = ? ORDER BY id DESC LIMIT 1');
+    $rq->execute([$fan['id']]);
+    $req = $rq->fetch(); ?>
+<p>Your username is <strong><?= e($fan['username']) ?></strong>. It is locked, because you already chose it.</p>
+<?php if ($req && $req['status'] === 'pending'): ?>
+<p class="notice">Your request for <strong><?= e($req['wanted']) ?></strong> is waiting for support.</p>
+<?php else: ?>
+<?php if ($req && $req['status'] === 'declined'): ?><p class="hint">Your last request for <?= e($req['wanted']) ?> was declined<?= $req['note'] ? ': ' . e($req['note']) : '' ?>.</p>
+<?php elseif ($req && $req['status'] === 'approved'): ?><p class="hint">Your last request was approved.</p><?php endif; ?>
+<h3>Need a change? Ask support</h3>
 <form method="post" action="/fans.php?v=settings" class="form">
+  <?= csrf_field() ?><input type="hidden" name="action" value="support">
+  <label for="wanted">The username you would like</label>
+  <input id="wanted" name="wanted" minlength="3" maxlength="20" required>
+  <label for="why">Why do you need the change?</label>
+  <textarea id="why" name="reason" maxlength="300" rows="3" required></textarea>
+  <button class="btn" type="submit">Send to support</button>
+</form>
+<?php endif; ?>
+<?php else: ?>
+<form method="post" action="/fans.php?v=settings" class="form" onsubmit="return confirm('You can only choose your username once. After that, only support can change it. Save it?');">
   <?= csrf_field() ?><input type="hidden" name="action" value="username">
   <label for="username">Name shown in the hall of fame and on the fans page</label>
   <input id="username" name="username" value="<?= e($fan['username']) ?>" minlength="3" maxlength="20" required>
-  <p class="hint">3 to 20 characters: letters, numbers, spaces, dots, dashes. Pick a nickname if you prefer not to show your name.</p>
+  <p class="hint"><strong>You can choose only once.</strong> After you save, it is locked and only support can change it. 3 to 20 characters: letters, numbers, spaces, dots, dashes. Pick a nickname if you prefer not to show your name.</p>
   <button class="btn" type="submit">Save username</button>
 </form>
+<?php endif; ?>
 
 <h2>Change password</h2>
 <form method="post" action="/fans.php?v=settings" class="form">
@@ -414,9 +464,9 @@ page_header('Fans', 'fans');
   <?= csrf_field() ?><input type="hidden" name="action" value="join">
   <label for="fn">First name</label>
   <input id="fn" name="first_name" value="<?= e($old['first_name'] ?? '') ?>" maxlength="20" required autocomplete="given-name">
-  <label for="li">First letter of your last name</label>
-  <input id="li" name="last_initial" value="<?= e($old['last_initial'] ?? '') ?>" maxlength="1" required style="max-width:5em">
-  <p class="hint">Your public name will be your first name and that letter, like "Mia K." You can change it to a nickname later.</p>
+  <label for="ln">Last name</label>
+  <input id="ln" name="last_name" value="<?= e($old['last_name'] ?? '') ?>" maxlength="30" required autocomplete="family-name">
+  <p class="hint">Only Leah and the admins can see your full name. Everyone else sees your first name and the first letter of your last name, like "Mia K." You can pick a nickname once, later.</p>
   <label for="em">Email</label>
   <input id="em" name="email" type="email" value="<?= e($old['email'] ?? '') ?>" maxlength="120" required autocomplete="email">
   <p class="hint">Only used to confirm your account and reset your password. It is never shown to anyone.</p>

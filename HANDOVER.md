@@ -53,7 +53,9 @@ Read CLAUDE.md first for permanent architecture. This file records what happened
 - Adrien's answers: like 5, follow 10, comment 10; follow once per platform, like/comment once per vlog; admin badge only (no email).
 - Needs checking on the live host: that uploads work (host limit is usually 2 MB; the page shrinks big images), and that `data/proofs/` is created and not reachable from the web.
 - Tested locally (scripted): counter, ranking order, level points, upload rules (duplicates, wrong platform, non-image), admin review, image deletion, delete account.
-- Pending from Adrien: reply "go" to apply the PRD text proposed earlier (Draft v4, plus the points rules above).
+- Added (still Update F, zip rebuilt): sign-up asks for the full last name (admins only see it; public name stays "Mia K."). Username can be chosen once; then locked. Locked fans send a support request (new username + reason); admin approves or declines in Admin > Support (menu badge + dashboard card). Admin can Unlock or Reset a username. Existing fans keep their initial only and get one free change. Default name does not count as a choice.
+- Tested locally (scripted, 20 checks): join validation, lock, one pending request, approve/decline, unlock, legacy fallback, delete cascade.
+- PRD Draft v4 applied (see the PRD artifact).
 
 ## Open items
 - Paste the TikTok links per vlog via ⚙.
@@ -97,7 +99,7 @@ Keep building the site: a vlog hub (Watch Vlogs, Fans, Games, plus a private Wri
 
 3. CURRENT STATE
 Done and deployed (through livedbyleah-update5.zip = "Update C", merged to main; HTTPS redirect on since 2026-10-25): vlog drawer and comments, Instagram links, Shantell Sans, the full game with Leah's art, wave physics, UFO and heart, gun in hand, and shells. Fonts confirmed working after a hard refresh. Leah played for real, reached Level 5 and lost.
-Update D (fan club + level-based hall of fame, livedbyleah-update6.zip) is deployed and confirmed working; merged to main. Update E (fans list with last seen, settings gear, delete account, livedbyleah-update7.zip) is deployed and confirmed working; merged to main. In progress: Update F (fan counter, points ranking, screenshot proofs) is built and tested locally on branch update-f as livedbyleah-update8.zip. Not yet deployed.
+Update D (fan club + level-based hall of fame, livedbyleah-update6.zip) is deployed and confirmed working; merged to main. Update E (fans list with last seen, settings gear, delete account, livedbyleah-update7.zip) is deployed and confirmed working; merged to main. In progress: Update F (fan counter, points ranking, screenshot proofs, full last name, one-time username with support requests) is built and tested locally on branch update-f as livedbyleah-update8.zip. Not yet deployed.
 Open:
 - Paste the TikTok links per vlog via the gear icon.
 - Replace my placeholder shells (and the code-drawn shark and UFO) with Leah's art.
