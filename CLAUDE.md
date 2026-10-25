@@ -19,7 +19,8 @@ Adrien is new to hosting. Explain things simply, in short steps. Keep replies cr
 - Palette: Golden Pollen #FDC921, Mustard #FDD85D, Frosted Blue #99D6EA, Blue Grey #6798C0, Porcelain #FFFDF7, ink #1E3248.
 
 ## Site map
-- Tabs: Watch Vlogs (public home, `/vlogs.php`), Fans (`/fans.php`, sign-up and login), Games (`/games.php`).
+- Tabs: Watch Vlogs (public home, `/vlogs.php`), Fans (`/fans.php`, sign-up and login), Games (`/games.php`: menu with Surf Cleanup `?g=surf`, Leah's Road Trip `?g=road`, Leah's Blocks coming).
+- Site version is `SITE_VERSION` in `inc/bootstrap.php` (shown under the sidebar menu). 1.2.1 = Road Trip, 1.2.2 = Leah's Blocks. Zips are named `livedbyleah-v<version>.zip` from now on.
 - Writing Process (`/writing.php`) is a private tab, shown only when `is_admin()` (Leah or admin).
 - `/index.php` redirects to `/vlogs.php`. `/creative.php` is a 301 to `/games.php`.
 - Admin (`/admin/`): Dashboard, Vlogs, Writing posts, Comments, Fans, Screenshots, Support, Hall of fame, Settings.
@@ -34,7 +35,7 @@ Adrien is new to hosting. Explain things simply, in short steps. Keep replies cr
 - Cache-bust JS and CSS with `?v=N` in the includes when you change them (browsers cache hard).
 
 ## Database and migrations (SQLite, `data/site.sqlite`)
-- Tables: users (admins only), fans (public sign-ups), proofs, support_requests, vlogs (title, youtube_id, tiktok_url, instagram_url, why, yt_fetched, sort_order), posts, comments (UNIQUE source+ext_id, hidden flag), settings (key/value), scores (id, name, ms, created_at, pkey, fan_id, level, won).
+- Tables: users (admins only), fans (public sign-ups), proofs, support_requests, vlogs (title, youtube_id, tiktok_url, instagram_url, why, yt_fetched, sort_order), posts, comments (UNIQUE source+ext_id, hidden flag), settings (key/value), scores (id, name, ms, created_at, pkey, fan_id, level, won, game: surf|road|blocks; pkey is `<player>` for surf and `<player>:<game>` for others, one best row per player per game).
 - Migrations live inside `db()` in `inc/bootstrap.php`, with no migration tool:
   - `CREATE TABLE IF NOT EXISTS`.
   - `PRAGMA table_info` then `ALTER TABLE ... ADD COLUMN`.
@@ -66,6 +67,15 @@ Canvas 640x360, pixel art, no libraries. 5 levels, one total timer, 3 lives acro
 - Certificate (full clears only) is drawn client-side on a canvas with Myfont, with the player's name and time.
 - Art in `assets/img/art/`: Leah's trash (bottle, rings, water, bag) and gun parts (gun, tank, barrel, nut, handle) are hers. The 4 shells (scallop, spiral, clam, conch) are PLACEHOLDERS to replace with Leah's art. Surfer is `assets/img/surfer.png` (59x52, hers). Shark and UFO are code-drawn placeholders.
 - Test hook: open `/games.php?debug=1` to get `window.__lbl` (level(n, ufo), puzzle(), S(), info(), won(ms), over(ms), god mode via `__lbl.god = true`). `won()` with no argument fakes the clock, so the server rejects its score. Pass a time under the real elapsed time (for example `won(47500)` after waiting 48 s) to test saving.
+
+## Game 2 (v1.2.1): "Leah's Road Trip" (`games.php?g=road` + `assets/js/road.js`)
+Pseudo-3D arcade driver (Outrun style, original art), canvas 320x180 shown at 2x, no libraries. Leah drives a neon-green electric Jeep through 5 levels: Houston area, Mexico, Costa Rica, Colorado, France.
+- The timer is the battery: it counts down, 0 = game over (no lives). Each level has its own start time and two checkpoints (+cp seconds). Green batteries on the road give +2 s. Painted yellow arrows give a ~1.4 s boost. Leftover time gives a small carry bonus (25%) to the next level. Crashes (traffic, roadside objects) cost speed.
+- Controls: left/right steer, up = gas, down = brake (WASD works). Touch buttons on phones. Sound with mute (WebAudio beeps, no music yet).
+- Level config is in `LEVELS` in road.js (len, start, cp, traffic, curve, hill, seed, palette, sprites, background). Roads are generated from a seed, so every run of a level is the same road.
+- Art is all code-drawn pixel sprites (`SP`, `JEEP`, `CARS`, `bg*` functions), to be replaced with Leah's art. Title logo `assets/img/leah-logo.png` is Leah's LEAH logo.
+- Hall of fame: `api/scores.php` with `game=road`. Same rules as surf: rank = cleared all 5, then level reached, then total driving time. Server rejects wins under 120 s and non-wins under 20 s x (level-1). Level 1 is saved too. Fan points: same formula as surf (1 to 5 per level passed, 15 for a full clear), counted per game. Separate certificate for a full clear.
+- Test hook: `/games.php?g=road&debug=1` gives `window.__road` (keys, level(n), skipCard(), info(), god(), over(ms), won(ms), start()).
 
 ## Fans (built in Updates D, E and F)
 - Code: `fans.php` (all views), `inc/fans.php` (helpers), `admin/fans.php`. Fans live in the `fans` table, separate from admins. Session key `fan_id`.

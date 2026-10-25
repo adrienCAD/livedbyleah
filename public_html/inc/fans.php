@@ -171,7 +171,7 @@ function fan_count(): int {
 // + approved screenshots. Ties go to whoever signed up first.
 function fan_ranking(): array {
     $rows = db()->query('SELECT f.id, f.username, COALESCE(f.last_login, f.created_at) AS seen,
-        COALESCE((SELECT CASE WHEN s.won = 1 THEN 15 ELSE (s.level - 1) * s.level / 2 END FROM scores s WHERE s.fan_id = f.id), 0) AS lvl_pts,
+        COALESCE((SELECT SUM(CASE WHEN s.won = 1 THEN 15 ELSE (s.level - 1) * s.level / 2 END) FROM scores s WHERE s.fan_id = f.id AND s.game IN (\'surf\', \'road\')), 0) AS lvl_pts,
         COALESCE((SELECT SUM(p.points) FROM proofs p WHERE p.fan_id = f.id AND p.status = \'approved\'), 0) AS soc_pts
         FROM fans f WHERE f.confirmed = 1')->fetchAll();
     foreach ($rows as &$r) {

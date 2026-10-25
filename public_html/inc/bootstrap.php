@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 const SITE_NAME = 'Lived by Leah';
+const SITE_VERSION = '1.2.1';   // 1.2.1 = Leah's Road Trip, 1.2.2 = Leah's Blocks
 const DB_PATH = __DIR__ . '/../data/site.sqlite';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -156,6 +157,10 @@ function db(): PDO {
             $pdo->exec('ALTER TABLE scores ADD COLUMN won INTEGER NOT NULL DEFAULT 1');
         }
         $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS scores_pkey ON scores(pkey)');
+        // Which game the result is from: surf, road (Leah's Road Trip), later blocks. pkey is "<player>" for surf, "<player>:road" etc.
+        if (!in_array('game', $scols, true)) {
+            $pdo->exec('ALTER TABLE scores ADD COLUMN game TEXT NOT NULL DEFAULT "surf"');
+        }
         // Screenshot proofs of likes / follows / comments. The image is deleted once reviewed.
         $pdo->exec('CREATE TABLE IF NOT EXISTS proofs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

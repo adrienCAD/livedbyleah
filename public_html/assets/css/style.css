@@ -237,3 +237,20 @@ ol.fanlist { counter-reset: none; }
 .proof img { max-width: 100%; max-height: 420px; border: 1px solid var(--line); border-radius: 6px; display: block; margin: 8px 0; }
 .proof form.inline { display: flex; gap: 8px; flex: 1; min-width: 240px; }
 .shotbtns[hidden] { display: none; }
+
+.site-version { margin: auto 0 0; padding-top: 12px; font-size: 12px; opacity: .6; }
+
+/* Games menu + road trip */
+.gametabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.gametabs a, .gametabs .soon-tab { padding: 8px 14px; border: 2px solid var(--ink); border-radius: 8px; font-weight: 700; text-decoration: none; color: var(--ink); background: var(--frost, #99D6EA); }
+.gametabs a.on { background: var(--pollen); }
+.gametabs .soon-tab { opacity: .55; cursor: default; background: transparent; }
+.road-start { background: rgba(255, 253, 247, .93); }
+.road-logo { max-width: 60%; height: auto; border-radius: 6px; image-rendering: auto; }
+.road-start .pixel { margin: -4px 0 0; color: #E8820C; font-weight: 800; }
+.road-touch { }
+@media (max-width: 760px) {
+  .game-hud-road, .game-hud-road .hud-btn { font-size: 11px; }
+  .game-hud-road { max-width: 62%; flex-wrap: wrap; gap: 5px; }
+  .game-hud-road span, .game-hud-road .hud-btn { padding: 3px 5px; }
+}

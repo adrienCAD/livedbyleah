@@ -57,6 +57,12 @@ Read CLAUDE.md first for permanent architecture. This file records what happened
 - Tested locally (scripted, 20 checks): join validation, lock, one pending request, approve/decline, unlock, legacy fallback, delete cascade.
 - PRD Draft v4 applied (see the PRD artifact).
 
+### v1.2.1: Leah's Road Trip (branch `update-g`, `livedbyleah-v1.2.1.zip`)
+- Version numbering started: 1.2.1 = Road Trip, 1.2.2 = Leah's Blocks (Tetris-style, hand-drawn blocks, hold piece, Top 10 by score, fan points by score tiers, separate certificate). Blocks is NOT built yet; the Games menu shows it as "soon".
+- Also in this branch: screenshot form fixes (new thank-you text, Leah-only wording, photo/camera buttons, optional message to Leah, `proofs.fan_note`).
+- Road Trip: pseudo-3D driver, neon-green electric Jeep, 5 levels (Houston area, Mexico, Costa Rica, Colorado, France). Timer = battery; checkpoints and green batteries add time; yellow arrows boost. Own hall of fame (`scores.game = 'road'`) and certificate. Art is code-drawn placeholder pixel art, to be replaced with Leah's. No music yet.
+- Adrien's reference art (Leah's pixel scene and LEAH logo) is in the chat only; only the LEAH logo is in the repo (`assets/img/leah-logo.png`). The reference scene used the name "Leah's Outrun"; the game is called "Leah's Road Trip" to avoid the Sega trademark.
+
 ## Open items
 - Paste the TikTok links per vlog via ⚙.
 - Replace my placeholder shells with Leah's own art. (The shark and UFO are also code-drawn.)
