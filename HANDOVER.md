@@ -75,11 +75,10 @@ Keep building the site: a vlog hub (Watch Vlogs, Fans, Games, plus a private Wri
 - Fan rules (under-13 handling, ranking, points) are for a later phase.
 
 3. CURRENT STATE
-Done and deployed (through livedbyleah-update5.zip = "Update C", merged to main): vlog drawer and comments, Instagram links, Shantell Sans, the full game with Leah's art, wave physics, UFO and heart, gun in hand, and shells. Fonts confirmed working after a hard refresh. Leah played for real, reached Level 5 and lost.
+Done and deployed (through livedbyleah-update5.zip = "Update C", merged to main; HTTPS redirect on since 2026-10-25): vlog drawer and comments, Instagram links, Shantell Sans, the full game with Leah's art, wave physics, UFO and heart, gun in hand, and shells. Fonts confirmed working after a hard refresh. Leah played for real, reached Level 5 and lost.
 In progress: none.
 Open:
 - Paste the TikTok links per vlog via the gear icon.
-- Un-comment the 3 HTTPS lines in .htaccess once SSL is active.
 - Replace my placeholder shells (and the code-drawn shark and UFO) with Leah's art.
 - Fans tab: sign-up, ranking, under-13 rules, points.
 - Campaigns.
