@@ -150,3 +150,42 @@ function time_tag(?string $utc): string {
     $t = strtotime($utc . ' UTC');
     return '<time class="localtime" datetime="' . gmdate('c', $t) . '">' . e(gmdate('M j, Y H:i', $t)) . ' UTC</time>';
 }
+
+// ---------------------------------------------------------------- points and ranking
+const SIGNUP_POINTS = 10;
+const PROOF_POINTS = ['like' => 5, 'follow' => 10, 'comment' => 10];
+const PROOF_PLATFORMS = ['youtube' => 'YouTube', 'instagram' => 'Instagram', 'tiktok' => 'TikTok'];
+
+function proof_action_label(string $platform, string $action): string {
+    if ($action === 'follow') {
+        return $platform === 'youtube' ? 'Subscribe' : 'Follow';
+    }
+    return $action === 'like' ? 'Like' : 'Comment';
+}
+
+function fan_count(): int {
+    return (int)db()->query('SELECT COUNT(*) FROM fans WHERE confirmed = 1')->fetchColumn();
+}
+
+// Every confirmed fan, ranked. Points = sign-up (10) + game levels passed (1+2+3+4+5, so 15 for a full clear)
+// + approved screenshots. Ties go to whoever signed up first.
+function fan_ranking(): array {
+    $rows = db()->query('SELECT f.id, f.username, COALESCE(f.last_login, f.created_at) AS seen,
+        COALESCE((SELECT CASE WHEN s.won = 1 THEN 15 ELSE (s.level - 1) * s.level / 2 END FROM scores s WHERE s.fan_id = f.id), 0) AS lvl_pts,
+        COALESCE((SELECT SUM(p.points) FROM proofs p WHERE p.fan_id = f.id AND p.status = \'approved\'), 0) AS soc_pts
+        FROM fans f WHERE f.confirmed = 1')->fetchAll();
+    foreach ($rows as &$r) {
+        $r['id'] = (int)$r['id'];
+        $r['pts'] = SIGNUP_POINTS + (int)$r['lvl_pts'] + (int)$r['soc_pts'];
+    }
+    unset($r);
+    usort($rows, fn($a, $b) => [$b['pts'], $a['id']] <=> [$a['pts'], $b['id']]);
+    foreach ($rows as $i => &$r) {
+        $r['rank'] = $i + 1;
+    }
+    return $rows;
+}
+
+function pending_proofs(): int {
+    return (int)db()->query('SELECT COUNT(*) FROM proofs WHERE status = \'pending\'')->fetchColumn();
+}

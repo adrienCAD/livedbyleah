@@ -222,3 +222,17 @@ td.actions form { display: inline; }
 .fanlist li.me { background: #FFF1B8; }
 .fanlist .seen, .hof li .seen { font-size: 12px; color: var(--muted); }
 .hof li .seen { display: block; clear: both; }
+.fan-count { font-size: 18px; margin: 0 0 16px; }
+.fan-count strong { font-size: 32px; font-variant-numeric: tabular-nums; background: var(--pollen); border: 2px solid var(--ink); border-radius: 8px; padding: 0 12px; }
+.rankcard p { margin: 0 0 6px; }
+.soon ul { margin: 8px 0; padding-left: 22px; }
+.proofbox { margin: 16px 0 28px; max-width: 560px; }
+.proofbox summary { cursor: pointer; font-weight: 700; padding: 10px 14px; background: var(--pollen); border: 2px solid var(--ink); border-radius: 8px; width: fit-content; }
+.proofbox .form { margin-top: 14px; }
+ol.fanlist { counter-reset: none; }
+.fanlist .st-approved { color: #1E7A3A; font-weight: 700; }
+.fanlist .st-rejected { color: var(--danger); }
+.fanlist.subs { max-width: 640px; }
+.proof { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 0 0 16px; max-width: 640px; background: #fff; }
+.proof img { max-width: 100%; max-height: 420px; border: 1px solid var(--line); border-radius: 6px; display: block; margin: 8px 0; }
+.proof form.inline { display: flex; gap: 8px; flex: 1; min-width: 240px; }

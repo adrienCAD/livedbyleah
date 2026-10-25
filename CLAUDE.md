@@ -67,7 +67,7 @@ Canvas 640x360, pixel art, no libraries. 5 levels, one total timer, 3 lives acro
 - Art in `assets/img/art/`: Leah's trash (bottle, rings, water, bag) and gun parts (gun, tank, barrel, nut, handle) are hers. The 4 shells (scallop, spiral, clam, conch) are PLACEHOLDERS to replace with Leah's art. Surfer is `assets/img/surfer.png` (59x52, hers). Shark and UFO are code-drawn placeholders.
 - Test hook: open `/games.php?debug=1` to get `window.__lbl` (level(n, ufo), puzzle(), S(), info(), won(ms), over(ms), god mode via `__lbl.god = true`). `won()` with no argument fakes the clock, so the server rejects its score. Pass a time under the real elapsed time (for example `won(47500)` after waiting 48 s) to test saving.
 
-## Fans (built in Update D)
+## Fans (built in Updates D, E and F)
 - Code: `fans.php` (all views), `inc/fans.php` (helpers), `admin/fans.php`. Fans live in the `fans` table, separate from admins. Session key `fan_id`.
 - Visitors see "you are not a fan yet" with Join and Log in. Join: first name, first letter of last name, email, password (min 10, max 64; the page shows a tip like Purple-Wave-Tacos-42), and a required "I am 13 or older" checkbox. No birth date is stored.
 - Email must be confirmed (link by email) before login. "I lost my password" sends a 1 hour reset link; using it also confirms the email. Login locks an account for 5 minutes after 8 wrong tries.
@@ -77,7 +77,9 @@ Canvas 640x360, pixel art, no libraries. 5 levels, one total timer, 3 lives acro
 - Hall of fame: one best result per player. Saved on game over (level 2 or higher) and on a win. Rank = cleared all 5 first, then highest level reached, then fastest time. Shows "Level N" or "Cleared all 5". Only a full clear shows the certificate (it uses the player's name). Older scores were migrated as level 5, cleared.
 - Fans page for a logged-in fan (Update E): the list of fans (public username + "last seen", most recent first; visible to logged-in fans only, never emails) and a gear (`/fans.php?v=settings`). Settings: account info (fan since, this visit, previous login), change username, change password, log out, and "Delete my account" (needs the password; removes the fan and their hall of fame entry).
 - Login time: `fans.last_login` and `fans.prev_login` (UTC), set at each successful login. Dates in settings are shown in the visitor's own time zone by a small script. The public hall of fame shows "last seen ..." (relative, no exact time) for fans.
-- Still to do: points and campaigns.
+- Points and ranking (Update F): the Fans tab starts with a live counter of confirmed fans (everyone sees it; `api/fans-count.php`, refreshed every 20 s by `assets/js/fans.js`). Rank = points, ties go to the earlier sign-up, so at the start the order is sign-up order. Points = 10 for joining + game levels passed (level N = N points, each once, 15 for a full clear; worked out from the fan's best score, `fan_ranking()` in `inc/fans.php`) + approved screenshots (like 5, follow/subscribe 10, comment 10).
+- Screenshots: a logged-in fan picks platform, action and vlog (not for follows) and uploads a JPG/PNG/WebP (the browser shrinks big ones; server limit 5 MB, host default 2 MB). Stored in `data/proofs/` under random names (web-blocked), shown only to admins via `admin/proof-image.php`. Rules: follows once per platform; likes and comments once per vlog per platform; max 10 waiting per fan. Admin approves or rejects (optional reason) in `admin/proofs.php`; the image is deleted after review and the points come from the `proofs` table. Admin sees a "Screenshots (N)" badge in the admin menu and a dashboard card; no email alerts.
+- Still to do: privacy policy and terms page; weekly backup of `data/site.sqlite`.
 
 ## Deploy routine (Adrien does this by hand)
 1. Build a zip of `public_html` EXCLUDING `data/*`, `setup.php` and `.DS_Store`:

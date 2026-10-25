@@ -148,6 +148,21 @@ function db(): PDO {
             $pdo->exec('ALTER TABLE scores ADD COLUMN won INTEGER NOT NULL DEFAULT 1');
         }
         $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS scores_pkey ON scores(pkey)');
+        // Screenshot proofs of likes / follows / comments. The image is deleted once reviewed.
+        $pdo->exec('CREATE TABLE IF NOT EXISTS proofs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fan_id INTEGER NOT NULL REFERENCES fans(id) ON DELETE CASCADE,
+            platform TEXT NOT NULL,
+            action TEXT NOT NULL,
+            vlog_id INTEGER REFERENCES vlogs(id) ON DELETE SET NULL,
+            file TEXT,
+            status TEXT NOT NULL DEFAULT "pending",
+            points INTEGER NOT NULL,
+            note TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            reviewed_at TEXT
+        )');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS proofs_fan ON proofs(fan_id, status)');
     }
     return $pdo;
 }
