@@ -20,6 +20,9 @@ function display_name(string $raw): string {
 }
 
 function yt_refresh(array $vlog): ?string {
+    if ($vlog['youtube_id'] === '') {
+        return null;
+    }
     $key = setting('youtube_api_key');
     if ($key === '') {
         return 'No YouTube API key saved yet.';

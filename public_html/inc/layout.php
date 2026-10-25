@@ -18,9 +18,7 @@ function page_header(string $title, string $active, string $extraHead = ''): voi
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?> | <?= e(SITE_NAME) ?></title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23FDC921'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="preload" href="/assets/fonts/shantell-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/css/style.css">
 <?= $extraHead ?>
 </head>
@@ -62,7 +60,6 @@ function admin_header(string $title): void {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title><?= e($title) ?> | Admin</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="admin">
@@ -74,6 +71,7 @@ function admin_header(string $title): void {
       <a href="/admin/vlogs.php">Vlogs</a>
       <a href="/admin/posts.php">Writing posts</a>
       <a href="/admin/comments.php">Comments</a>
+      <a href="/admin/scores.php">Hall of fame</a>
       <a href="/admin/settings.php">Settings</a>
       <a href="/vlogs.php">View site</a>
       <a href="/admin/logout.php">Log out</a>

@@ -6,7 +6,7 @@ require __DIR__ . '/inc/layout.php';
 require_admin();
 
 $posts = db()->query(
-    'SELECT p.id, p.title, p.body, p.created_at, v.title AS vlog_title, v.youtube_id
+    'SELECT p.id, p.title, p.body, p.created_at, v.title AS vlog_title, v.id AS vlog_id
      FROM posts p LEFT JOIN vlogs v ON v.id = p.vlog_id
      ORDER BY p.created_at DESC, p.id DESC'
 )->fetchAll();
@@ -26,8 +26,8 @@ page_header('Writing Process', 'writing');
     <time datetime="<?= e(substr($p['created_at'], 0, 10)) ?>"><?= e(date('F j, Y', strtotime($p['created_at']))) ?></time>
     <h2><?= e($p['title']) ?></h2>
     <div class="post-body"><?= nl2br(e($p['body'])) ?></div>
-    <?php if ($p['youtube_id']): ?>
-      <a class="post-vlog" href="/vlogs.php#v-<?= e($p['youtube_id']) ?>">Watch: <?= e($p['vlog_title']) ?></a>
+    <?php if ($p['vlog_id']): ?>
+      <a class="post-vlog" href="/vlogs.php#v-<?= (int)$p['vlog_id'] ?>">Watch: <?= e($p['vlog_title']) ?></a>
     <?php endif; ?>
   </article>
 <?php endforeach; ?>

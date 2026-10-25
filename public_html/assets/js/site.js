@@ -65,7 +65,7 @@
       tpl.querySelector('.drawer-close').addEventListener('click', closeDrawer);
       tpl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       var body = tpl.querySelector('.drawer-body');
-      fetch('/api/comments.php?v=' + encodeURIComponent(btn.getAttribute('data-vlog')))
+      fetch('/api/comments.php?id=' + encodeURIComponent(btn.getAttribute('data-vlog')))
         .then(function (r) { return r.json(); })
         .then(function (d) {
           if (openDrawer !== tpl) { return; }

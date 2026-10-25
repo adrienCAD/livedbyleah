@@ -7,8 +7,8 @@ require __DIR__ . '/../inc/comments.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: public, max-age=60');
 
-$s = db()->prepare('SELECT * FROM vlogs WHERE youtube_id = ?');
-$s->execute([(string)($_GET['v'] ?? '')]);
+$s = db()->prepare('SELECT * FROM vlogs WHERE id = ?');
+$s->execute([(int)($_GET['id'] ?? 0)]);
 $vlog = $s->fetch();
 if (!$vlog) {
     http_response_code(404);
@@ -16,7 +16,7 @@ if (!$vlog) {
     exit;
 }
 
-if (time() - (int)$vlog['yt_fetched'] > YT_REFRESH_SECONDS) {
+if ($vlog['youtube_id'] !== '' && time() - (int)$vlog['yt_fetched'] > YT_REFRESH_SECONDS) {
     $err = yt_refresh($vlog);
     set_setting('youtube_last_error', $err ?? '');
 }

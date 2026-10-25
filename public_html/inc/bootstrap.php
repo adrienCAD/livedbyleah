@@ -80,6 +80,35 @@ function db(): PDO {
             }
             $pdo->prepare('INSERT INTO settings (k, v) VALUES ("seed_instagram_1", "1")')->execute();
         }
+        // One-time: three reels that only exist on Instagram (no YouTube video), placed in series order.
+        if (setting_raw($pdo, 'seed_extra_1') === null && (int)$pdo->query('SELECT COUNT(*) FROM vlogs')->fetchColumn() > 0) {
+            $ig = 'https://www.instagram.com/lived.by.leah/reel/';
+            $add = function (string $title, string $code, ?string $beforeYt) use ($pdo, $ig): void {
+                $pos = null;
+                if ($beforeYt !== null) {
+                    $q = $pdo->prepare('SELECT sort_order FROM vlogs WHERE youtube_id = ?');
+                    $q->execute([$beforeYt]);
+                    $pos = $q->fetchColumn();
+                }
+                if ($pos === false || $pos === null) {
+                    $pos = (int)$pdo->query('SELECT COALESCE(MIN(sort_order), 0) FROM vlogs')->fetchColumn() - ($beforeYt === null ? 1 : 0);
+                } else {
+                    $pdo->prepare('UPDATE vlogs SET sort_order = sort_order + 1 WHERE sort_order >= ?')->execute([$pos]);
+                }
+                $pdo->prepare('INSERT INTO vlogs (title, youtube_id, instagram_url, sort_order) VALUES (?, "", ?, ?)')
+                    ->execute([$title, $ig . $code . '/', $pos]);
+            };
+            $add('Concert cover - September 19th, 2026', 'DemqL8rpy06', null);
+            $add('Visiting the Tower of London: London vlog part 2', 'DcoKi4SJoSE', 'r3SIxBH7fWo');
+            $add('Last day in Veracruz', 'DavwHFVOMcA', 'LZpbEPJpq8U');
+            $pdo->prepare('INSERT INTO settings (k, v) VALUES ("seed_extra_1", "1")')->execute();
+        }
+        $pdo->exec('CREATE TABLE IF NOT EXISTS scores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            ms INTEGER NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )');
     }
     return $pdo;
 }

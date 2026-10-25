@@ -20,14 +20,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'save') {
         $title = trim((string)($_POST['title'] ?? ''));
-        $yt = youtube_id((string)($_POST['youtube'] ?? ''));
+        $ytRaw = trim((string)($_POST['youtube'] ?? ''));
+        $yt = $ytRaw === '' ? '' : youtube_id($ytRaw);
         $tt = clean_url((string)($_POST['tiktok_url'] ?? ''));
         $ig = clean_url((string)($_POST['instagram_url'] ?? ''));
         $why = mb_substr(trim((string)($_POST['why'] ?? '')), 0, 1200);
         if ($title === '' || mb_strlen($title) > 200) {
             flash('Add a title (up to 200 characters).');
         } elseif ($yt === null) {
-            flash('That does not look like a YouTube link. Paste the full link.');
+            flash('That does not look like a YouTube link. Paste the full link, or leave it empty for an Instagram or TikTok vlog.');
+        } elseif ($yt === '' && $tt === null && $ig === null) {
+            flash('Add at least one link: YouTube, TikTok or Instagram.');
         } elseif ($id > 0) {
             $pdo->prepare('UPDATE vlogs SET title=?, youtube_id=?, tiktok_url=?, instagram_url=?, why=? WHERE id=?')
                 ->execute([$title, $yt, $tt, $ig, $why, $id]);
@@ -62,8 +65,8 @@ admin_header('Vlogs');
   <input type="hidden" name="id" value="<?= $editing ? (int)$editing['id'] : 0 ?>">
   <label for="title">Title</label>
   <input id="title" name="title" required maxlength="200" value="<?= e($editing['title'] ?? '') ?>">
-  <label for="youtube">YouTube link</label>
-  <input id="youtube" name="youtube" required placeholder="https://www.youtube.com/shorts/..." value="<?= $editing ? e('https://www.youtube.com/shorts/' . $editing['youtube_id']) : '' ?>">
+  <label for="youtube">YouTube link (leave empty for Instagram or TikTok only)</label>
+  <input id="youtube" name="youtube" placeholder="https://www.youtube.com/shorts/..." value="<?= ($editing && $editing['youtube_id'] !== '') ? e('https://www.youtube.com/shorts/' . $editing['youtube_id']) : '' ?>">
   <label for="tiktok_url">TikTok link (optional)</label>
   <input id="tiktok_url" name="tiktok_url" value="<?= e($editing['tiktok_url'] ?? '') ?>">
   <label for="instagram_url">Instagram link (optional)</label>
