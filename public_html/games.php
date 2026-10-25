@@ -7,20 +7,20 @@ require __DIR__ . '/inc/layout.php';
 page_header('Games', 'games');
 ?>
 <h1>Surf cleanup</h1>
-<p class="lede">Clean the beach, build a water gun, then surf five waves and beat the sharks. Your total time goes in the hall of fame.</p>
+<p class="lede">Clean the beach, collect the shells, build a water gun, then surf five waves and beat the sharks. Your total time goes in the hall of fame.</p>
 
 <div class="game" id="game">
   <div class="game-hud">
     <span id="hudTime">0:00.0</span>
     <span id="hudLevel">Level 1/5</span>
-    <span id="hudGoal">Trash 0/8</span>
+    <span id="hudGoal">Beach finds 0/8</span>
     <button type="button" id="muteBtn" class="hud-btn" aria-pressed="false" aria-label="Mute sound">Sound on</button>
   </div>
   <canvas id="gameCanvas" width="640" height="360" aria-label="Surf cleanup game"></canvas>
   <div class="game-overlay" id="gameStart">
     <p class="pixel">SURF CLEANUP</p>
     <button type="button" id="startBtn" class="btn">Start</button>
-    <p class="hint">Beach: arrows or A/D to move, up or W to jump.<br>Surf: left/right keep the board level, up jumps (up again = double jump + trick), space fires the water gun.</p>
+    <p class="hint">Beach: arrows or A/D to move, up or W to jump.<br>Surf: left/right keep the board level (nose down = faster, nose up = slower), up jumps (up again = double jump + trick), space fires the water gun along the board.</p>
   </div>
   <div class="game-overlay" id="gameOver" hidden>
     <p class="pixel">GAME OVER</p>
@@ -54,4 +54,4 @@ page_header('Games', 'games');
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/game.js"></script>'); ?>
+<?php page_footer('<script src="/assets/js/game.js?v=3"></script>'); ?>

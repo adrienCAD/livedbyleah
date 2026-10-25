@@ -21,9 +21,8 @@
     S: '#5B6B7A', s: '#A9BAC9', E: '#1E3248', B: '#99D6EA'
   };
 
-  var BOTTLE = ['..G..', '..G..', '.GGG.', '.GDG.', '.GGG.', '.GDG.', '.GGG.'];
-  var CAN = ['.CCCC.', 'CWWWWC', 'CCCCCC', 'CKKKKC', 'CCCCCC', '.CCCC.'];
   var HEART = ['.RR.RR.', 'RRRRRRR', 'RRRRRRR', '.RRRRR.', '..RRR..', '...R...'];
+  var HEART_OUT = ['..EE...EE..', '.ERRE.ERRE.', 'ERWRREERRRE', 'ERRRRRRRRRE', '.ERRRRRRRE.', '..ERRRRRE..', '...ERRRE...', '....ERE....', '.....E.....'];
   // shark swims toward the left, so the head is on the left
   var SHARK = [
     '.........SS...........',
@@ -39,6 +38,22 @@
 
   var SURFER = new Image();
   SURFER.src = '/assets/img/surfer.png';
+
+  // Leah's pixel art (trash, water gun pieces) and the shells
+  var ART = {};
+  ['bottle', 'rings', 'water', 'bag', 'scallop', 'spiral', 'clam', 'conch', 'gun', 'tank', 'barrel', 'nut', 'handle'].forEach(function (n) {
+    var im = new Image(); im.src = '/assets/img/art/' + n + '.png?v=3'; ART[n] = im;
+  });
+  function artReady(n) { return ART[n] && ART[n].complete && ART[n].naturalWidth; }
+  var silCache = {};
+  function silhouette(n) {          // a flat dark copy of a sprite, used for the "put it here" outlines
+    if (silCache[n]) { return silCache[n]; }
+    if (!artReady(n)) { return null; }
+    var c = document.createElement('canvas'); c.width = ART[n].naturalWidth; c.height = ART[n].naturalHeight;
+    var g = c.getContext('2d'); g.drawImage(ART[n], 0, 0);
+    g.globalCompositeOperation = 'source-in'; g.fillStyle = '#1E3248'; g.fillRect(0, 0, c.width, c.height);
+    silCache[n] = c; return c;
+  }
 
   var el = {
     start: document.getElementById('gameStart'),
@@ -58,7 +73,7 @@
   var mode = 'start';              // start | beach | puzzle | surf | over | win
   var t = 0;                       // frame counter (animation)
   var clockMs = 0, clockRunning = false;
-  var lives = 3, level = 1;
+  var lives = 3, level = 1, MAX_LIVES = 5;
   var runNonce = '';
   var lastTime = 0;
 
@@ -127,6 +142,7 @@
     hit: function () { tone(300, 0.2, 'sawtooth', 0.3, 80); noise(0.12, 0.25); },
     bite: function () { tone(220, 0.35, 'sawtooth', 0.35, 60); noise(0.2, 0.3); },
     ufo: function () { tone(180, 0.5, 'sawtooth', 0.12, 90); },
+    boom: function () { noise(0.4, 0.35); tone(160, 0.4, 'sawtooth', 0.3, 40); },
     snap: function () { tone(800, 0.06, 'square', 0.25); tone(1200, 0.08, 'square', 0.25, null, AC && AC.currentTime + 0.05); },
     up: function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.14, 'square', 0.25, null, AC && AC.currentTime + i * 0.1); }); },
     win: function () { [523, 659, 784, 659, 784, 1047, 1319].forEach(function (f, i) { tone(f, 0.18, 'square', 0.25, null, AC && AC.currentTime + i * 0.13); }); },
@@ -192,13 +208,14 @@
     for (var sx = 0; sx < W; sx += 4) {
       var top = Math.round(fn(sx + cam));
       ctx.fillStyle = '#99D6EA'; ctx.fillRect(sx, top - 4, 4, 4);
+      if (mode === 'surf' && surfCfg && surfCfg.amp >= 16 && top < BASE_Y - surfCfg.amp * 0.5) { ctx.fillStyle = '#FFFDF7'; ctx.fillRect(sx, top - 8, 4, 4); ctx.fillRect(sx + (sx % 8 ? 0 : 4), top - 12, 4, 4); }
       ctx.fillStyle = '#6EB3D6'; ctx.fillRect(sx, top, 4, 22);
       ctx.fillStyle = '#6798C0'; ctx.fillRect(sx, top + 22, 4, H - top - 22);
     }
   }
 
   function drawHearts() {
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < Math.max(3, lives); i++) {
       ctx.globalAlpha = i < lives ? 1 : 0.25;
       sprite(HEART, W - 30 - i * 26, 10, 3);
     }
@@ -227,9 +244,11 @@
   function beachReset() {
     player = { x: 120, y: BASE_Y - 40, vx: 0, vy: 0, grounded: true, face: 1, land: 0 };
     cam = 0; trashGot = 0; items = []; towerHint = 0;
-    var heights = [22, 48, 74], n = 8;
+    // 4 pieces of trash (floating at jumping height) and 4 shells (lying on the sand), mixed along the beach
+    var order = ['bottle', 'scallop', 'water', 'spiral', 'rings', 'clam', 'bag', 'conch'];
+    var heights = [60, 0, 34, 0, 76, 0, 48, 0], n = order.length;
     for (var i = 0; i < n; i++) {
-      items.push({ kind: i % 2 === 0 ? 'bottle' : 'can', x: 380 + i * ((TOWER_X - 700) / (n - 1)), h: heights[(i * 7 + 1) % 3], got: false });
+      items.push({ kind: order[i], x: 380 + i * ((TOWER_X - 700) / (n - 1)), h: heights[i], got: false });
     }
     trashTotal = n;
   }
@@ -259,14 +278,14 @@
     var cx = player.x + 19, cy = player.y - 40;
     items.forEach(function (it) {
       if (it.got) { return; }
-      var dx = cx - (it.x + 10), dy = cy - (BASE_Y - it.h);
-      if (dx * dx + dy * dy < 36 * 36) { it.got = true; trashGot++; play('collect'); updateHud(); }
+      var dx = cx - (it.x + 14), dy = cy - (BASE_Y - it.h - 16);
+      if (dx * dx + dy * dy < 40 * 40) { it.got = true; trashGot++; play('collect'); updateHud(); }
     });
 
     if (trashGot === trashTotal) {
       if (player.x > TOWER_X - 40) { startPuzzle(); }
     } else if (player.x > TOWER_X - 180) {
-      towerHint = 90;      // "collect all the trash first"
+      towerHint = 90;      // "collect everything first"
       player.vx = Math.min(player.vx, 0); player.x = Math.min(player.x, TOWER_X - 180);
     }
     if (towerHint > 0) { towerHint -= k; }
@@ -293,8 +312,10 @@
       player.grounded ? 1 : 1 + Math.min(0.12, Math.abs(player.vy) * 0.015), player.land > 0 ? 1 - 0.1 * (player.land / 8) : 1);
   }
 
+  // the gun sits in her hand: top-left corner of the 2x gun art, in surfer-local pixels (origin = bottom centre of the board)
+  var GUN_HAND = { x: 1, y: -88 }, MUZZLE = { x: 53, y: -78 };
   // surfer art, drawn from the board's bottom centre; mirrored when facing left
-  function drawSurfer(x, y, rot, face, stretch, squash, spin) {
+  function drawSurfer(x, y, rot, face, stretch, squash, spin, gun) {
     if (!(SURFER.complete && SURFER.naturalWidth)) { return; }
     var w = SURFER.naturalWidth * SC, h = SURFER.naturalHeight * SC;
     var sy = stretch * squash, sxs = Math.min(1.05, 2 - sy);
@@ -303,6 +324,7 @@
     ctx.rotate(rot + (spin || 0));
     ctx.scale(face * sxs, sy);
     ctx.drawImage(SURFER, -w / 2, -h, w, h);
+    if (gun && artReady('gun')) { ctx.drawImage(ART.gun, GUN_HAND.x, GUN_HAND.y, 52, 32); }   // the water gun, held in her front hand
     ctx.restore();
   }
 
@@ -314,76 +336,59 @@
       if (it.got) { return; }
       var sx = it.x - cam;
       if (sx < -30 || sx > W + 30) { return; }
-      var bob = Math.round(Math.sin(t * 0.08 + it.x) * 3), y = BASE_Y - it.h + bob;
-      if (it.kind === 'bottle') { sprite(BOTTLE, sx, y - 12, 3); } else { sprite(CAN, sx, y - 9, 3); }
+      var im = ART[it.kind];
+      if (!artReady(it.kind)) { return; }
+      var bob = it.h > 0 ? Math.round(Math.sin(t * 0.08 + it.x) * 3) : 0;
+      var iw = im.naturalWidth * 3, ih = im.naturalHeight * 3;
+      var gy = BASE_Y - it.h + bob + (it.h > 0 ? 0 : 4);
+      if (it.h === 0) { ctx.fillStyle = 'rgba(30,50,72,.18)'; ctx.fillRect(Math.round(sx + 14 - iw / 2), Math.round(gy), iw, 4); }
+      ctx.drawImage(im, Math.round(sx + 14 - iw / 2), Math.round(gy - ih), iw, ih);
     });
     drawPlayerBeach();
     if (trashGot === trashTotal) {
       bigText('Go to the watchtower!', 60, 24, '#FDC921');
     } else if (towerHint > 0) {
-      bigText('Pick up all the trash first!', 60, 22, '#FDC921');
+      bigText('Collect all the trash and shells first!', 60, 22, '#FDC921');
     }
   }
 
   // ------------------------------------------------------------------ puzzle: build the DIY water gun
-  // Each piece is drawn around its own centre; rot is in quarter turns. A piece locks when it is close to its
-  // slot and rotated the right way. Pieces are drawn from trash-looking parts.
-  var GUN = { x: 190, y: 120 };
+  // Leah's gun is 26x16 pixels; each of the 4 pieces sits at a fixed spot inside it (ox, oy, in pixels).
+  // A piece locks when it is close to its slot and turned the right way (rot counts quarter turns).
+  var PZ = 8;                        // puzzle pixel size
+  var GUN = { x: 196, y: 96 };
   var PIECES_DEF = [
-    { id: 'barrel', w: 150, h: 22, sx: 75, sy: 11, color: '#FDC921' },
-    { id: 'nozzle', w: 34, h: 22, sx: 167, sy: 11, color: '#E8556D' },
-    { id: 'tank', w: 92, h: 52, sx: 52, sy: -28, color: '#4E9A5B' },
-    { id: 'grip', w: 34, h: 62, sx: 32, sy: 52, color: '#7A8691' },
-    { id: 'pump', w: 40, h: 46, sx: 112, sy: 45, color: '#B8C2CC' }
+    { id: 'tank', ox: 1, oy: 0 },
+    { id: 'barrel', ox: 16, oy: 2 },
+    { id: 'handle', ox: 0, oy: 8 },
+    { id: 'nut', ox: 6, oy: 8 }
   ];
   var pieces = [], grabbed = null, grabDx = 0, grabDy = 0, grabMoved = 0, lastTouched = null, puzzleDone = 0;
 
   function startPuzzle() {
-    mode = 'puzzle'; puzzleDone = 0; grabbed = null; lastTouched = null;
+    mode = 'puzzle'; puzzleDone = 0; grabbed = null; lastTouched = null; puzzleWin = 0;
     setMusic('beach');
-    var spots = [[90, 300], [250, 310], [420, 300], [560, 230], [540, 120]];
+    var spots = [[90, 300], [300, 320], [560, 290], [560, 130]];
     pieces = PIECES_DEF.map(function (d, i) {
+      var im = ART[d.id], w = (im.naturalWidth || 10) * PZ, h = (im.naturalHeight || 6) * PZ;
+      var def = { id: d.id, w: w, h: h };
       return {
-        d: d, x: spots[i][0], y: spots[i][1], rot: 1 + Math.floor(Math.random() * 3), locked: false,
-        tx: GUN.x + d.sx, ty: GUN.y + d.sy
+        d: def, x: spots[i][0], y: spots[i][1], rot: 1 + Math.floor(Math.random() * 3), locked: false,
+        tx: GUN.x + d.ox * PZ + w / 2, ty: GUN.y + d.oy * PZ + h / 2
       };
     });
     updateHud();
   }
 
-  // draw one piece (local coordinates around its centre)
+  // draw one piece around its own centre; ghost = the dark "put it here" outline
   function drawPiece(p, ghost) {
-    var d = p.d, w = d.w, h = d.h;
+    var im = ghost ? silhouette(p.d.id) : ART[p.d.id];
+    if (!im || (!ghost && !artReady(p.d.id))) { return; }
     ctx.save();
     ctx.translate(Math.round(p.x), Math.round(p.y));
     ctx.rotate(p.rot * Math.PI / 2);
-    var main = ghost ? 'rgba(30,50,72,.10)' : d.color, edge = ghost ? 'rgba(30,50,72,.35)' : '#1E3248';
-    function box(x, y, bw, bh, col) { ctx.fillStyle = col; ctx.fillRect(Math.round(x), Math.round(y), bw, bh); }
-    function rim(x, y, bw, bh) { ctx.strokeStyle = edge; ctx.lineWidth = 2; ctx.strokeRect(Math.round(x) + 1, Math.round(y) + 1, bw - 2, bh - 2); }
-    if (d.id === 'barrel') {
-      box(-w / 2, -h / 2, w, h, main);
-      if (!ghost) { box(w / 2 - 22, -h / 2 - 3, 10, h + 6, '#FDD85D'); box(-w / 2 + 14, -h / 2, 6, h, '#E0A800'); }
-      rim(-w / 2, -h / 2, w, h);
-    } else if (d.id === 'nozzle') {
-      ctx.fillStyle = main; ctx.beginPath();
-      ctx.moveTo(-w / 2, -h / 2); ctx.lineTo(w / 2, -5); ctx.lineTo(w / 2, 5); ctx.lineTo(-w / 2, h / 2); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = edge; ctx.lineWidth = 2; ctx.stroke();
-    } else if (d.id === 'tank') {
-      box(-w / 2, -h / 2 + 8, w, h - 8, main);
-      if (!ghost) { box(-w / 2 + 6, -h / 2 + 14, w - 12, 6, '#2F6B3A'); box(-w / 2 + 6, -h / 2 + 28, w - 12, 4, '#2F6B3A'); }
-      box(-w / 2 + 8, -h / 2, 18, 8, ghost ? main : '#FFFDF7');       // cap on the top-left
-      rim(-w / 2, -h / 2 + 8, w, h - 8); rim(-w / 2 + 8, -h / 2, 18, 8);
-    } else if (d.id === 'grip') {
-      box(-w / 2, -h / 2, w, h - 18, main);
-      box(-w / 2, h / 2 - 18, w + 14, 18, main);                       // foot of the handle sticks out to the right
-      if (!ghost) { box(-w / 2 + 6, -h / 2 + 6, 8, 20, '#5B6B7A'); }
-      rim(-w / 2, -h / 2, w, h - 18); rim(-w / 2, h / 2 - 18, w + 14, 18);
-    } else if (d.id === 'pump') {
-      box(-w / 2, -h / 2, w, h - 10, main);
-      if (!ghost) { box(-w / 2 + 6, -h / 2 + 8, w - 12, 5, '#7A8691'); }
-      box(-w / 2 - 6, h / 2 - 10, w + 12, 10, ghost ? main : '#E8556D');  // wide handle at the bottom
-      rim(-w / 2, -h / 2, w, h - 10); rim(-w / 2 - 6, h / 2 - 10, w + 12, 10);
-    }
+    if (ghost) { ctx.globalAlpha = 0.22; }
+    ctx.drawImage(im, -p.d.w / 2, -p.d.h / 2, p.d.w, p.d.h);
     ctx.restore();
   }
 
@@ -405,7 +410,7 @@
 
   function trySnap(p) {
     var ok = (p.rot % 4 === 0);
-    var near = Math.abs(p.x - p.tx) < 20 && Math.abs(p.y - p.ty) < 20;
+    var near = Math.abs(p.x - p.tx) < 26 && Math.abs(p.y - p.ty) < 26;
     if (ok && near) {
       p.x = p.tx; p.y = p.ty; p.rot = 0; p.locked = true; puzzleDone++; play('snap');
       updateHud();
@@ -461,11 +466,11 @@
     ctx.fillStyle = '#1E3248'; ctx.fillRect(0, 0, W, 40);
     ctx.fillStyle = '#FDC921'; ctx.textAlign = 'right';
     ctx.font = '700 16px "Shantell Sans", "Comic Sans MS", cursive';
-    ctx.fillText('Watchtower workshop: build the water gun', W - 12, 26);
+    ctx.fillText('Build the water gun', W - 12, 26);
     ctx.textAlign = 'left';
     // blueprint area
-    ctx.fillStyle = 'rgba(255,253,247,.65)'; ctx.fillRect(GUN.x - 40, GUN.y - 70, 290, 230);
-    ctx.strokeStyle = '#6798C0'; ctx.setLineDash([6, 5]); ctx.lineWidth = 2; ctx.strokeRect(GUN.x - 40, GUN.y - 70, 290, 230); ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,253,247,.65)'; ctx.fillRect(GUN.x - 24, GUN.y - 24, 26 * PZ + 48, 16 * PZ + 48);
+    ctx.strokeStyle = '#6798C0'; ctx.setLineDash([6, 5]); ctx.lineWidth = 2; ctx.strokeRect(GUN.x - 24, GUN.y - 24, 26 * PZ + 48, 16 * PZ + 48); ctx.setLineDash([]);
     pieces.forEach(function (p) {
       if (!p.locked) { drawPiece({ d: p.d, x: p.tx, y: p.ty, rot: 0 }, true); }   // outline of where it goes
     });
@@ -482,27 +487,29 @@
     if (puzzleWin > 0) {
       for (var i = 0; i < 14; i++) {      // squirt of water from the nozzle
         var f = (90 - puzzleWin) * 5 - i * 16;
-        if (f > 0) { ctx.fillStyle = '#99D6EA'; ctx.fillRect(GUN.x + 185 + f, GUN.y + 8 + f * f * 0.002, 6, 6); }
+        if (f > 0) { ctx.fillStyle = '#99D6EA'; ctx.fillRect(GUN.x + 26 * PZ + f, GUN.y + 5 * PZ + f * f * 0.002, 8, 8); }
       }
-      bigText('Water gun ready!', 230, 30, '#FDC921');
+      bigText('Water gun ready!', 270, 30, '#FDC921');
     }
   }
 
   // ------------------------------------------------------------------ LEVELS 2-5: surf
   var LEVELS = {
-    2: { name: 'Easy waves', sharks: 6, speed: 2.2, swim: 0.5, gap: 3.1, amp: 9, waveGain: 5, gust: 0.7, instab: 0.5, ufo: false },
-    3: { name: 'Choppy', sharks: 7, speed: 2.6, swim: 0.9, gap: 2.7, amp: 13, waveGain: 8, gust: 1.5, instab: 1.0, ufo: true },
-    4: { name: 'Rough water', sharks: 8, speed: 3.0, swim: 1.2, gap: 2.3, amp: 17, waveGain: 11, gust: 2.3, instab: 1.5, ufo: true },
-    5: { name: 'Monster surf', sharks: 10, speed: 3.4, swim: 1.6, gap: 1.9, amp: 21, waveGain: 14, gust: 3.0, instab: 2.1, ufo: true }
+    2: { name: 'Easy waves', sharks: 6, speed: 2.2, swim: 0.5, gap: 3.1, amp: 9, freq: 0.016, waveGain: 5, gust: 0.7, instab: 0.5, ufo: false },
+    3: { name: 'Choppy', sharks: 7, speed: 2.6, swim: 0.9, gap: 2.7, amp: 16, freq: 0.019, waveGain: 6, gust: 1.5, instab: 1.0, ufo: true, ufoFollow: 0.55 },
+    4: { name: 'Rough water', sharks: 8, speed: 3.0, swim: 1.2, gap: 2.3, amp: 24, freq: 0.021, waveGain: 6, gust: 2.3, instab: 1.5, ufo: true, ufoFollow: 0.75 },
+    5: { name: 'Monster surf', sharks: 10, speed: 3.4, swim: 1.6, gap: 1.9, amp: 32, freq: 0.023, waveGain: 6, gust: 3.0, instab: 2.1, ufo: true, ufoFollow: 0.95 }
   };
   var S = null;                      // surf-level state
   var surfCfg = null;
 
   function waveY(wx) {
     var a = surfCfg ? surfCfg.amp : 10;
-    return BASE_Y + a * (0.6 * Math.sin(wx * 0.016) + 0.4 * Math.sin(wx * 0.0067 + 1.3));
+    var f = surfCfg ? surfCfg.freq : 0.016;
+    return BASE_Y + a * (0.6 * Math.sin(wx * f) + 0.4 * Math.sin(wx * 0.0067 + 1.3));
   }
   function waveSlope(wx) { return (waveY(wx + 4) - waveY(wx - 4)) / 8; }
+  function surferWY() { return waveY(S.wx + S.px - SCREEN_X); }      // water line under the surfer
 
   function startLevel(n) {
     level = n; mode = 'surf'; surfCfg = LEVELS[n]; jumpPressed = false;
@@ -510,17 +517,17 @@
     cam = 0;
     S = {
       wx: 0, time: 0, intro: 2.0, spawnAt: 2.7,
-      h: 0, vh: 0, jumps: 0, trick: 0, gunCd: 0,
+      h: 0, vh: 0, jumps: 0, trick: 0, gunCd: 0, px: SCREEN_X, pv: 0, edge: 0, hearts: [], boom: [],
       ang: 0, angV: 0, bad: 0,
       sharks: [], bullets: [], splash: [], spawned: 0, resolved: 0,
-      ufo: null, ufoDone: !surfCfg.ufo, ufoAt: 2 + Math.floor(Math.random() * Math.max(1, surfCfg.sharks - 4)),
+      ufo: null, ufoDone: !surfCfg.ufo, ufoLeft: 0, ufoAt: 2 + Math.floor(Math.random() * Math.max(1, surfCfg.sharks - 4)),
       abduct: 0, msg: '', msgT: 0, clear: 0, phase: Math.random() * 6
     };
     updateHud();
   }
 
   function loseLife(why) {
-    if (window.__lbl && window.__lbl.god) { S.ang = 0; S.angV = 0; S.abduct = 0; return; }
+    if (window.__lbl && window.__lbl.god) { (window.__lbl.deaths = window.__lbl.deaths || []).push(why); S.ang = 0; S.angV = 0; S.abduct = 0; S.edge = 0; S.bad = 0; return; }
     lives--; play(why === 'ufo' ? 'ufo' : 'bite');
     if (lives <= 0) { gameOver(); return; }
     startLevel(level);
@@ -528,6 +535,11 @@
       : why === 'ufo' ? 'Abducted! ' + lives + (lives === 1 ? ' life left' : ' lives left')
       : 'Wipeout! ' + lives + (lives === 1 ? ' life left' : ' lives left');
     S.msgT = 2.2; S.intro = 0.6;
+  }
+
+  function muzzle() {      // where the water leaves the gun, in screen pixels
+    var ax = S.px + 19, ay = surferWY() - S.h + 6, c = Math.cos(S.ang), sn = Math.sin(S.ang);
+    return { x: ax + MUZZLE.x * c - MUZZLE.y * sn, y: ay + MUZZLE.x * sn + MUZZLE.y * c };
   }
 
   function surfStep(k, dt) {
@@ -539,7 +551,7 @@
     if (S.trick > 0) { S.trick -= dt; }
 
     // ---- balance: the wave pushes the board, left/right push back
-    var push = C.waveGain * waveSlope(S.wx)
+    var push = C.waveGain * waveSlope(S.wx + S.px - SCREEN_X)
       + C.gust * Math.sin(S.time * 0.9 + S.phase) * Math.sin(S.time * 2.1 + S.phase * 2)
       + C.instab * S.ang;
     var input = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
@@ -548,6 +560,13 @@
     var bad = Math.abs(S.ang) > 0.8;
     S.bad = bad ? S.bad + dt : Math.max(0, S.bad - dt * 2);
     if (Math.abs(S.ang) > 1.15 || S.bad > 0.6) { loseLife('wipeout'); return; }
+
+    // ---- speed along the wave: nose down = she speeds up and drifts right, nose up = she slows and drifts left
+    S.pv += (S.ang * 260 - 1.6 * S.pv + (SCREEN_X - S.px) * 0.25) * dt;
+    S.px += S.pv * dt;
+    if (S.px > 430) { S.px = 430; S.pv = Math.min(0, S.pv); }
+    if (S.px < 60) { S.px = 60; S.pv = Math.max(0, S.pv); S.edge += dt; } else { S.edge = Math.max(0, S.edge - dt * 2); }
+    if (S.edge > 1.4) { loseLife('wipeout'); return; }      // pushed off the back of the wave
 
     // ---- jumping (press up again in the air for the double jump + aerial trick)
     if (jumpPressed) {
@@ -561,17 +580,14 @@
     }
     var inTrick = S.trick > 0;
 
-    // ---- water gun with a short cooldown, auto-aimed within a narrow cone
+    // ---- water gun with a short cooldown; the spurt leaves the muzzle along the direction of the board
     if (keys.fire && S.gunCd <= 0 && S.intro <= 0.4) {
       S.gunCd = 0.32; play('shoot');
-      var my = waveY(S.wx) - S.h - 62, mx = SCREEN_X + 52, best = null, ang = 0.08;
-      S.sharks.forEach(function (sh) { if (sh.alive && sh.x > mx + 40 && (!best || sh.x < best.x)) { best = { x: sh.x, y: waveY(S.wx + sh.x - SCREEN_X) - 8 }; } });
-      if (S.ufo && S.ufo.alive && S.ufo.x > mx) { if (!best || Math.abs(S.ufo.y - my) < Math.abs(best.y - my)) { best = { x: S.ufo.x, y: S.ufo.y }; } }
-      if (best) { ang = Math.max(-0.12, Math.min(0.12, Math.atan2(best.y - my, best.x - mx))); }
-      S.bullets.push({ x: mx, y: my, vx: Math.cos(ang) * 10, vy: Math.sin(ang) * 10, life: 80 });
+      var mz = muzzle();
+      S.bullets.push({ x: mz.x, y: mz.y, vx: Math.cos(S.ang) * 10, vy: Math.sin(S.ang) * 10, life: 90 });
     }
     S.bullets.forEach(function (b) { b.x += b.vx * k; b.y += b.vy * k; b.life -= k; });
-    S.bullets = S.bullets.filter(function (b) { return b.life > 0 && b.x < W + 20; });
+    S.bullets = S.bullets.filter(function (b) { return b.life > 0 && b.x < W + 20 && b.y > -20 && b.y < H + 20; });
 
     // ---- sharks
     var gapT = C.gap;
@@ -585,56 +601,80 @@
       if (sh.dying > 0) { sh.dying -= dt; return; }
       if (!sh.alive) { return; }
       sh.x -= (C.speed + C.swim) * k;
-      var dx = Math.abs(sh.x - SCREEN_X);
+      var dx = Math.abs(sh.x - S.px);
       // shot?
       for (var i = 0; i < S.bullets.length; i++) {
         var b = S.bullets[i], sy = waveY(S.wx + sh.x - SCREEN_X);
-        if (Math.abs(b.x - sh.x) < 36 && b.y > sy - 52 && b.y < sy + 22) {
+        if (Math.abs(b.x - sh.x) < 38 && b.y > sy - 60 && b.y < sy + 30) {
           sh.alive = false; sh.dying = 0.5; S.bullets.splice(i, 1); S.resolved++; play('hit'); S.splash.push({ x: sh.x, y: sy, t: 0.5 });
           updateHud(); return;
         }
       }
       if (dx < 40 && playerLow && !sh.biting) { sh.biting = true; dead = true; loseLife('bite'); return; }
-      if (sh.x < SCREEN_X - 64 && !sh.passed) { sh.passed = true; S.resolved++; updateHud(); }
+      if (sh.x < S.px - 64 && !sh.passed) { sh.passed = true; S.resolved++; updateHud(); }
     });
     if (dead) { return; }
     S.sharks = S.sharks.filter(function (sh) { return sh.x > -80 && (sh.alive || sh.dying > 0); });
     S.splash.forEach(function (sp) { sp.t -= dt; });
     S.splash = S.splash.filter(function (sp) { return sp.t > 0; });
 
-    // ---- UFO (levels 3-5): it sneaks up, locks on and beams. A trick makes you slippery; three water hits bring it down.
+    // ---- UFO (levels 3-5): it follows Leah slowly. Stay under it for 3 seconds and it abducts her.
+    // It leaves after 10 seconds. Two water hits bring it down; it explodes and drops a heart worth one life.
     if (!S.ufoDone && !S.ufo && S.spawned > S.ufoAt) {
-      S.ufo = { x: W + 60, y: 56, alive: true, hp: 3, state: 'arrive', st: 0, cycles: 0, flash: 0 };
+      S.ufo = { x: W + 60, y: 70, alive: true, hp: 2, life: 10, state: 'arrive', st: 0, flash: 0 };
       play('ufo');
     }
     var u = S.ufo;
     if (u) {
       u.st += dt; if (u.flash > 0) { u.flash -= dt; }
-      if (u.alive) {
-        if (u.state === 'arrive') { u.x += (430 - u.x) * 0.04 * k; if (u.st > 1.6) { u.state = 'chase'; u.st = 0; } }
-        else if (u.state === 'chase') { u.x += (SCREEN_X - u.x) * 0.06 * k; if (u.st > 1.4) { u.state = 'charge'; u.st = 0; } }
-        else if (u.state === 'charge') { u.x += (SCREEN_X - u.x) * 0.1 * k; if (u.st > 1.0) { u.state = 'beam'; u.st = 0; play('ufo'); } }
-        else if (u.state === 'beam') {
-          u.x += (SCREEN_X - u.x) * 0.1 * k;
-          if (Math.abs(u.x - SCREEN_X) < 40 && !inTrick) { S.abduct += dt; } else { S.abduct = Math.max(0, S.abduct - dt * 1.5); }
-          if (S.abduct > 1.1) { loseLife('ufo'); return; }
-          if (u.st > 1.8) { u.state = 'retreat'; u.st = 0; u.cycles++; S.abduct = 0; }
-        } else if (u.state === 'retreat') {
-          u.x += (460 - u.x) * 0.05 * k;
-          if (u.st > 1.6) { if (u.cycles >= 3) { u.state = 'leave'; u.st = 0; } else { u.state = 'chase'; u.st = 0; } }
-        } else if (u.state === 'leave') { u.x += 4 * k; u.y -= 1.2 * k; if (u.x > W + 80) { S.ufoDone = true; S.ufo = null; u = null; } }
-        if (u) {
-          for (var j = 0; j < S.bullets.length; j++) {
-            var bb = S.bullets[j];
-            if (Math.abs(bb.x - u.x) < 34 && Math.abs(bb.y - u.y) < 26) {
-              S.bullets.splice(j, 1); u.hp--; u.flash = 0.2; play('hit');
-              if (u.hp <= 0) { u.alive = false; u.st = 0; S.splash.push({ x: u.x, y: u.y, t: 0.6 }); }
-              break;
+      u.life -= dt;
+      var hy = Math.max(46, Math.min(190, surferWY() - 128));
+      u.y += (hy - u.y) * 0.05 * k;
+      if (u.state === 'arrive') {
+        u.x += (S.px + 170 - u.x) * 0.04 * k;
+        if (u.st > 1.2) { u.state = 'hunt'; u.st = 0; }
+      } else if (u.state === 'hunt') {
+        var stepX = C.ufoFollow * k;
+        u.x += Math.max(-stepX, Math.min(stepX, S.px - u.x));
+        if (Math.abs(S.px - u.x) < 36 && !inTrick) { S.abduct += dt; } else { S.abduct = 0; }
+        if (S.abduct >= 3) { loseLife('ufo'); return; }
+        if (u.life <= 0) { u.state = 'leave'; u.st = 0; S.abduct = 0; }
+      } else if (u.state === 'leave') {
+        u.x += 9 * k; u.y -= 2.4 * k;
+        if (u.x > W + 80 || u.y < -60) { S.ufoDone = true; S.ufo = null; u = null; S.abduct = 0; }
+      }
+      if (u) {
+        for (var j = 0; j < S.bullets.length; j++) {
+          var bb = S.bullets[j];
+          if (Math.abs(bb.x - u.x) < 42 && Math.abs(bb.y - u.y) < 30) {
+            S.bullets.splice(j, 1); u.hp--; u.flash = 0.2; play('hit');
+            if (u.hp <= 0) {
+              S.boom.push({ x: u.x, y: u.y, t: 0.9 }); play('boom');
+              S.hearts.push({ x: u.x, y: u.y, t: 0, a0: Math.random() * 6 });
+              S.ufoDone = true; S.ufo = null; S.abduct = 0;
             }
+            break;
           }
         }
-      } else if (u.st > 0.8) { S.ufoDone = true; S.ufo = null; }
+      }
     }
+    S.boom.forEach(function (bm) { bm.t -= dt; });
+    S.boom = S.boom.filter(function (bm) { return bm.t > 0; });
+
+    // ---- the heart: circles around the screen for a while, then zips away. Catch it for an extra life.
+    S.hearts.forEach(function (hh) {
+      hh.t += dt;
+      var gx = hh.t < 8 ? 330 + Math.cos(hh.t * 1.1 + hh.a0) * 250 : W + 200;
+      var gy = hh.t < 8 ? 150 + Math.sin(hh.t * 1.1 + hh.a0) * 60 : -40;
+      hh.x += (gx - hh.x) * Math.min(1, 0.07 * k); hh.y += (gy - hh.y) * Math.min(1, 0.07 * k);
+      var cdx = hh.x - (S.px + 19), cdy = hh.y - (surferWY() - S.h - 62);
+      if (!hh.got && cdx * cdx + cdy * cdy < 50 * 50) {
+        hh.got = true;
+        if (lives < MAX_LIVES) { lives++; S.msg = '+1 life!'; } else { S.msg = 'Lives are full!'; }
+        S.msgT = 1.6; play('up');
+      }
+    });
+    S.hearts = S.hearts.filter(function (hh) { return !hh.got && hh.t < 11 && hh.x < W + 60; });
 
     // ---- level clear
     if (S.spawned >= C.sharks && S.resolved >= C.sharks && S.sharks.length === 0 && S.ufoDone && S.clear === 0) {
@@ -651,7 +691,7 @@
   function surfDraw() {
     drawSky();
     drawWaterWith(waveY);
-    var sy = waveY(S.wx);
+    var sy = surferWY();
     // sharks
     S.sharks.forEach(function (sh) {
       var y = waveY(S.wx + sh.x - SCREEN_X) - 12 + Math.sin(t * 0.1 + sh.bob) * 2;
@@ -668,9 +708,31 @@
     // surfer
     var y = sy - S.h + 6;
     var trickProg = S.trick > 0 ? 1 - S.trick / 0.85 : 0;
-    drawSurfer(SCREEN_X + 19, y, S.ang, 1, S.h > 0 ? 1 + Math.min(0.1, Math.abs(S.vh) * 0.012) : 1, 1, trickProg * Math.PI * 2);
-    // bullets
-    S.bullets.forEach(function (b) { ctx.fillStyle = '#99D6EA'; ctx.fillRect(Math.round(b.x), Math.round(b.y), 6, 5); ctx.fillStyle = '#FFFDF7'; ctx.fillRect(Math.round(b.x), Math.round(b.y), 3, 2); });
+    drawSurfer(S.px + 19, y, S.ang, 1, S.h > 0 ? 1 + Math.min(0.1, Math.abs(S.vh) * 0.012) : 1, 1, trickProg * Math.PI * 2, true);
+    // water spurts: a thick black outline, light blue inside, trailing drops
+    S.bullets.forEach(function (b) {
+      var n = Math.hypot(b.vx, b.vy) || 1, ux = b.vx / n, uy = b.vy / n;
+      for (var i = 3; i >= 0; i--) {
+        var r = i === 0 ? 10 : 8 - i * 1.2, px = b.x - ux * i * 13, py = b.y - uy * i * 13;
+        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fillStyle = i === 0 ? '#99D6EA' : '#B8E6F6'; ctx.fill();
+        ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.stroke();
+      }
+      ctx.fillStyle = '#FFFDF7'; ctx.fillRect(Math.round(b.x - 3), Math.round(b.y - 4), 3, 3);
+    });
+    // explosion and the heart that drops from the UFO
+    S.boom.forEach(function (bm) {
+      var p = 1 - bm.t / 0.9;
+      for (var i = 0; i < 14; i++) {
+        var a = i * 0.45 + 0.3, d = 6 + p * (30 + (i % 4) * 14);
+        ctx.fillStyle = i % 3 === 0 ? '#FFFDF7' : (i % 3 === 1 ? '#FDC921' : '#E8556D');
+        var sz = Math.max(3, 9 - p * 6);
+        ctx.fillRect(Math.round(bm.x + Math.cos(a) * d - sz / 2), Math.round(bm.y + Math.sin(a) * d - sz / 2), sz, sz);
+      }
+    });
+    S.hearts.forEach(function (hh) {
+      sprite(HEART_OUT, hh.x - 16, hh.y - 14 + Math.round(Math.sin(t * 0.25) * 2), 3);
+    });
     // HUD: lives, tilt gauge
     drawHearts();
     var gx = W - 134, gy = 40;
@@ -680,9 +742,11 @@
     ctx.fillStyle = '#1E3248'; ctx.fillRect(gx + 59, gy - 2, 2, 18);
     ctx.strokeStyle = '#1E3248'; ctx.lineWidth = 2; ctx.strokeRect(gx, gy, 120, 14);
     if (S.abduct > 0.05) {
-      ctx.fillStyle = 'rgba(255,253,247,.9)'; ctx.fillRect(SCREEN_X - 30, 100, 60, 8);
-      ctx.fillStyle = '#E8556D'; ctx.fillRect(SCREEN_X - 30, 100, 60 * Math.min(1, S.abduct / 1.1), 8);
+      ctx.fillStyle = 'rgba(255,253,247,.9)'; ctx.fillRect(S.px - 30, 100, 60, 8);
+      ctx.fillStyle = '#E8556D'; ctx.fillRect(S.px - 30, 100, 60 * Math.min(1, S.abduct / 3), 8);
+      ctx.strokeStyle = '#1E3248'; ctx.lineWidth = 2; ctx.strokeRect(S.px - 30, 100, 60, 8);
     }
+    if (S.edge > 0.05) { bigText('Too slow! Lean right!', 190, 20, '#E8556D'); }
     if (S.msgT > 0) { bigText(S.msg, 130, 26, '#FDC921'); }
     else if (S.intro > 0) { bigText('Level ' + level + ': ' + surfCfg.name, 130, 28); }
     if (S.clear > 0) { bigText(level >= TOTAL_LEVELS ? 'All sharks beaten!' : 'Level clear!', 140, 34, '#FDC921'); }
@@ -690,18 +754,16 @@
 
   function drawUFO(u) {
     var x = Math.round(u.x), y = Math.round(u.y + Math.sin(t * 0.12) * 3);
-    if (u.state === 'charge' || u.state === 'beam') {
-      var beaming = u.state === 'beam';
-      var top = y + 14, bottom = waveY(S.wx) + 10;
-      ctx.fillStyle = beaming ? 'rgba(253,201,33,.55)' : 'rgba(153,214,234,' + (0.25 + 0.2 * Math.sin(t * 0.5)) + ')';
+    if (S.abduct > 0.05) {      // tractor beam down to Leah while she stays underneath
+      var top = y + 14, bottom = surferWY() + 10;
+      ctx.fillStyle = 'rgba(253,201,33,' + (0.3 + 0.25 * Math.sin(t * 0.6)) + ')';
       ctx.beginPath(); ctx.moveTo(x - 14, top); ctx.lineTo(x + 14, top); ctx.lineTo(x + 44, bottom); ctx.lineTo(x - 44, bottom); ctx.closePath(); ctx.fill();
     }
-    var fl = u.flash > 0 || !u.alive;
+    var fl = u.flash > 0;
     ctx.fillStyle = fl ? '#FFFDF7' : '#99D6EA'; ctx.fillRect(x - 14, y - 16, 28, 14); ctx.fillRect(x - 10, y - 20, 20, 6);   // dome
     ctx.fillStyle = fl ? '#E8556D' : '#7A8691'; ctx.fillRect(x - 36, y - 4, 72, 12); ctx.fillRect(x - 28, y + 8, 56, 6); ctx.fillRect(x - 44, y, 88, 6);
     for (var i = 0; i < 5; i++) { ctx.fillStyle = ((t >> 3) + i) % 2 ? '#FDC921' : '#FFFDF7'; ctx.fillRect(x - 30 + i * 15, y + 2, 6, 5); }
-    // hit points
-    for (var h = 0; h < 3; h++) { ctx.fillStyle = h < u.hp ? '#E8556D' : 'rgba(30,50,72,.3)'; ctx.fillRect(x - 15 + h * 11, y - 28, 8, 5); }
+    for (var h = 0; h < 2; h++) { ctx.fillStyle = h < u.hp ? '#E8556D' : 'rgba(30,50,72,.3)'; ctx.fillRect(x - 10 + h * 12, y - 28, 8, 5); }   // hit points
   }
 
   // ------------------------------------------------------------------ flow: start, game over, win, HUD
@@ -720,7 +782,7 @@
   function updateHud() {
     if (mode === 'beach') {
       el.level.textContent = 'Level 1/' + TOTAL_LEVELS;
-      el.goal.textContent = 'Trash ' + trashGot + '/' + trashTotal;
+      el.goal.textContent = 'Beach finds ' + trashGot + '/' + trashTotal;
     } else if (mode === 'puzzle') {
       el.level.textContent = 'Level 1/' + TOTAL_LEVELS;
       el.goal.textContent = 'Pieces ' + puzzleDone + '/' + pieces.length;
@@ -902,6 +964,8 @@
       puzzle: function () { clockRunning = true; startPuzzle(); },
       level: function (n, ufo) { clockRunning = true; lives = 3; startLevel(n); if (ufo) { S.ufoAt = 0; S.ufoDone = false; } },
       info: function () { return { mode: mode, level: level, lives: lives, S: S && { resolved: S.resolved, spawned: S.spawned, ang: S.ang, h: S.h, ufo: S.ufo && S.ufo.state }, ms: clockMs }; },
+      S: function () { return S; },
+      lives: function (n) { lives = n; },
       won: function () { clockMs = 61000 + Math.random() * 1000; gameWon(); }
     };
   }
