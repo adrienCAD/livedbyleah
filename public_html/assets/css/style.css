@@ -236,3 +236,4 @@ ol.fanlist { counter-reset: none; }
 .proof { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 0 0 16px; max-width: 640px; background: #fff; }
 .proof img { max-width: 100%; max-height: 420px; border: 1px solid var(--line); border-radius: 6px; display: block; margin: 8px 0; }
 .proof form.inline { display: flex; gap: 8px; flex: 1; min-width: 240px; }
+.shotbtns[hidden] { display: none; }

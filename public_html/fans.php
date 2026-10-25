@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (send_confirm_email($id, $email, $first)) {
                 flash('Almost there! We sent a link to ' . $email . '. Click it to confirm your email, then log in. Check your spam folder too.');
             } else {
-                flash('Your account is created, but the confirmation email could not be sent. Tell Leah or Adrien so they can confirm it for you.');
+                flash('Your account is created, but the confirmation email could not be sent. Tell Leah so she can confirm it for you.');
             }
             redirect('/fans.php');
         }
@@ -247,11 +247,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $name = bin2hex(random_bytes(12)) . '.' . $ext;
             if (!@move_uploaded_file($file['tmp_name'], $dir . '/' . $name)) {
-                $err = 'Could not save the image. Please tell Leah or Adrien.';
+                $err = 'Could not save the image. Please tell Leah.';
             } else {
-                db()->prepare('INSERT INTO proofs (fan_id, platform, action, vlog_id, file, points) VALUES (?, ?, ?, ?, ?, ?)')
-                    ->execute([$me['id'], $plat, $kind, $vlogId ?: null, $name, PROOF_POINTS[$kind]]);
-                flash('Thanks! Leah or Adrien will check your screenshot soon. You get the points once it is approved.');
+                $fanNote = mb_substr(trim((string)preg_replace('/\s+/u', ' ', (string)($_POST['fan_note'] ?? ''))), 0, 200);
+                db()->prepare('INSERT INTO proofs (fan_id, platform, action, vlog_id, file, points, fan_note) VALUES (?, ?, ?, ?, ?, ?, ?)')
+                    ->execute([$me['id'], $plat, $kind, $vlogId ?: null, $name, PROOF_POINTS[$kind], $fanNote !== '' ? $fanNote : null]);
+                flash('Thanks! Leah will check your screenshot soon. You get the points once it is approved.');
                 redirect('/fans.php');
             }
         }
@@ -400,7 +401,7 @@ page_header('Fans', 'fans');
     <li><strong>Follow or subscribe</strong> on each platform: <?= PROOF_POINTS['follow'] ?> points each</li>
     <li><strong>Comment on a vlog:</strong> <?= PROOF_POINTS['comment'] ?> points each</li>
   </ul>
-  <p class="hint">For likes, follows and comments, send a screenshot. Leah or Adrien checks it and, if it is real, the points are added. The image is deleted after it is checked.</p>
+  <p class="hint">For likes, follows and comments, send a screenshot. Leah checks it and, if it is real, the points are added. The image is deleted after it is checked.</p>
 </div>
 
 <details class="proofbox"<?= ($action ?? '') === 'proof' ? ' open' : '' ?>>
@@ -425,7 +426,15 @@ page_header('Fans', 'fans');
     </select>
     <label for="ps">Screenshot</label>
     <input id="ps" name="shot" type="file" accept="image/png,image/jpeg,image/webp" required>
+    <div class="row shotbtns" id="shotBtns" hidden>
+      <button class="btn ghost" type="button" id="pickPhoto">Choose from photos</button>
+      <button class="btn ghost" type="button" id="takePhoto">Take a photo</button>
+    </div>
+    <input id="pcam" type="file" accept="image/*" capture="environment" hidden>
+    <p class="hint" id="shotName"></p>
     <p class="hint">Show your like, comment or follow, with your account name visible. JPG, PNG or WebP.</p>
+    <label for="pn">A quick message for Leah (optional)</label>
+    <textarea id="pn" name="fan_note" maxlength="200" rows="2" placeholder="Say hi, or tell her what you liked!"></textarea>
     <button class="btn" type="submit">Send for review</button>
   </form>
 </details>
@@ -510,4 +519,4 @@ page_header('Fans', 'fans');
 </form>
 <?php endif; ?>
 <?php endif; ?>
-<?php page_footer('<script src="/assets/js/fans.js?v=1"></script><script>document.querySelectorAll("time.localtime").forEach(function(t){var d=new Date(t.getAttribute("datetime"));if(!isNaN(d)){t.textContent=d.toLocaleString([],{dateStyle:"medium",timeStyle:"short"});}});</script>'); ?>
+<?php page_footer('<script src="/assets/js/fans.js?v=2"></script><script>document.querySelectorAll("time.localtime").forEach(function(t){var d=new Date(t.getAttribute("datetime"));if(!isNaN(d)){t.textContent=d.toLocaleString([],{dateStyle:"medium",timeStyle:"short"});}});</script>'); ?>

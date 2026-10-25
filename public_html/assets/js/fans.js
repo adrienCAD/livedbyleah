@@ -31,6 +31,20 @@
   kind.addEventListener('change', sync);
   sync();
 
+  // Phones: two clear buttons (photo library / camera). Both fill the normal file field.
+  var btns = document.getElementById('shotBtns'), cam = document.getElementById('pcam'), nm = document.getElementById('shotName');
+  if (btns && cam && window.DataTransfer) {
+    btns.hidden = false; file.style.display = 'none';
+    document.getElementById('pickPhoto').addEventListener('click', function () { file.click(); });
+    document.getElementById('takePhoto').addEventListener('click', function () { cam.click(); });
+    cam.addEventListener('change', function () {
+      if (!cam.files || !cam.files[0]) { return; }
+      var dt = new DataTransfer(); dt.items.add(cam.files[0]); file.files = dt.files;
+      file.dispatchEvent(new Event('change'));
+    });
+    file.addEventListener('change', function () { if (nm) { nm.textContent = file.files[0] ? 'Selected: ' + file.files[0].name : ''; } });
+  }
+
   // Phone screenshots can be several MB and many hosts cap uploads at 2 MB, so shrink them first.
   file.addEventListener('change', function () {
     var f = file.files && file.files[0];

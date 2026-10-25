@@ -34,6 +34,7 @@ admin_header('Screenshots');
 <div class="proof">
   <p><strong><?= e($p['username']) ?></strong> says: <?= e(PROOF_PLATFORMS[$p['platform']] ?? $p['platform']) ?> &middot; <?= e(proof_action_label($p['platform'], $p['action'])) ?>
     <?= $p['title'] ? ' &middot; vlog: ' . e($p['title']) : '' ?> &middot; <strong><?= (int)$p['points'] ?> points</strong> <span class="hint">(<?= e(ago($p['created_at'])) ?>)</span></p>
+  <?php if ($p['fan_note']): ?><p>Message: <em><?= e($p['fan_note']) ?></em></p><?php endif; ?>
   <?php if ($p['file']): ?><a href="/admin/proof-image.php?id=<?= (int)$p['id'] ?>" target="_blank" rel="noopener"><img src="/admin/proof-image.php?id=<?= (int)$p['id'] ?>" alt="Screenshot from <?= e($p['username']) ?>" loading="lazy"></a><?php endif; ?>
   <div class="row">
     <form method="post"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$p['id'] ?>"><input type="hidden" name="action" value="approve"><button class="btn" type="submit">Approve</button></form>
@@ -46,10 +47,11 @@ admin_header('Screenshots');
 <?php if ($done): ?>
 <h2>Already reviewed</h2>
 <div class="table-wrap"><table>
-<thead><tr><th>Fan</th><th>What</th><th>Result</th><th>When</th></tr></thead><tbody>
+<thead><tr><th>Fan</th><th>What</th><th>Message</th><th>Result</th><th>When</th></tr></thead><tbody>
 <?php foreach ($done as $p): ?>
   <tr><td><?= e($p['username']) ?></td>
     <td><?= e(PROOF_PLATFORMS[$p['platform']] ?? $p['platform']) ?> &middot; <?= e(proof_action_label($p['platform'], $p['action'])) ?><?= $p['title'] ? ' &middot; ' . e($p['title']) : '' ?></td>
+    <td><?= e((string)$p['fan_note']) ?></td>
     <td><?= $p['status'] === 'approved' ? '+' . (int)$p['points'] : 'Rejected' . ($p['note'] ? ': ' . e($p['note']) : '') ?></td>
     <td><?= e(substr((string)$p['reviewed_at'], 0, 10)) ?></td></tr>
 <?php endforeach; ?>

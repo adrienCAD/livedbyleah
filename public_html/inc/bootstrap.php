@@ -171,6 +171,11 @@ function db(): PDO {
             reviewed_at TEXT
         )');
         $pdo->exec('CREATE INDEX IF NOT EXISTS proofs_fan ON proofs(fan_id, status)');
+        // Optional short message from the fan to Leah, sent with the screenshot.
+        $pcols = array_column($pdo->query('PRAGMA table_info(proofs)')->fetchAll(), 'name');
+        if (!in_array('fan_note', $pcols, true)) {
+            $pdo->exec('ALTER TABLE proofs ADD COLUMN fan_note TEXT');
+        }
         // Fan asks support to change a locked username. Shows as a pending task in the admin.
         $pdo->exec('CREATE TABLE IF NOT EXISTS support_requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
