@@ -29,8 +29,16 @@ page_header('Watch Vlogs', 'vlogs');
       <?php if ($v['tiktok_url']): ?><a href="<?= e($v['tiktok_url']) ?>" target="_blank" rel="noopener">TikTok</a><?php endif; ?>
       <?php if ($v['instagram_url']): ?><a href="<?= e($v['instagram_url']) ?>" target="_blank" rel="noopener">Instagram</a><?php endif; ?>
     </p>
+    <button type="button" class="drawer-btn" aria-expanded="false" data-vlog="<?= e($id) ?>">Why I made this + comments</button>
   </article>
 <?php endforeach; ?>
 </div>
+
+<template id="drawerTpl">
+  <section class="drawer" aria-live="polite">
+    <button type="button" class="drawer-close" aria-label="Close">&times;</button>
+    <div class="drawer-body"><p class="hint">Loading...</p></div>
+  </section>
+</template>
 
 <?php page_footer(); ?>

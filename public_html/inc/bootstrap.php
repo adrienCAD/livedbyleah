@@ -44,8 +44,40 @@ function db(): PDO {
             vlog_id INTEGER REFERENCES vlogs(id) ON DELETE SET NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            vlog_id INTEGER NOT NULL REFERENCES vlogs(id) ON DELETE CASCADE,
+            source TEXT NOT NULL,
+            author TEXT NOT NULL,
+            body TEXT NOT NULL,
+            likes INTEGER NOT NULL DEFAULT 0,
+            ext_id TEXT,
+            hidden INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (source, ext_id)
+        )');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS settings (k TEXT PRIMARY KEY, v TEXT NOT NULL)');
+        // Upgrade older databases: Leah's "why I made this" blurb per vlog.
+        $cols = array_column($pdo->query('PRAGMA table_info(vlogs)')->fetchAll(), 'name');
+        if (!in_array('why', $cols, true)) {
+            $pdo->exec('ALTER TABLE vlogs ADD COLUMN why TEXT');
+        }
+        if (!in_array('yt_fetched', $cols, true)) {
+            $pdo->exec('ALTER TABLE vlogs ADD COLUMN yt_fetched INTEGER NOT NULL DEFAULT 0');
+        }
     }
     return $pdo;
+}
+
+function setting(string $k, string $default = ''): string {
+    $s = db()->prepare('SELECT v FROM settings WHERE k = ?');
+    $s->execute([$k]);
+    $v = $s->fetchColumn();
+    return $v === false ? $default : (string)$v;
+}
+
+function set_setting(string $k, string $v): void {
+    db()->prepare('INSERT INTO settings (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v')->execute([$k, $v]);
 }
 
 function e(?string $s): string {

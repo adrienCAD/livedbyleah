@@ -22,4 +22,63 @@
       thumb.replaceWith(frame);
     });
   });
+
+  // Drawer under a vlog: Leah's blurb + top comments. Opens as a full-width row under the card's row.
+  var openDrawer = null, openBtn = null;
+  function closeDrawer() {
+    if (openDrawer) { openDrawer.remove(); }
+    if (openBtn) { openBtn.setAttribute('aria-expanded', 'false'); }
+    openDrawer = openBtn = null;
+  }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) { n.className = cls; }
+    if (text !== undefined) { n.textContent = text; }
+    return n;
+  }
+  function commentList(title, list, empty) {
+    var box = el('div', 'cgroup');
+    box.appendChild(el('h3', '', title));
+    if (!list.length) { box.appendChild(el('p', 'hint', empty)); return box; }
+    list.forEach(function (c) {
+      var q = el('blockquote', 'comment');
+      q.appendChild(el('p', '', c.body));
+      var by = c.author + (c.likes > 0 ? ' \u00b7 ' + c.likes + (c.likes === 1 ? ' like' : ' likes') : '');
+      q.appendChild(el('footer', '', by));
+      box.appendChild(q);
+    });
+    return box;
+  }
+  document.querySelectorAll('.drawer-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var wasOpen = openBtn === btn;
+      closeDrawer();
+      if (wasOpen) { return; }
+      var card = btn.closest('.vlog');
+      var tpl = document.getElementById('drawerTpl').content.firstElementChild.cloneNode(true);
+      // place after the last card that sits on the same row as this one
+      var anchor = card, top = card.offsetTop, n = card.nextElementSibling;
+      while (n && n.classList.contains('vlog') && n.offsetTop === top) { anchor = n; n = n.nextElementSibling; }
+      anchor.after(tpl);
+      openDrawer = tpl; openBtn = btn;
+      btn.setAttribute('aria-expanded', 'true');
+      tpl.querySelector('.drawer-close').addEventListener('click', closeDrawer);
+      tpl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      var body = tpl.querySelector('.drawer-body');
+      fetch('/api/comments.php?v=' + encodeURIComponent(btn.getAttribute('data-vlog')))
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (openDrawer !== tpl) { return; }
+          body.textContent = '';
+          body.appendChild(el('h3', '', 'My thought process'));
+          body.appendChild(el('p', 'why', d.why || 'Leah has not added a note for this vlog yet.'));
+          var cols = el('div', 'cols');
+          cols.appendChild(commentList('YouTube', d.youtube, 'No comments yet.'));
+          cols.appendChild(commentList('TikTok', d.tiktok, 'Leah has not picked any yet.'));
+          cols.appendChild(commentList('Instagram', d.instagram, 'Leah has not picked any yet.'));
+          body.appendChild(cols);
+        })
+        .catch(function () { body.textContent = 'Could not load this right now. Try again in a moment.'; });
+    });
+  });
 })();

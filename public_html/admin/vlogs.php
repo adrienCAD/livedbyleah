@@ -23,19 +23,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $yt = youtube_id((string)($_POST['youtube'] ?? ''));
         $tt = clean_url((string)($_POST['tiktok_url'] ?? ''));
         $ig = clean_url((string)($_POST['instagram_url'] ?? ''));
+        $why = mb_substr(trim((string)($_POST['why'] ?? '')), 0, 1200);
         if ($title === '' || mb_strlen($title) > 200) {
             flash('Add a title (up to 200 characters).');
         } elseif ($yt === null) {
             flash('That does not look like a YouTube link. Paste the full link.');
         } elseif ($id > 0) {
-            $pdo->prepare('UPDATE vlogs SET title=?, youtube_id=?, tiktok_url=?, instagram_url=? WHERE id=?')
-                ->execute([$title, $yt, $tt, $ig, $id]);
+            $pdo->prepare('UPDATE vlogs SET title=?, youtube_id=?, tiktok_url=?, instagram_url=?, why=? WHERE id=?')
+                ->execute([$title, $yt, $tt, $ig, $why, $id]);
             flash('Vlog saved.');
         } else {
             // New vlogs go to the top of the list.
             $pdo->exec('UPDATE vlogs SET sort_order = sort_order + 1');
-            $pdo->prepare('INSERT INTO vlogs (title, youtube_id, tiktok_url, instagram_url, sort_order) VALUES (?, ?, ?, ?, 0)')
-                ->execute([$title, $yt, $tt, $ig]);
+            $pdo->prepare('INSERT INTO vlogs (title, youtube_id, tiktok_url, instagram_url, why, sort_order) VALUES (?, ?, ?, ?, ?, 0)')
+                ->execute([$title, $yt, $tt, $ig, $why]);
             flash('Vlog added.');
         }
         redirect('/admin/vlogs.php');
@@ -67,6 +68,8 @@ admin_header('Vlogs');
   <input id="tiktok_url" name="tiktok_url" value="<?= e($editing['tiktok_url'] ?? '') ?>">
   <label for="instagram_url">Instagram link (optional)</label>
   <input id="instagram_url" name="instagram_url" value="<?= e($editing['instagram_url'] ?? '') ?>">
+  <label for="why">My thought process (why I made this video)</label>
+  <textarea id="why" name="why" rows="4" maxlength="1200"><?= e($editing['why'] ?? '') ?></textarea>
   <div class="row">
     <button class="btn" type="submit"><?= $editing ? 'Save changes' : 'Add vlog' ?></button>
     <?php if ($editing): ?><a class="btn ghost" href="/admin/vlogs.php">Cancel</a><?php endif; ?>
@@ -83,6 +86,7 @@ admin_header('Vlogs');
       <td><?= e($v['title']) ?></td>
       <td class="actions">
         <a href="/admin/vlogs.php?edit=<?= (int)$v['id'] ?>">Edit</a>
+        <a href="/admin/comments.php?vlog=<?= (int)$v['id'] ?>">Comments</a>
         <form method="post" onsubmit="return confirm('Delete this vlog?');">
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="delete">

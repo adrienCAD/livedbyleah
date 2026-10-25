@@ -1,6 +1,6 @@
 # Lived by Leah (livedbyleah.com)
 
-Vlog hub for Leah: Writing Process, Watch Vlogs, Fans (coming soon), and the Creative tab with the surf cleanup game.
+Vlog hub for Leah: Watch Vlogs (home), Fans (coming soon), Games (surf cleanup), and a private Writing Process tab for Leah/admins. Each vlog has a drawer with Leah's note and top comments (YouTube automatic, TikTok/Instagram picked by Leah).
 PHP 8 + SQLite (a single file, no database setup). Everything the site serves lives in `public_html/`.
 
 ## Deploy to Namecheap (first time)
@@ -10,6 +10,9 @@ PHP 8 + SQLite (a single file, no database setup). Everything the site serves li
 4. **Delete `setup.php` from the server.**
 5. Log in at https://livedbyleah.com/admin/login.php.
 6. After the free SSL is installed, edit `.htaccess` and remove the `#` on the 3 HTTPS redirect lines.
+
+## YouTube comments
+Admin > Settings: paste a YouTube Data API v3 key. Comments are cached for 6 hours per vlog; links are skipped; names show as first name + last initial; any comment can be hidden in Admin > Comments.
 
 ## Updating later
 Re-upload only the changed files. Never overwrite `data/site.sqlite` (it holds the posts and vlogs added through the admin).

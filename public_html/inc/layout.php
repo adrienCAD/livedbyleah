@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 function page_header(string $title, string $active, string $extraHead = ''): void {
-    $tabs = [
-        'writing' => ['/index.php', 'Writing Process'],
-        'vlogs'   => ['/vlogs.php', 'Watch Vlogs'],
-        'fans'    => ['/fans.php', 'Fans'],
-        'creative' => ['/creative.php', 'Creative'],
-    ];
+    $tabs = [];
+    if (is_admin()) {
+        $tabs['writing'] = ['/writing.php', 'Writing Process'];   // visible to Leah and admins only
+    }
+    $tabs['vlogs'] = ['/vlogs.php', 'Watch Vlogs'];
+    $tabs['fans']  = ['/fans.php', 'Fans'];
+    $tabs['games'] = ['/games.php', 'Games'];
     ?>
 <!doctype html>
 <html lang="en">
@@ -27,7 +28,7 @@ function page_header(string $title, string $active, string $extraHead = ''): voi
 <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">Menu</button>
 <div class="shell">
   <nav class="sidebar" id="sidebar" aria-label="Main">
-    <a class="brand" href="/index.php"><span class="brand-top">Lived by</span><span class="brand-name">Leah</span></a>
+    <a class="brand" href="/vlogs.php"><span class="brand-top">Lived by</span><span class="brand-name">Leah</span></a>
     <ul>
       <?php foreach ($tabs as $key => [$href, $label]): ?>
         <li><a href="<?= e($href) ?>"<?= $key === $active ? ' class="active" aria-current="page"' : '' ?>><?= e($label) ?></a></li>
@@ -72,7 +73,9 @@ function admin_header(string $title): void {
       <a href="/admin/index.php">Dashboard</a>
       <a href="/admin/vlogs.php">Vlogs</a>
       <a href="/admin/posts.php">Writing posts</a>
-      <a href="/index.php">View site</a>
+      <a href="/admin/comments.php">Comments</a>
+      <a href="/admin/settings.php">Settings</a>
+      <a href="/vlogs.php">View site</a>
       <a href="/admin/logout.php">Log out</a>
     </nav>
   </header>
