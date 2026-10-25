@@ -119,6 +119,13 @@ function db(): PDO {
             locked_until INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )');
+        $fcols = array_column($pdo->query('PRAGMA table_info(fans)')->fetchAll(), 'name');
+        if (!in_array('last_login', $fcols, true)) {
+            $pdo->exec('ALTER TABLE fans ADD COLUMN last_login TEXT');
+        }
+        if (!in_array('prev_login', $fcols, true)) {
+            $pdo->exec('ALTER TABLE fans ADD COLUMN prev_login TEXT');
+        }
         $pdo->exec('CREATE TABLE IF NOT EXISTS scores (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,

@@ -40,6 +40,12 @@ Read CLAUDE.md first for permanent architecture. This file records what happened
 - Needs checking on the live host: that PHP `mail()` delivers (sign up with a real email). If not, use Confirm in admin/fans.php and tell me.
 - Tested locally (scripted): sign-up, confirm, login, reset, username rules, scores, ranking, admin, migration of old scores.
 
+### Update E (`livedbyleah-update7.zip`, 2026-10-25, branch `update-e`)
+- Update D deployed by Adrien and confirmed working (sign-up works), merged to main.
+- Fans page, when logged in, now lists the fans with "last seen". The gear opens settings: fan since, this visit, previous login, change username, change password, log out, delete my account.
+- Hall of fame rows for fans show "last seen ...". New columns `fans.last_login`, `fans.prev_login` migrate by themselves.
+- Tested locally (scripted): migration from the Update D database, login times, list visibility (logged-in only), settings actions, delete, hall of fame.
+
 ## Open items
 - Paste the TikTok links per vlog via ⚙.
 - Replace my placeholder shells with Leah's own art. (The shark and UFO are also code-drawn.)
@@ -82,7 +88,7 @@ Keep building the site: a vlog hub (Watch Vlogs, Fans, Games, plus a private Wri
 
 3. CURRENT STATE
 Done and deployed (through livedbyleah-update5.zip = "Update C", merged to main; HTTPS redirect on since 2026-10-25): vlog drawer and comments, Instagram links, Shantell Sans, the full game with Leah's art, wave physics, UFO and heart, gun in hand, and shells. Fonts confirmed working after a hard refresh. Leah played for real, reached Level 5 and lost.
-In progress: Update D (fan club + level-based hall of fame) is built and tested locally on branch update-d as livedbyleah-update6.zip. Not yet deployed or merged to main; merge once Adrien confirms it works live.
+Update D (fan club + level-based hall of fame, livedbyleah-update6.zip) is deployed and confirmed working; merged to main. In progress: Update E (fans page shows the fans with last seen, settings gear, last login, delete account) is built and tested locally on branch update-e as livedbyleah-update7.zip. Not yet deployed.
 Open:
 - Paste the TikTok links per vlog via the gear icon.
 - Replace my placeholder shells (and the code-drawn shark and UFO) with Leah's art.

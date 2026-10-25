@@ -118,3 +118,35 @@ function player(): array {
     $g = guest_player();
     return ['pkey' => $g['key'], 'fan_id' => null, 'name' => $g['name'], 'fan' => false];
 }
+
+// "5 min ago", "3 h ago", "2 days ago", or "on Oct 3" for a UTC datetime string from the database.
+function ago(?string $utc): string {
+    if (!$utc) {
+        return 'never';
+    }
+    $t = strtotime($utc . ' UTC');
+    $d = time() - $t;
+    if ($d < 90) {
+        return 'just now';
+    }
+    if ($d < 3600) {
+        return intdiv($d, 60) . ' min ago';
+    }
+    if ($d < 86400) {
+        return intdiv($d, 3600) . ' h ago';
+    }
+    if ($d < 86400 * 14) {
+        $n = intdiv($d, 86400);
+        return $n . ($n === 1 ? ' day ago' : ' days ago');
+    }
+    return 'on ' . gmdate('M j', $t);
+}
+
+// A date and time that the browser shows in the visitor's own time zone (UTC text if JavaScript is off).
+function time_tag(?string $utc): string {
+    if (!$utc) {
+        return 'never';
+    }
+    $t = strtotime($utc . ' UTC');
+    return '<time class="localtime" datetime="' . gmdate('c', $t) . '">' . e(gmdate('M j, Y H:i', $t)) . ' UTC</time>';
+}

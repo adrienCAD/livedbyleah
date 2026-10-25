@@ -54,4 +54,4 @@ page_header('Games', 'games');
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/game.js?v=4"></script>'); ?>
+<?php page_footer('<script src="/assets/js/game.js?v=5"></script>'); ?>

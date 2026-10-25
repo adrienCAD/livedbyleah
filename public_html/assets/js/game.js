@@ -810,6 +810,7 @@
       li.appendChild(document.createTextNode(r.name + ' '));
       li.appendChild(lv);
       li.appendChild(tt);
+      if (r.seen) { var sn = document.createElement('span'); sn.className = 'seen'; sn.textContent = 'last seen ' + r.seen; li.appendChild(sn); }
       ol.appendChild(li);
     });
   }

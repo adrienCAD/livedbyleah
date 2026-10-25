@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 session_regenerate_id(true);
                 $_SESSION['fan_id'] = (int)$f['id'];
-                db()->prepare('UPDATE fans SET fails = 0 WHERE id = ?')->execute([$f['id']]);
+                db()->prepare('UPDATE fans SET fails = 0, prev_login = last_login, last_login = datetime("now") WHERE id = ?')->execute([$f['id']]);
                 redirect('/fans.php');
             }
         } else {
@@ -137,6 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('You are logged out.');
         redirect('/fans.php');
     } elseif ($action === 'username' && current_fan()) {
+        $view = 'settings';
         $me = current_fan();
         [$name, $err] = clean_username((string)($_POST['username'] ?? ''));
         if ($err === '' && username_taken($name, (int)$me['id'])) {
@@ -147,9 +148,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             db()->prepare('UPDATE fans SET username = ? WHERE id = ?')->execute([$name, $me['id']]);
             flash('Your username is now ' . $name . '.');
-            redirect('/fans.php');
+            redirect('/fans.php?v=settings');
         }
     } elseif ($action === 'password' && current_fan()) {
+        $view = 'settings';
         $me = current_fan();
         $pass = (string)($_POST['new_password'] ?? '');
         if (!password_verify((string)($_POST['current_password'] ?? ''), $me['password_hash'])) {
@@ -159,6 +161,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             db()->prepare('UPDATE fans SET password_hash = ? WHERE id = ?')->execute([password_hash($pass, PASSWORD_DEFAULT), $me['id']]);
             flash('Password updated.');
+            redirect('/fans.php?v=settings');
+        }
+    } elseif ($action === 'delete_account' && current_fan()) {
+        $view = 'settings';
+        $me = current_fan();
+        if (!password_verify((string)($_POST['current_password'] ?? ''), $me['password_hash'])) {
+            $errors[] = 'Your password is not right, so the account was not deleted.';
+        } else {
+            db()->prepare('DELETE FROM fans WHERE id = ?')->execute([$me['id']]);   // their hall of fame entry goes too
+            unset($_SESSION['fan_id']);
+            flash('Your account and hall of fame entry were deleted. Thanks for being a fan!');
             redirect('/fans.php');
         }
     }
@@ -179,14 +192,60 @@ $tip = 'Tip: join 3 or 4 random words with hyphens, add a number and a capital l
 
 page_header('Fans', 'fans');
 ?>
-<h1>Fans</h1>
+<h1>Fans<?php if ($fan && !$resetOk && $view !== 'settings'): ?> <a class="gear" href="/fans.php?v=settings" aria-label="Settings" title="Settings">&#9881;</a><?php endif; ?></h1>
 <?php if ($msg): ?><p class="notice"><?= e($msg) ?></p><?php endif; ?>
 <?php foreach ($errors as $er): ?><p class="error"><?= e($er) ?></p><?php endforeach; ?>
 
-<?php if ($fan && !$resetOk): /* ---------------- logged in ---------------- */
+<?php if ($fan && !$resetOk && $view === 'settings'): /* ---------------- settings (gear) ---------------- */ ?>
+<h2>Settings</h2>
+<p><a href="/fans.php">&larr; Back to the fans</a></p>
+<div class="soon">
+  <p><strong>Username:</strong> <?= e($fan['username']) ?></p>
+  <p><strong>Fan since:</strong> <?= time_tag($fan['created_at']) ?></p>
+  <p><strong>This visit started:</strong> <?= time_tag($fan['last_login']) ?></p>
+  <p><strong>Your login before that:</strong> <?= $fan['prev_login'] ? time_tag($fan['prev_login']) : 'this is your first visit' ?></p>
+</div>
+
+<h2>Your username</h2>
+<form method="post" action="/fans.php?v=settings" class="form">
+  <?= csrf_field() ?><input type="hidden" name="action" value="username">
+  <label for="username">Name shown in the hall of fame and on the fans page</label>
+  <input id="username" name="username" value="<?= e($fan['username']) ?>" minlength="3" maxlength="20" required>
+  <p class="hint">3 to 20 characters: letters, numbers, spaces, dots, dashes. Pick a nickname if you prefer not to show your name.</p>
+  <button class="btn" type="submit">Save username</button>
+</form>
+
+<h2>Change password</h2>
+<form method="post" action="/fans.php?v=settings" class="form">
+  <?= csrf_field() ?><input type="hidden" name="action" value="password">
+  <label for="cur">Current password</label>
+  <input id="cur" name="current_password" type="password" required autocomplete="current-password">
+  <label for="new">New password</label>
+  <input id="new" name="new_password" type="password" required minlength="10" maxlength="64" autocomplete="new-password">
+  <p class="hint"><?= $tip ?></p>
+  <button class="btn" type="submit">Change password</button>
+</form>
+
+<h2>Log out</h2>
+<form method="post" class="form">
+  <?= csrf_field() ?><input type="hidden" name="action" value="logout">
+  <button class="btn ghost" type="submit">Log out</button>
+</form>
+
+<h2>Delete my account</h2>
+<form method="post" action="/fans.php?v=settings" class="form" onsubmit="return confirm('Delete your account and your hall of fame entry? This cannot be undone.');">
+  <?= csrf_field() ?><input type="hidden" name="action" value="delete_account">
+  <p class="hint">This removes your account, your email and your hall of fame entry for good.</p>
+  <label for="delpw">Your password</label>
+  <input id="delpw" name="current_password" type="password" required autocomplete="current-password">
+  <button class="btn ghost" type="submit">Delete my account</button>
+</form>
+
+<?php elseif ($fan && !$resetOk): /* ---------------- logged in: the fans ---------------- */
     $best = db()->prepare('SELECT level, won, ms FROM scores WHERE fan_id = ?');
     $best->execute([$fan['id']]);
     $b = $best->fetch();
+    $fans = db()->query('SELECT id, username, COALESCE(last_login, created_at) AS seen FROM fans WHERE confirmed = 1 ORDER BY seen DESC, id DESC LIMIT 200')->fetchAll();
     ?>
 <p class="lede">Hey <strong><?= e($fan['username']) ?></strong>, you are part of the fan club. Everything you do on the site shows up under this name.</p>
 <div class="soon">
@@ -197,30 +256,13 @@ page_header('Fans', 'fans');
   <?php endif; ?>
 </div>
 
-<h2>Your username</h2>
-<form method="post" class="form">
-  <?= csrf_field() ?><input type="hidden" name="action" value="username">
-  <label for="username">Name shown in the hall of fame</label>
-  <input id="username" name="username" value="<?= e($fan['username']) ?>" minlength="3" maxlength="20" required>
-  <p class="hint">3 to 20 characters: letters, numbers, spaces, dots, dashes. Pick a nickname if you prefer not to show your name.</p>
-  <button class="btn" type="submit">Save username</button>
-</form>
-
-<h2>Change password</h2>
-<form method="post" class="form">
-  <?= csrf_field() ?><input type="hidden" name="action" value="password">
-  <label for="cur">Current password</label>
-  <input id="cur" name="current_password" type="password" required autocomplete="current-password">
-  <label for="new">New password</label>
-  <input id="new" name="new_password" type="password" required minlength="10" maxlength="64" autocomplete="new-password">
-  <p class="hint"><?= $tip ?></p>
-  <button class="btn" type="submit">Change password</button>
-</form>
-
-<form method="post" class="form">
-  <?= csrf_field() ?><input type="hidden" name="action" value="logout">
-  <button class="btn ghost" type="submit">Log out</button>
-</form>
+<h2>The fans (<?= count($fans) ?>)</h2>
+<ul class="fanlist">
+<?php foreach ($fans as $f): ?>
+  <li<?= (int)$f['id'] === (int)$fan['id'] ? ' class="me"' : '' ?>><span class="nm"><?= e($f['username']) ?><?= (int)$f['id'] === (int)$fan['id'] ? ' (you)' : '' ?></span>
+    <span class="seen">last seen <?= e(ago($f['seen'])) ?></span></li>
+<?php endforeach; ?>
+</ul>
 
 <?php elseif ($resetOk): /* ---------------- choose new password ---------------- */ ?>
 <h2>Choose a new password</h2>
@@ -284,4 +326,4 @@ page_header('Fans', 'fans');
 </form>
 <?php endif; ?>
 <?php endif; ?>
-<?php page_footer(); ?>
+<?php page_footer('<script>document.querySelectorAll("time.localtime").forEach(function(t){var d=new Date(t.getAttribute("datetime"));if(!isNaN(d)){t.textContent=d.toLocaleString([],{dateStyle:"medium",timeStyle:"short"});}});</script>'); ?>

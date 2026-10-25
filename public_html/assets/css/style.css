@@ -213,3 +213,12 @@ td.actions form { display: inline; }
 .fan-join { text-align: left; }
 .fan-join p { margin: 0 0 12px; }
 .hint a { color: var(--ink); font-weight: 700; }
+
+/* Fans page */
+.gear { font-size: .7em; text-decoration: none; color: var(--ink); border: 2px solid var(--ink); border-radius: 8px; padding: 0 8px; vertical-align: middle; background: var(--pollen); }
+.gear:hover { background: var(--mustard); }
+.fanlist { list-style: none; padding: 0; margin: 0 0 28px; max-width: 520px; display: grid; gap: 4px; }
+.fanlist li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 10px; border-bottom: 1px dashed var(--line); }
+.fanlist li.me { background: #FFF1B8; }
+.fanlist .seen, .hof li .seen { font-size: 12px; color: var(--muted); }
+.hof li .seen { display: block; clear: both; }

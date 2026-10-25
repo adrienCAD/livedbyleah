@@ -12,13 +12,13 @@ header('Cache-Control: no-store');
 const SCORE_ORDER = 's.won DESC, s.level DESC, s.ms ASC, s.id ASC';
 
 function top_scores(string $myKey): array {
-    $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.pkey, s.created_at
+    $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.pkey, s.created_at, f.last_login AS seen
         FROM scores s LEFT JOIN fans f ON f.id = s.fan_id ORDER BY ' . SCORE_ORDER . ' LIMIT 10')->fetchAll();
     $out = [];
     foreach ($rows as $r) {
         $out[] = [
             'name' => $r['name'], 'ms' => (int)$r['ms'], 'level' => (int)$r['level'], 'won' => (int)$r['won'] === 1,
-            'date' => substr((string)$r['created_at'], 0, 10), 'mine' => $r['pkey'] !== null && $r['pkey'] === $myKey,
+            'date' => substr((string)$r['created_at'], 0, 10), 'seen' => $r['seen'] ? ago($r['seen']) : null, 'mine' => $r['pkey'] !== null && $r['pkey'] === $myKey,
         ];
     }
     return $out;
