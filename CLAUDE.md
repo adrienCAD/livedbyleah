@@ -19,8 +19,8 @@ Adrien is new to hosting. Explain things simply, in short steps. Keep replies cr
 - Palette: Golden Pollen #FDC921, Mustard #FDD85D, Frosted Blue #99D6EA, Blue Grey #6798C0, Porcelain #FFFDF7, ink #1E3248.
 
 ## Site map
-- Tabs: Watch Vlogs (public home, `/vlogs.php`), Fans (`/fans.php`, sign-up and login), Games (`/games.php`: hub page with 3 art cards (images in `assets/img/games/`): Surf Cleanup `?g=surf`, Leah's Outrun `?g=road` (test name, constant `$ROAD_NAME` in games.php; may become Leah's Road Trip), Leah's Blocks `?g=blocks`).
-- Site version is `SITE_VERSION` in `inc/bootstrap.php` (shown under the sidebar menu). 1.2.1 = Road Trip/Outrun, 1.2.2 = Leah's Blocks, 1.2.3 = My account tab. Zips are named `livedbyleah-v<version>.zip` from now on.
+- Left menu, in order: Watch Vlogs (public home, `/vlogs.php`), Play Games (`/games.php`), Fan Fest (`/fans.php`, sign-up and login), then Writing Process (admins). "My account" sits at the bottom of the menu for signed-in fans only. Games page (`/games.php`: hub page with 3 art cards (images in `assets/img/games/`): Surf Cleanup `?g=surf`, Leah's Outrun `?g=road` (test name, constant `$ROAD_NAME` in games.php; may become Leah's Road Trip), Leah's Blocks `?g=blocks`).
+- Site version is `SITE_VERSION` in `inc/bootstrap.php` (shown under the sidebar menu). 1.2.1 = Road Trip/Outrun, 1.2.2 = Leah's Blocks, 1.2.3 = My account tab, 1.2.4 = menu order and names (Play Games, Fan Fest). Zips are named `livedbyleah-v<version>.zip` from now on.
 - Writing Process (`/writing.php`) is a private tab, shown only when `is_admin()` (Leah or admin).
 - `/index.php` redirects to `/vlogs.php`. `/creative.php` is a 301 to `/games.php`.
 - Admin (`/admin/`): Dashboard, Vlogs, Writing posts, Comments, Fans, Screenshots, Support, Hall of fame, Settings.

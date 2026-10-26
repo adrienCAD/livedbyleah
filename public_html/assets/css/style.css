@@ -265,3 +265,8 @@ ol.fanlist { counter-reset: none; }
 .blocks-game { max-width: 480px; }
 .blocks-touch { flex-wrap: wrap; }
 .blocks-touch button { flex: 1 1 18%; min-width: 0; font-size: 14px; }
+
+.sidebar ul.side-bottom { margin-top: auto; }
+.side-bottom + .admin-link { margin-top: 12px; }
+.site-version { margin-top: 0; }
+.sidebar > ul:not(.side-bottom) + .site-version { margin-top: auto; }

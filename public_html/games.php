@@ -8,9 +8,9 @@ $g = (string)($_GET['g'] ?? '');
 $g = in_array($g, ['surf', 'road', 'blocks'], true) ? $g : '';
 $ROAD_NAME = "Leah's Outrun";   // test name; the trademark-safe name is "Leah's Road Trip"
 
-page_header('Games', 'games');
+page_header('Play Games', 'games');
 if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
-<h1>Games</h1>
+<h1>Play Games</h1>
 <p class="lede">Pick a game. Every game has its own hall of fame, and the levels you pass earn fan points.</p>
 <div class="gamecards">
   <a class="gamecard" href="/games.php?g=surf">

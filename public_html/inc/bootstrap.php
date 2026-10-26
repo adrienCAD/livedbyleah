@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 const SITE_NAME = 'Lived by Leah';
-const SITE_VERSION = '1.2.3';   // 1.2.1 = Leah's Road Trip, 1.2.2 = Leah's Blocks, 1.2.3 = My account tab
+const SITE_VERSION = '1.2.4';   // 1.2.1 Road Trip, 1.2.2 Blocks, 1.2.3 My account tab, 1.2.4 menu order and names
 const DB_PATH = __DIR__ . '/../data/site.sqlite';
 
 if (session_status() === PHP_SESSION_NONE) {

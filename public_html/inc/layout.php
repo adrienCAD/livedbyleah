@@ -3,16 +3,15 @@
 declare(strict_types=1);
 
 function page_header(string $title, string $active, string $extraHead = ''): void {
-    $tabs = [];
+    $tabs = [
+        'vlogs' => ['/vlogs.php', 'Watch Vlogs'],
+        'games' => ['/games.php', 'Play Games'],
+        'fans'  => ['/fans.php', 'Fan Fest'],
+    ];
     if (is_admin()) {
         $tabs['writing'] = ['/writing.php', 'Writing Process'];   // visible to Leah and admins only
     }
-    $tabs['vlogs'] = ['/vlogs.php', 'Watch Vlogs'];
-    $tabs['fans']  = ['/fans.php', 'Fans'];
-    if (!empty($_SESSION['fan_id'])) {
-        $tabs['account'] = ['/fans.php?v=settings', 'My account'];   // signed-in fans only
-    }
-    $tabs['games'] = ['/games.php', 'Games'];
+    $account = !empty($_SESSION['fan_id']);   // "My account" sits at the bottom of the menu, signed-in fans only
     ?>
 <!doctype html>
 <html lang="en">
@@ -22,7 +21,7 @@ function page_header(string $title, string $active, string $extraHead = ''): voi
 <title><?= e($title) ?> | <?= e(SITE_NAME) ?></title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23FDC921'/%3E%3C/svg%3E">
 <link rel="preload" href="/assets/fonts/shantell-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/css/style.css?v=7">
+<link rel="stylesheet" href="/assets/css/style.css?v=10">
 <?= $extraHead ?>
 </head>
 <body>
@@ -35,6 +34,9 @@ function page_header(string $title, string $active, string $extraHead = ''): voi
         <li><a href="<?= e($href) ?>"<?= $key === $active ? ' class="active" aria-current="page"' : '' ?>><?= e($label) ?></a></li>
       <?php endforeach; ?>
     </ul>
+    <?php if ($account): ?>
+      <ul class="side-bottom"><li><a href="/fans.php?v=settings"<?= $active === 'account' ? ' class="active" aria-current="page"' : '' ?>>My account</a></li></ul>
+    <?php endif; ?>
     <?php if (is_admin()): ?>
       <a class="admin-link" href="/admin/index.php">Admin</a>
     <?php endif; ?>
@@ -64,7 +66,7 @@ function admin_header(string $title): void {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title><?= e($title) ?> | Admin</title>
-<link rel="stylesheet" href="/assets/css/style.css?v=7">
+<link rel="stylesheet" href="/assets/css/style.css?v=10">
 </head>
 <body class="admin">
 <div class="admin-wrap">

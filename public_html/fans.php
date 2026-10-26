@@ -290,9 +290,9 @@ if ($resetToken !== '' && preg_match('/^[a-f0-9]{40}$/', $resetToken)) {
 $tip = 'Tip: join 3 or 4 random words with hyphens, add a number and a capital letter, like <strong>Purple-Wave-Tacos-42</strong>. Long beats complicated. Do not reuse a password from another site.';
 
 $onAccount = $fan && !$resetOk && $view === 'settings';
-page_header($onAccount ? 'My account' : 'Fans', $onAccount ? 'account' : 'fans');
+page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fans');
 ?>
-<h1><?= $onAccount ? 'My account' : 'Fans' ?></h1>
+<h1><?= $onAccount ? 'My account' : 'Fan Fest' ?></h1>
 <?php $nFans = fan_count(); ?>
 <?php if (!$onAccount): ?><p class="fan-count"><strong id="fanCount"><?= $nFans ?></strong> <span id="fanLabel"><?= $nFans === 1 ? 'fan' : 'fans' ?></span> in the club</p><?php endif; ?>
 <?php if ($msg): ?><p class="notice"><?= e($msg) ?></p><?php endif; ?>
