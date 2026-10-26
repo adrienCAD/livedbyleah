@@ -13,16 +13,20 @@ header('Cache-Control: no-store');
 const GAMES = [
     'surf'  => ['minWin' => 45000, 'perLevel' => 9000,  'minLevelSaved' => 2],
     'road'  => ['minWin' => 120000, 'perLevel' => 20000, 'minLevelSaved' => 1],
+    // blocks: the score is stored in `ms`, the lines cleared in `level`, won = 0. Ranked by score.
+    'blocks' => ['score' => true],
 ];
 const SCORE_ORDER = 's.won DESC, s.level DESC, s.ms ASC, s.id ASC';
 
 function top_scores(string $myKey, string $game): array {
+    $order = $game === 'blocks' ? 's.ms DESC, s.id ASC' : SCORE_ORDER;
     $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.pkey, s.created_at, f.last_login AS seen
-        FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE s.game = ' . db()->quote($game) . ' ORDER BY ' . SCORE_ORDER . ' LIMIT 10')->fetchAll();
+        FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE s.game = ' . db()->quote($game) . ' ORDER BY ' . $order . ' LIMIT 10')->fetchAll();
     $out = [];
     foreach ($rows as $r) {
         $out[] = [
             'name' => $r['name'], 'ms' => (int)$r['ms'], 'level' => (int)$r['level'], 'won' => (int)$r['won'] === 1,
+            'score' => (int)$r['ms'], 'lines' => (int)$r['level'],
             'date' => substr((string)$r['created_at'], 0, 10), 'seen' => $r['seen'] ? ago($r['seen']) : null, 'mine' => $r['pkey'] !== null && $r['pkey'] === $myKey,
         ];
     }
@@ -59,6 +63,44 @@ if ($action === 'start') {
 
 if ($action === 'submit') {
     $run = $_SESSION[$runKey] ?? null;
+    if (!empty($cfg['score'])) {   // ---- Leah's Blocks: ranked by score
+        $score = (int)($in['score'] ?? 0);
+        $lines = (int)($in['lines'] ?? 0);
+        if (!$run || !hash_equals($run['nonce'], (string)($in['nonce'] ?? ''))) {
+            http_response_code(400);
+            echo json_encode(['error' => 'No active game. Play a game first.']);
+            exit;
+        }
+        unset($_SESSION[$runKey]);
+        $sec = max(1, time() - (int)$run['start']);
+        // A real game cannot score faster than a very good player can, or clear more than ~2 lines a second.
+        if ($score < 0 || $score > 600 * $sec + 500 || $lines < 0 || $lines > 2 * $sec + 4 || $sec > 4 * 3600) {
+            http_response_code(400);
+            echo json_encode(['error' => 'That score was not accepted.']);
+            exit;
+        }
+        if ($score < 100) {
+            echo json_encode(['saved' => false, 'top' => top_scores($myKey, $game), 'me' => $meOut], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $st = db()->prepare('SELECT id, ms, level FROM scores WHERE pkey = ?');
+        $st->execute([$myKey]);
+        $cur = $st->fetch();
+        $improved = false;
+        if (!$cur) {
+            db()->prepare('INSERT INTO scores (name, ms, pkey, fan_id, level, won, game) VALUES (?, ?, ?, ?, ?, 0, ?)')
+                ->execute([$me['name'], $score, $myKey, $me['fan_id'], $lines, $game]);
+            $improved = true; $best = ['score' => $score, 'lines' => $lines];
+        } elseif ($score > (int)$cur['ms']) {
+            db()->prepare('UPDATE scores SET name = ?, ms = ?, level = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?')
+                ->execute([$me['name'], $score, $lines, $cur['id']]);
+            $improved = true; $best = ['score' => $score, 'lines' => $lines];
+        } else {
+            $best = ['score' => (int)$cur['ms'], 'lines' => (int)$cur['level']];
+        }
+        echo json_encode(['saved' => true, 'improved' => $improved, 'best' => $best, 'top' => top_scores($myKey, $game), 'me' => $meOut], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     $ms = (int)($in['ms'] ?? 0);
     $level = (int)($in['level'] ?? 0);
     $won = !empty($in['won']);

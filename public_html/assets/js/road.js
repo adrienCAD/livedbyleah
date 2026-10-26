@@ -133,7 +133,16 @@
       R(x, '#1a4fd0', 26, 30, 12, 4); R(x, '#ffffff', 28, 31, 8, 1); R(x, '#ffffff', 28, 33, 8, 1);   // plate
     });
   }
-  var JEEP = [jeepSprite(-2), jeepSprite(0), jeepSprite(2)];
+  var JEEP = [jeepSprite(-2), jeepSprite(0), jeepSprite(2)];   // code-drawn fallback, replaced by Leah's art once it loads
+  (function () {
+    var back = new Image(), turn = new Image();
+    back.onload = function () { JEEP[1] = back; };
+    turn.onload = function () {   // Leah's back-left 3/4 view; mirrored for the other direction
+      JEEP[2] = turn;
+      JEEP[0] = mk(turn.width, turn.height, function (x) { x.translate(turn.width, 0); x.scale(-1, 1); x.drawImage(turn, 0, 0); });
+    };
+    back.src = '/assets/img/jeep-back.png?v=1'; turn.src = '/assets/img/jeep-turn.png?v=1';
+  })();
 
   // ------------------------------------------------------------------ levels
   function bgHouston(x) {
@@ -537,9 +546,9 @@
     // Leah's jeep
     var steer = keys.left ? 0 : keys.right ? 2 : 1;
     if (keys.left && !keys.right) { steer = 0; } else if (keys.right && !keys.left) { steer = 2; } else { steer = 1; }
-    var bob = speed > 1 ? (Math.floor(tick * 14) % 2) : 0, jx = Math.round(W / 2 - 32), jy = H - 42 + bob;
+    var jf = JEEP[steer], bob = speed > 1 ? (Math.floor(tick * 14) % 2) : 0, jx = Math.round(W / 2 - jf.width / 2), jy = H - jf.height - 2 + bob;
     if (crashT > 0) { jx += Math.round(Math.sin(tick * 60) * 3); }
-    if (mode !== 'over' && mode !== 'win') { g.drawImage(JEEP[steer], jx, jy); }
+    if (mode !== 'over' && mode !== 'win') { g.drawImage(jf, jx, jy); }
     if (boostT > 0) { g.fillStyle = 'rgba(255,255,255,.55)'; for (i = 0; i < 6; i++) { g.fillRect(Math.round((i * 53 + tick * 600) % W), 100 + (i * 17) % 70, 2, 12); } }
     if (flash > 0) { g.fillStyle = 'rgba(120,255,120,.18)'; g.fillRect(0, 0, W, H); }
 
@@ -616,7 +625,7 @@
     x.fillText('drove Leah\'s electric Jeep from Houston to Mexico, Costa Rica, Colorado and France', c.width / 2, 490);
     x.fillText('without running out of battery, in all 5 levels of Leah\'s Road Trip game.', c.width / 2, 522);
     x.font = '40px ' + pix; x.fillStyle = '#6798C0'; x.fillText('Total time: ' + fmt(ms), c.width / 2, 582);
-    x.imageSmoothingEnabled = false; x.drawImage(JEEP[1], c.width / 2 - 96, 596, 192, 120);
+    x.imageSmoothingEnabled = false; var jw = JEEP[1].width * 3, jh = JEEP[1].height * 3; x.drawImage(JEEP[1], Math.round(c.width / 2 - jw / 2), 600 + Math.round((120 - jh) / 2), jw, jh);
     x.fillStyle = '#1E3248'; x.font = '24px ' + pix;
     x.fillText(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), c.width / 2, 744);
     x.fillText('livedbyleah.com', c.width / 2, 776);

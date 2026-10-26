@@ -254,3 +254,14 @@ ol.fanlist { counter-reset: none; }
   .game-hud-road { max-width: 62%; flex-wrap: wrap; gap: 5px; }
   .game-hud-road span, .game-hud-road .hud-btn { padding: 3px 5px; }
 }
+
+/* Games hub */
+.gamecards { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); margin: 16px 0 28px; }
+.gamecard { display: flex; flex-direction: column; border: 4px solid var(--ink); border-radius: 10px; overflow: hidden; background: var(--porcelain); color: var(--ink); text-decoration: none; transition: transform .12s; }
+.gamecard:hover, .gamecard:focus-visible { transform: translateY(-3px); outline: 3px solid var(--pollen); }
+.gamecard img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; image-rendering: pixelated; border-bottom: 4px solid var(--ink); background: var(--frost, #99D6EA); }
+.gc-title { font-family: var(--font-pixel); font-size: 22px; font-weight: 800; padding: 10px 12px 2px; }
+.gc-text { padding: 0 12px 14px; font-size: 14px; color: var(--muted); }
+.blocks-game { max-width: 480px; }
+.blocks-touch { flex-wrap: wrap; }
+.blocks-touch button { flex: 1 1 18%; min-width: 0; font-size: 14px; }

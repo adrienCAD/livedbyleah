@@ -19,8 +19,8 @@ Adrien is new to hosting. Explain things simply, in short steps. Keep replies cr
 - Palette: Golden Pollen #FDC921, Mustard #FDD85D, Frosted Blue #99D6EA, Blue Grey #6798C0, Porcelain #FFFDF7, ink #1E3248.
 
 ## Site map
-- Tabs: Watch Vlogs (public home, `/vlogs.php`), Fans (`/fans.php`, sign-up and login), Games (`/games.php`: menu with Surf Cleanup `?g=surf`, Leah's Road Trip `?g=road`, Leah's Blocks coming).
-- Site version is `SITE_VERSION` in `inc/bootstrap.php` (shown under the sidebar menu). 1.2.1 = Road Trip, 1.2.2 = Leah's Blocks. Zips are named `livedbyleah-v<version>.zip` from now on.
+- Tabs: Watch Vlogs (public home, `/vlogs.php`), Fans (`/fans.php`, sign-up and login), Games (`/games.php`: hub page with 3 art cards (images in `assets/img/games/`): Surf Cleanup `?g=surf`, Leah's Outrun `?g=road` (test name, constant `$ROAD_NAME` in games.php; may become Leah's Road Trip), Leah's Blocks `?g=blocks`).
+- Site version is `SITE_VERSION` in `inc/bootstrap.php` (shown under the sidebar menu). 1.2.1 = Road Trip/Outrun, 1.2.2 = Leah's Blocks (done). Zips are named `livedbyleah-v<version>.zip` from now on.
 - Writing Process (`/writing.php`) is a private tab, shown only when `is_admin()` (Leah or admin).
 - `/index.php` redirects to `/vlogs.php`. `/creative.php` is a 301 to `/games.php`.
 - Admin (`/admin/`): Dashboard, Vlogs, Writing posts, Comments, Fans, Screenshots, Support, Hall of fame, Settings.
@@ -73,9 +73,18 @@ Pseudo-3D arcade driver (Outrun style, original art), canvas 320x180 shown at 2x
 - The timer is the battery: it counts down, 0 = game over (no lives). Each level has its own start time and two checkpoints (+cp seconds). Green batteries on the road give +2 s. Painted yellow arrows give a ~1.4 s boost. Leftover time gives a small carry bonus (25%) to the next level. Crashes (traffic, roadside objects) cost speed.
 - Controls: left/right steer, up = gas, down = brake (WASD works). Touch buttons on phones. Sound with mute (WebAudio beeps, no music yet).
 - Level config is in `LEVELS` in road.js (len, start, cp, traffic, curve, hill, seed, palette, sprites, background). Roads are generated from a seed, so every run of a level is the same road.
-- Art is all code-drawn pixel sprites (`SP`, `JEEP`, `CARS`, `bg*` functions), to be replaced with Leah's art. Title logo `assets/img/leah-logo.png` is Leah's LEAH logo.
+- The Jeep is Leah's art (`assets/img/jeep-back.png`, `jeep-turn.png`, cut out of her sheet). Other art is code-drawn pixel sprites (`SP`, `JEEP`, `CARS`, `bg*` functions), to be replaced with Leah's art. Title logo `assets/img/leah-logo.png` is Leah's LEAH logo.
 - Hall of fame: `api/scores.php` with `game=road`. Same rules as surf: rank = cleared all 5, then level reached, then total driving time. Server rejects wins under 120 s and non-wins under 20 s x (level-1). Level 1 is saved too. Fan points: same formula as surf (1 to 5 per level passed, 15 for a full clear), counted per game. Separate certificate for a full clear.
 - Test hook: `/games.php?g=road&debug=1` gives `window.__road` (keys, level(n), skipCard(), info(), god(), over(ms), won(ms), start()).
+
+## Game 3 (v1.2.2): "Leah's Blocks" (`games.php?g=blocks` + `assets/js/blocks.js`)
+Falling-blocks game with a hand-drawn crayon look (wobbly cells drawn once per colour, no libraries). Canvas 480x600, 10x20 board, 7 shapes from a shuffled bag, hold, 3 next pieces, ghost piece, wall kicks, level up every 10 lines, lock delay 0.5 s.
+- Controls: Left/Right arrows (or A/D), Up = rotate, Down = hard drop, C or Shift = hold, Space = soft drop. WASD works. Phones get 5 buttons (`#touch` data-key left/right/rotate/drop/hold).
+- Score: 100/300/500/800 x level for 1-4 lines, +1 per soft-drop row, +2 per hard-drop row.
+- Hall of fame: `api/scores.php` with `game=blocks`. Score is stored in `scores.ms`, lines in `scores.level`, won=0. Ranked by score, then earlier entry. POST `start` gives a nonce, POST `submit` {game, nonce, score, lines}; rejected if score > 600 x elapsed seconds + 500, lines > 2 x seconds + 4, or over 4 h. Scores under 100 are not saved. Best score per player is kept.
+- Fan points (cumulative tiers): 1,000 = 1, 2,500 = 3, 5,000 = 6, 8,000 = 10, 12,000 = 15 (`fan_ranking()` in `inc/fans.php`). Certificate ("OF BLOCK BUILDING", client-side canvas, Myfont) at 12,000.
+- In-game title is spelled LEAH'S BLOCKS. The logo image `assets/img/games/blocks.jpg` (Leah's art) has a doubled L; it is only used on the hub card and start screen.
+- Test hook: `/games.php?g=blocks&debug=1` gives `window.__blocks` (info(), start(), end(score, lines), setGrid(rows), setPiece(type)).
 
 ## Fans (built in Updates D, E and F)
 - Code: `fans.php` (all views), `inc/fans.php` (helpers), `admin/fans.php`. Fans live in the `fans` table, separate from admins. Session key `fan_id`.

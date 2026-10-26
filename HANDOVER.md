@@ -135,3 +135,6 @@ Open:
 3. Build the next update on a new branch (update-d), test locally with php -S and Playwright, delete data/site.sqlite, merge to main, push, build livedbyleah-update6.zip, and add a dated entry to HANDOVER.md.
 4. Before any new phase (privacy pages, new campaign types), ask me the rules in one batch of questions.
 ```
+
+
+v1.2.2 (2026-10-25): Leah's Blocks added (see CLAUDE.md, Game 3), Games hub page with 3 art cards, Leah's Jeep art in Outrun, game name Leah's Outrun for testing, per-game hall of fame (scores.game), blocks fan point tiers. Zip: livedbyleah-v1.2.2.zip. Branch update-g.
