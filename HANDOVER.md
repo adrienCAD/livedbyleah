@@ -138,3 +138,5 @@ Open:
 
 
 v1.2.2 (2026-10-25): Leah's Blocks added (see CLAUDE.md, Game 3), Games hub page with 3 art cards, Leah's Jeep art in Outrun, game name Leah's Outrun for testing, per-game hall of fame (scores.game), blocks fan point tiers. Zip: livedbyleah-v1.2.2.zip. Branch update-g.
+
+v1.2.3 (2026-10-25): gear moved to a 'My account' tab in the left menu for signed-in fans. Zip: livedbyleah-v1.2.3.zip.

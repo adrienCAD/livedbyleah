@@ -9,6 +9,9 @@ function page_header(string $title, string $active, string $extraHead = ''): voi
     }
     $tabs['vlogs'] = ['/vlogs.php', 'Watch Vlogs'];
     $tabs['fans']  = ['/fans.php', 'Fans'];
+    if (!empty($_SESSION['fan_id'])) {
+        $tabs['account'] = ['/fans.php?v=settings', 'My account'];   // signed-in fans only
+    }
     $tabs['games'] = ['/games.php', 'Games'];
     ?>
 <!doctype html>

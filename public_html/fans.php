@@ -289,17 +289,17 @@ if ($resetToken !== '' && preg_match('/^[a-f0-9]{40}$/', $resetToken)) {
 
 $tip = 'Tip: join 3 or 4 random words with hyphens, add a number and a capital letter, like <strong>Purple-Wave-Tacos-42</strong>. Long beats complicated. Do not reuse a password from another site.';
 
-page_header('Fans', 'fans');
+$onAccount = $fan && !$resetOk && $view === 'settings';
+page_header($onAccount ? 'My account' : 'Fans', $onAccount ? 'account' : 'fans');
 ?>
-<h1>Fans<?php if ($fan && !$resetOk && $view !== 'settings'): ?> <a class="gear" href="/fans.php?v=settings" aria-label="Settings" title="Settings">&#9881;</a><?php endif; ?></h1>
+<h1><?= $onAccount ? 'My account' : 'Fans' ?></h1>
 <?php $nFans = fan_count(); ?>
-<p class="fan-count"><strong id="fanCount"><?= $nFans ?></strong> <span id="fanLabel"><?= $nFans === 1 ? 'fan' : 'fans' ?></span> in the club</p>
+<?php if (!$onAccount): ?><p class="fan-count"><strong id="fanCount"><?= $nFans ?></strong> <span id="fanLabel"><?= $nFans === 1 ? 'fan' : 'fans' ?></span> in the club</p><?php endif; ?>
 <?php if ($msg): ?><p class="notice"><?= e($msg) ?></p><?php endif; ?>
 <?php foreach ($errors as $er): ?><p class="error"><?= e($er) ?></p><?php endforeach; ?>
 
 <?php if ($fan && !$resetOk && $view === 'settings'): /* ---------------- settings (gear) ---------------- */ ?>
-<h2>Settings</h2>
-<p><a href="/fans.php">&larr; Back to the fans</a></p>
+<p class="hint">Everything about your fan account is here. More is coming.</p>
 <div class="soon">
   <p><strong>Username:</strong> <?= e($fan['username']) ?></p>
   <p><strong>Fan since:</strong> <?= time_tag($fan['created_at']) ?></p>
