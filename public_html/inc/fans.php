@@ -115,6 +115,14 @@ function player(): array {
     if ($f) {
         return ['pkey' => 'f' . $f['id'], 'fan_id' => (int)$f['id'], 'name' => $f['username'], 'fan' => true];
     }
+    if (is_admin()) {   // Leah (or Adrien) playing while signed in as admin: scores go under the admin name
+        $u = db()->prepare('SELECT username FROM users WHERE id = ?');
+        $u->execute([(int)$_SESSION['user_id']]);
+        $nm = (string)$u->fetchColumn();
+        if ($nm !== '') {
+            return ['pkey' => 'u' . (int)$_SESSION['user_id'], 'fan_id' => null, 'name' => $nm, 'fan' => true];
+        }
+    }
     $g = guest_player();
     return ['pkey' => $g['key'], 'fan_id' => null, 'name' => $g['name'], 'fan' => false];
 }
@@ -199,4 +207,76 @@ function fan_full_name(array $f): string {
 
 function pending_support(): int {
     return (int)db()->query("SELECT COUNT(*) FROM support_requests WHERE status = 'pending'")->fetchColumn();
+}
+
+
+// ---------------------------------------------------------------- hall of fame summary (top 5 per game)
+const SCORE_ORDER = 's.won DESC, s.level DESC, s.ms ASC, s.id ASC';
+const HOF_GAMES = ['surf' => 'Surf Cleanup', 'road' => "Leah's Outrun", 'blocks' => "Leah's Blocks"];
+
+function hof_result(string $game, array $r): string {
+    if ($game === 'blocks') {
+        return number_format((int)$r['ms']) . ' pts &middot; ' . (int)$r['level'] . ' lines';
+    }
+    $sec = intdiv((int)$r['ms'], 1000);
+    return ((int)$r['won'] === 1 ? 'Cleared all 5' : 'Level ' . (int)$r['level']) . ' &middot; ' . sprintf('%d:%02d', intdiv($sec, 60), $sec % 60);
+}
+
+// Everything the summary needs: top 5 per game, Leah's record, the viewer's rank, and the overall champion.
+function hof_summary(): array {
+    $leah = setting('leah_name') ?: 'LeahPunkStar';
+    $me = current_fan() ? 'f' . current_fan()['id'] : (is_admin() ? 'u' . (int)$_SESSION['user_id'] : '');
+    $out = ['games' => [], 'champ' => null];
+    $pts = [];
+    foreach (HOF_GAMES as $g => $label) {
+        $order = $g === 'blocks' ? 's.ms DESC, s.id ASC' : SCORE_ORDER;
+        $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.pkey, f.last_login AS seen
+            FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE s.game = ' . db()->quote($g) . ' ORDER BY ' . $order)->fetchAll();
+        $rec = null; $mine = null;
+        foreach ($rows as $i => $r) {
+            $key = (string)$r['pkey'];
+            $pk = explode(':', $key)[0];   // same player across games
+            $pts[$pk]['name'] = $r['name'];
+            $pts[$pk]['pts'] = ($pts[$pk]['pts'] ?? 0) + max(0, 5 - $i);   // 5 points for 1st ... 1 for 5th
+            if ($rec === null && $key !== '' && $key[0] === 'u' && $r['name'] === $leah) { $rec = $r + ['rank' => $i + 1]; }
+            if ($me !== '' && $key === ($g === 'surf' ? $me : $me . ':' . $g) ) { $mine = $i + 1; }
+        }
+        $out['games'][$g] = ['label' => $label, 'top' => array_slice($rows, 0, 5), 'leah' => $rec, 'mine' => $mine, 'total' => count($rows), 'me' => $me !== ''];
+    }
+    uasort($pts, fn($a, $b) => $b['pts'] <=> $a['pts']);
+    foreach ($pts as $p) { $out['champ'] = $p; break; }
+    return $out;
+}
+
+function hof_render(array $h): void {
+    $leah = setting('leah_name') ?: 'LeahPunkStar';
+    $medal = ['&#129351;', '&#129352;', '&#129353;'];
+    echo '<div class="hofsum">';
+    if ($h['champ'] && $h['champ']['pts'] > 0) {
+        echo '<p class="champ">&#127942; <strong>Overall champion: ' . e($h['champ']['name']) . '</strong> <span class="seen">' . (int)$h['champ']['pts'] . ' hall of fame points (5 for 1st, down to 1 for 5th, in each game)</span></p>';
+    }
+    echo '<div class="hofgrid">';
+    foreach ($h['games'] as $g => $d) {
+        echo '<section class="hofbox"><h3>' . e($d['label']) . '</h3>';
+        if (!$d['top']) {
+            echo '<p class="hint">No scores yet. Be the first!</p>';
+        } else {
+            echo '<ol class="fanlist hofl">';
+            foreach ($d['top'] as $i => $r) {
+                $isLeah = (string)$r['pkey'] !== '' && ((string)$r['pkey'])[0] === 'u' && $r['name'] === $leah;
+                echo '<li><span class="nm">' . ($medal[$i] ?? '#' . ($i + 1)) . ' ' . e($r['name']) . ($isLeah ? ' &#11088;' : '') . '</span><span class="seen">' . hof_result($g, $r) . '</span></li>';
+            }
+            echo '</ol>';
+        }
+        if ($d['leah'] && $d['leah']['rank'] > 5) {
+            echo '<p class="hint">&#11088; Leah\'s record: ' . hof_result($g, $d['leah']) . ' (#' . (int)$d['leah']['rank'] . ')</p>';
+        } elseif (!$d['leah']) {
+            echo '<p class="hint">&#11088; Leah\'s record to beat: coming soon</p>';
+        }
+        if ($d['me']) {
+            echo '<p class="hint">' . ($d['mine'] ? 'You are #' . (int)$d['mine'] . ' of ' . (int)$d['total'] . ' players.' : 'You have not played yet.') . '</p>';
+        }
+        echo '<p><a class="btn ghost" href="/games.php?g=' . e($g) . '">Play ' . e($d['label']) . '</a></p></section>';
+    }
+    echo '</div></div>';
 }

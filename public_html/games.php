@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require __DIR__ . '/inc/bootstrap.php';
 require __DIR__ . '/inc/layout.php';
+require __DIR__ . '/inc/fans.php';
 
 $g = (string)($_GET['g'] ?? '');
 $g = in_array($g, ['surf', 'road', 'blocks'], true) ? $g : '';
@@ -29,6 +30,8 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
     <span class="gc-text">Stack hand-drawn blocks, clear lines and chase the top score.</span>
   </a>
 </div>
+<h2>Hall of fame</h2>
+<?php hof_render(hof_summary()); ?>
 <?php page_footer(); return; endif; ?>
 <nav class="gametabs" aria-label="Choose a game">
   <a href="/games.php">&larr; All games</a>

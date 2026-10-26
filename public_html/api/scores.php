@@ -16,7 +16,6 @@ const GAMES = [
     // blocks: the score is stored in `ms`, the lines cleared in `level`, won = 0. Ranked by score.
     'blocks' => ['score' => true],
 ];
-const SCORE_ORDER = 's.won DESC, s.level DESC, s.ms ASC, s.id ASC';
 
 function top_scores(string $myKey, string $game): array {
     $order = $game === 'blocks' ? 's.ms DESC, s.id ASC' : SCORE_ORDER;

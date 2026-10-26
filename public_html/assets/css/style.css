@@ -270,3 +270,10 @@ ol.fanlist { counter-reset: none; }
 .side-bottom + .admin-link { margin-top: 12px; }
 .site-version { margin-top: 0; }
 .sidebar > ul:not(.side-bottom) + .site-version { margin-top: auto; }
+
+.hofsum .champ { background: #FFF1B8; border: 2px solid var(--pollen); border-radius: 12px; padding: 10px 14px; margin: 0 0 16px; }
+.hofgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; align-items: start; }
+.hofbox { background: #fff; border: 2px solid var(--ink); border-radius: 14px; padding: 12px 14px; }
+.hofbox h3 { margin: 0 0 8px; }
+.hofbox .fanlist { margin-bottom: 8px; max-width: none; }
+.hofbox .fanlist li { flex-wrap: wrap; }

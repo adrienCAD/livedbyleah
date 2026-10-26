@@ -20,7 +20,7 @@ Adrien is new to hosting. Explain things simply, in short steps. Keep replies cr
 
 ## Site map
 - Left menu, in order: Watch Vlogs (public home, `/vlogs.php`), Play Games (`/games.php`), Fan Fest (`/fans.php`, sign-up and login), then Writing Process (admins). "My account" sits at the bottom of the menu for signed-in fans only. Games page (`/games.php`: hub page with 3 art cards (images in `assets/img/games/`): Surf Cleanup `?g=surf`, Leah's Outrun `?g=road` (test name, constant `$ROAD_NAME` in games.php; may become Leah's Road Trip), Leah's Blocks `?g=blocks`).
-- Site version is `SITE_VERSION` in `inc/bootstrap.php` (shown under the sidebar menu). 1.2.1 = Road Trip/Outrun, 1.2.2 = Leah's Blocks, 1.2.3 = My account tab, 1.2.4 = menu order and names (Play Games, Fan Fest), 1.2.5 = fan ranking moved to the top of Fan Fest (right under the fan's own rank card). Zips are named `livedbyleah-v<version>.zip` from now on.
+- Site version is `SITE_VERSION` in `inc/bootstrap.php` (shown under the sidebar menu). 1.2.1 = Road Trip/Outrun, 1.2.2 = Leah's Blocks, 1.2.3 = My account tab, 1.2.4 = menu order and names (Play Games, Fan Fest), 1.2.5 = fan ranking moved to the top of Fan Fest (right under the fan's own rank card), 1.2.6 = hall of fame summary. Zips are named `livedbyleah-v<version>.zip` from now on.
 - Writing Process (`/writing.php`) is a private tab, shown only when `is_admin()` (Leah or admin).
 - `/index.php` redirects to `/vlogs.php`. `/creative.php` is a 301 to `/games.php`.
 - Admin (`/admin/`): Dashboard, Vlogs, Writing posts, Comments, Fans, Screenshots, Support, Hall of fame, Settings.
@@ -85,6 +85,10 @@ Falling-blocks game with a hand-drawn crayon look (wobbly cells drawn once per c
 - Fan points (cumulative tiers): 1,000 = 1, 2,500 = 3, 5,000 = 6, 8,000 = 10, 12,000 = 15 (`fan_ranking()` in `inc/fans.php`). Certificate ("OF BLOCK BUILDING", client-side canvas, Myfont) at 12,000.
 - In-game title is spelled LEAH'S BLOCKS. The logo image `assets/img/games/blocks.jpg` (Leah's art) has a doubled L; it is only used on the hub card and start screen.
 - Test hook: `/games.php?g=blocks&debug=1` gives `window.__blocks` (info(), start(), end(score, lines), setGrid(rows), setPiece(type)).
+
+## Hall of fame summary (v1.2.6)
+- `hof_summary()` and `hof_render()` in `inc/fans.php`; shown to everyone on Fan Fest (`fans.php`, visitors and fans) and on the Play Games hub. Top 5 per game with medals for #1 to #3, result, the viewer's own rank per game, a Play button, and an overall champion (5 points for 1st down to 1 for 5th in each game, summed per player).
+- Admins can play: `player()` in `inc/fans.php` saves an admin's scores under the admin username (pkey `u<user id>`). Leah plays as admin "LeahPunkStar"; her entries get a star, and "Leah's record" shows under a game when she is outside its top 5 (name from setting `leah_name`, default LeahPunkStar).
 
 ## Fans (built in Updates D, E and F)
 - Code: `fans.php` (all views), `inc/fans.php` (helpers), `admin/fans.php`. Fans live in the `fans` table, separate from admins. Session key `fan_id`.

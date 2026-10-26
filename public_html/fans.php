@@ -399,6 +399,9 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
 <?php endforeach; ?>
 </ol>
 
+<h2>Hall of fame</h2>
+<?php hof_render(hof_summary()); ?>
+
 <h2>How to climb the ranking</h2>
 <div class="soon">
   <p>Everyone starts in sign-up order (first to join is #1). After that, points decide. If points are equal, the earlier sign-up stays ahead.</p>
@@ -504,6 +507,8 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
   <p><strong>Hey, you are not a fan yet!</strong> Join up and share the incredible fun of living with Leah.</p>
   <p><a class="btn" href="/fans.php?v=join">Join the fan club</a></p>
 </div>
+<h2>Hall of fame</h2>
+<?php hof_render(hof_summary()); ?>
 <h2>Already a fan? Log in</h2>
 <form method="post" class="form">
   <?= csrf_field() ?><input type="hidden" name="action" value="login">
