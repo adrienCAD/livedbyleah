@@ -64,3 +64,14 @@ http://127.0.0.1:8099/fans.php?confirm=aeac0031d77600c5f5cd2a8a968cc1d005c01149
 If you did not sign up, ignore this email.
 
 -----
+TO: mia@example.com
+SUBJECT: Confirm your email for Lived by Leah
+Hi Mia,
+
+Welcome to the Lived by Leah fan club!
+Confirm your email here:
+http://127.0.0.1:8099/fans.php?confirm=2a7520f5bd18ac30014895eecf972d2b6b5d1cc7
+
+If you did not sign up, ignore this email.
+
+-----

@@ -142,3 +142,5 @@ v1.2.2 (2026-10-25): Leah's Blocks added (see CLAUDE.md, Game 3), Games hub page
 v1.2.3 (2026-10-25): gear moved to a 'My account' tab in the left menu for signed-in fans. Zip: livedbyleah-v1.2.3.zip.
 
 v1.2.4 (2026-10-25): menu order Watch Vlogs, Play Games, Fan Fest; My account at the bottom. Zip: livedbyleah-v1.2.4.zip.
+
+v1.2.5 (2026-10-25): fan ranking list moved to the top of Fan Fest for signed-in fans. Zip: livedbyleah-v1.2.5.zip.

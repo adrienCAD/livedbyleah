@@ -391,6 +391,14 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
 </div>
 <?php endif; ?>
 
+<h2>The fan ranking</h2>
+<ol class="fanlist ranking">
+<?php foreach ($ranking as $f): $me = $f['id'] === (int)$fan['id']; ?>
+  <li<?= $me ? ' class="me"' : '' ?>><span class="nm">#<?= (int)$f['rank'] ?> <?= e($f['username']) ?><?= $me ? ' (you)' : '' ?></span>
+    <span class="seen"><?= (int)$f['pts'] ?> points &middot; last seen <?= e(ago($f['seen'])) ?></span></li>
+<?php endforeach; ?>
+</ol>
+
 <h2>How to climb the ranking</h2>
 <div class="soon">
   <p>Everyone starts in sign-up order (first to join is #1). After that, points decide. If points are equal, the earlier sign-up stays ahead.</p>
@@ -450,13 +458,6 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
 </ul>
 <?php endif; ?>
 
-<h2>The fan ranking</h2>
-<ol class="fanlist ranking">
-<?php foreach ($ranking as $f): $me = $f['id'] === (int)$fan['id']; ?>
-  <li<?= $me ? ' class="me"' : '' ?>><span class="nm">#<?= (int)$f['rank'] ?> <?= e($f['username']) ?><?= $me ? ' (you)' : '' ?></span>
-    <span class="seen"><?= (int)$f['pts'] ?> points &middot; last seen <?= e(ago($f['seen'])) ?></span></li>
-<?php endforeach; ?>
-</ol>
 
 <?php elseif ($resetOk): /* ---------------- choose new password ---------------- */ ?>
 <h2>Choose a new password</h2>
