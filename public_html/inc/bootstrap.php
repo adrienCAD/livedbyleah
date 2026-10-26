@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 const SITE_NAME = 'Lived by Leah';
-const SITE_VERSION = '1.2.6';   // 1.2.1 Road Trip, 1.2.2 Blocks, 1.2.3 My account, 1.2.4 menu names, 1.2.5 ranking first, 1.2.6 hall of fame summary
+const SITE_VERSION = '1.2.7';   // 1.2.1 Road Trip, 1.2.2 Blocks, 1.2.3 My account, 1.2.4 menu names, 1.2.5 ranking first, 1.2.6 hall of fame summary, 1.2.7 demo fans
 const DB_PATH = __DIR__ . '/../data/site.sqlite';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -134,6 +134,10 @@ function db(): PDO {
         // 1 once the fan has chosen their own username. After that only a support request can change it.
         if (!in_array('username_locked', $fcols, true)) {
             $pdo->exec('ALTER TABLE fans ADD COLUMN username_locked INTEGER NOT NULL DEFAULT 0');
+        }
+        // 1 for demo fans (day-one filler that Leah can remove in admin Settings).
+        if (!in_array('demo', $fcols, true)) {
+            $pdo->exec('ALTER TABLE fans ADD COLUMN demo INTEGER NOT NULL DEFAULT 0');
         }
         $pdo->exec('CREATE TABLE IF NOT EXISTS scores (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

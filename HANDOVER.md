@@ -146,3 +146,5 @@ v1.2.4 (2026-10-25): menu order Watch Vlogs, Play Games, Fan Fest; My account at
 v1.2.5 (2026-10-25): fan ranking list moved to the top of Fan Fest for signed-in fans. Zip: livedbyleah-v1.2.5.zip.
 
 v1.2.6 (2026-10-25): hall of fame summary (top 5 per game, medals, champion) on Fan Fest and Play Games; admins can save scores (Leah as LeahPunkStar). Zip: livedbyleah-v1.2.6.zip.
+
+v1.2.7 (2026-10-25): demo fans (add/remove buttons in admin Settings). Zip: livedbyleah-v1.2.7.zip.

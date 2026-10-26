@@ -47,7 +47,7 @@ admin_header('Fans');
 <thead><tr><th>Rank</th><th>Username</th><th>Points</th><th>Email</th><th>Name</th><th>Email confirmed</th><th>Joined</th><th></th></tr></thead>
 <tbody>
 <?php foreach ($rows as $r): ?>
-  <tr><td><?= isset($rank[(int)$r['id']]) ? '#' . (int)$rank[(int)$r['id']]['rank'] : '-' ?></td><td><?= e($r['username']) ?><?= $r['username_locked'] ? ' <span title="Username locked">&#128274;</span>' : '' ?></td><td><?= isset($rank[(int)$r['id']]) ? (int)$rank[(int)$r['id']]['pts'] : '-' ?></td><td><?= e($r['email']) ?></td>
+  <tr><td><?= isset($rank[(int)$r['id']]) ? '#' . (int)$rank[(int)$r['id']]['rank'] : '-' ?></td><td><?= e($r['username']) ?><?= !empty($r['demo']) ? ' <em>(demo)</em>' : '' ?><?= $r['username_locked'] ? ' <span title="Username locked">&#128274;</span>' : '' ?></td><td><?= isset($rank[(int)$r['id']]) ? (int)$rank[(int)$r['id']]['pts'] : '-' ?></td><td><?= e($r['email']) ?></td>
     <td><?= e(fan_full_name($r)) ?></td>
     <td><?= $r['confirmed'] ? 'Yes' : 'No' ?></td><td><?= e(substr($r['created_at'], 0, 10)) ?></td>
     <td class="actions">

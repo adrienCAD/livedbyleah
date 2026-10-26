@@ -280,3 +280,56 @@ function hof_render(array $h): void {
     }
     echo '</div></div>';
 }
+
+
+// ---------------------------------------------------------------- demo data (day-one filler, removable)
+function demo_count(): int {
+    return (int)db()->query('SELECT COUNT(*) FROM fans WHERE demo = 1')->fetchColumn();
+}
+
+// Adds fake fans with scores in the three games. They cannot log in (random password, fake email) and are flagged demo = 1.
+function demo_add(): int {
+    if (demo_count() > 0) { return 0; }
+    // first, last, username, days since joining, days since last seen, surf (level, won, sec), road (level, won, sec), blocks (score, lines)
+    $people = [
+        ['Mia', 'Kowalski', 'SunnyMia', 12, 0, [5, 1, 612], [3, 0, 190], [9400, 41]],
+        ['Noah', 'Brooks', 'NoahWaves', 11, 0, [5, 1, 705], [5, 1, 640], [4200, 22]],
+        ['Sofia', 'Reyes', 'SofiaStar', 11, 1, [4, 0, 480], [2, 0, 120], [13100, 58]],
+        ['Lucas', 'Meyer', 'LucasLegend', 10, 0, [3, 0, 330], [4, 0, 410], [2600, 15]],
+        ['Emma', 'Dubois', 'EmmaPixel', 9, 2, [2, 0, 150], [1, 0, 60], [6100, 30]],
+        ['Liam', 'Santos', 'TacoLiam', 9, 3, [5, 0, 560], [3, 0, 230], [1800, 11]],
+        ['Ava', 'Nguyen', 'AvaOnFire', 8, 1, [4, 0, 520], [5, 0, 470], [8300, 37]],
+        ['Ethan', 'Park', 'EthanTheBest', 7, 4, [2, 0, 170], [2, 0, 130], [1100, 8]],
+        ['Zoe', 'Fischer', 'ZoeZoom', 6, 0, [3, 0, 290], [4, 0, 360], [3500, 19]],
+        ['Mateo', 'Lopez', 'MateoMagic', 5, 2, [2, 0, 140], [1, 0, 70], [700, 6]],
+        ['Lily', 'Anderson', 'LilyBug', 4, 5, [0, 0, 0], [3, 0, 200], [0, 0]],
+        ['Oscar', 'Rossi', 'OscarOcean', 3, 1, [3, 0, 310], [0, 0, 0], [2100, 13]],
+    ];
+    $pdo = db();
+    $pdo->beginTransaction();
+    $n = 0;
+    foreach ($people as $i => [$first, $last, $user, $joined, $seen, $surf, $road, $blocks]) {
+        $created = gmdate('Y-m-d H:i:s', time() - $joined * 86400 - 3600 * ($i + 1));
+        $login = gmdate('Y-m-d H:i:s', time() - $seen * 86400 - 600 * ($i + 1));
+        $pdo->prepare('INSERT INTO fans (email, password_hash, first_name, last_initial, last_name, username, username_locked, confirmed, created_at, last_login, prev_login, demo)
+            VALUES (?, ?, ?, ?, ?, ?, 1, 1, ?, ?, ?, 1)')
+            ->execute(['demo' . ($i + 1) . '@demo.invalid', password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT), $first, substr($last, 0, 1), $last, $user, $created, $login, $created]);
+        $fid = (int)$pdo->lastInsertId();
+        $ins = $pdo->prepare('INSERT INTO scores (name, ms, level, won, pkey, fan_id, game, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        if ($surf[0] > 0) { $ins->execute([$user, $surf[2] * 1000, $surf[0], $surf[1], 'f' . $fid, $fid, 'surf', $login]); }
+        if ($road[0] > 0) { $ins->execute([$user, $road[2] * 1000, $road[0], $road[1], 'f' . $fid . ':road', $fid, 'road', $login]); }
+        if ($blocks[0] > 0) { $ins->execute([$user, $blocks[0], $blocks[1], 0, 'f' . $fid . ':blocks', $fid, 'blocks', $login]); }
+        $n++;
+    }
+    $pdo->commit();
+    return $n;
+}
+
+function demo_remove(): int {
+    $n = demo_count();
+    db()->exec('DELETE FROM scores WHERE fan_id IN (SELECT id FROM fans WHERE demo = 1)');
+    db()->exec('DELETE FROM proofs WHERE fan_id IN (SELECT id FROM fans WHERE demo = 1)');
+    db()->exec('DELETE FROM support_requests WHERE fan_id IN (SELECT id FROM fans WHERE demo = 1)');
+    db()->exec('DELETE FROM fans WHERE demo = 1');
+    return $n;
+}

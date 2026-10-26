@@ -3,10 +3,20 @@
 declare(strict_types=1);
 require __DIR__ . '/../inc/bootstrap.php';
 require __DIR__ . '/../inc/layout.php';
+require __DIR__ . '/../inc/fans.php';
 require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
+    if (($_POST['action'] ?? '') === 'demo_add') {
+        $n = demo_add();
+        flash($n ? 'Added ' . $n . ' demo fans with scores.' : 'Demo fans are already there.');
+        redirect('/admin/settings.php');
+    }
+    if (($_POST['action'] ?? '') === 'demo_remove') {
+        flash('Removed ' . demo_remove() . ' demo fans and their scores.');
+        redirect('/admin/settings.php');
+    }
     $key = trim((string)($_POST['youtube_api_key'] ?? ''));
     if ($key !== '' && !preg_match('/^[A-Za-z0-9_-]{20,80}$/', $key)) {
         flash('That does not look like an API key. Copy it again from Google.');
@@ -36,5 +46,13 @@ admin_header('Settings');
 <?php if ($has): ?>
 <form method="post" class="form"><?= csrf_field() ?><input type="hidden" name="action" value="clear">
   <button class="link-danger" type="submit">Remove saved key</button></form>
+<?php endif; ?>
+<h2>Demo fans (for the launch)</h2>
+<p>Fake fans with fake scores so the site does not look empty on day one. They cannot log in. Status: <strong><?= demo_count() ?> demo fans</strong>. Remove them whenever real fans have joined.</p>
+<form method="post" class="form"><?= csrf_field() ?><input type="hidden" name="action" value="demo_add">
+  <button class="btn" type="submit"<?= demo_count() ? ' disabled' : '' ?>>Add demo fans</button></form>
+<?php if (demo_count()): ?>
+<form method="post" class="form" onsubmit="return confirm('Remove all demo fans and their scores? Real fans are not touched.');"><?= csrf_field() ?><input type="hidden" name="action" value="demo_remove">
+  <button class="link-danger" type="submit">Remove all demo fans</button></form>
 <?php endif; ?>
 <?php admin_footer(); ?>
