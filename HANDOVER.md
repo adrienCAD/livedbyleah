@@ -150,3 +150,4 @@ v1.2.6 (2026-10-25): hall of fame summary (top 5 per game, medals, champion) on 
 v1.2.7 (2026-10-25): demo fans (add/remove buttons in admin Settings). Zip: livedbyleah-v1.2.7.zip.
 
 v1.2.8 (2026-10-27): Leah's Outrun rebuilt (Costa Rica > Mexico > USA > Canada > ship > France, scenery zones and transitions, cryptids and fun signs, better hills, no green lines on the road, 5 Jeep frames, km hall of fame, stats certificate). Blocks bottom row fixed. Zip: livedbyleah-v1.2.8.zip.
+v1.2.9 (2026-10-27): Outrun art pass: Leah's new Jeep views (rear, 1/4, 3/4 by how long the key is held; profile on the cargo ship; front-left view with a thumbs-up on the certificate), finer cars/ship/cryptids, two cryptids per country picked at random and slower (Big Blue Jeans Frog, Dama Blanca, Jackalope, Ogopogo, Loup-Garou, Witch added). Zip: livedbyleah-v1.2.9.zip.

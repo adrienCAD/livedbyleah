@@ -89,7 +89,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/road.js?v=4"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/road.js?v=5"></script>'); return; ?>
 <?php endif; ?>
 <?php if ($g === 'blocks'): ?>
 <h1>Leah's Blocks</h1>
