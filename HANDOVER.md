@@ -148,3 +148,5 @@ v1.2.5 (2026-10-25): fan ranking list moved to the top of Fan Fest for signed-in
 v1.2.6 (2026-10-25): hall of fame summary (top 5 per game, medals, champion) on Fan Fest and Play Games; admins can save scores (Leah as LeahPunkStar). Zip: livedbyleah-v1.2.6.zip.
 
 v1.2.7 (2026-10-25): demo fans (add/remove buttons in admin Settings). Zip: livedbyleah-v1.2.7.zip.
+
+v1.2.8 (2026-10-27): Leah's Outrun rebuilt (Costa Rica > Mexico > USA > Canada > ship > France, scenery zones and transitions, cryptids and fun signs, better hills, no green lines on the road, 5 Jeep frames, km hall of fame, stats certificate). Blocks bottom row fixed. Zip: livedbyleah-v1.2.8.zip.

@@ -22,7 +22,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
   <a class="gamecard" href="/games.php?g=road">
     <img src="/assets/img/games/road.jpg" width="640" height="349" alt="<?= e($ROAD_NAME) ?>: Leah's green Jeep on Route 1" loading="lazy">
     <span class="gc-title"><?= e($ROAD_NAME) ?></span>
-    <span class="gc-text">Drive Leah's electric Jeep from Houston to France. Beat the battery timer!</span>
+    <span class="gc-text">Drive Leah's electric Jeep from Costa Rica to Paris. Watch out for cryptids!</span>
   </a>
   <a class="gamecard" href="/games.php?g=blocks">
     <img src="/assets/img/games/blocks.jpg" width="640" height="349" alt="Leah's Blocks" loading="lazy">
@@ -41,7 +41,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
 </nav>
 <?php if ($g === 'road'): ?>
 <h1><?= e($ROAD_NAME) ?></h1>
-<p class="lede">Drive Leah's neon-green electric Jeep from Houston to Mexico, Costa Rica, Colorado and France. Your timer is your battery: reach each checkpoint, grab green batteries and hit the arrows for a boost. You are ranked by the highest level you reach, then by your driving time.</p>
+<p class="lede">Drive Leah's neon-green electric Jeep from Costa Rica through Mexico, the USA and Canada, then take the cargo ship to France and finish in Paris. Your timer is your battery: reach each checkpoint, grab green batteries, hit the arrows for a boost, and watch out for cryptids crossing the road. You are ranked by kilometers driven, with a bonus for every new country.</p>
 
 <div class="game" id="game">
   <div class="game-hud game-hud-road">
@@ -55,7 +55,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
     <img class="road-logo" src="/assets/img/leah-logo.png" width="400" height="190" alt="LEAH">
     <p class="pixel">OUTRUN</p>
     <button type="button" id="startBtn" class="btn">Start</button>
-    <p class="hint">Left/right steer, up = gas, down = brake. Catch green batteries and cross the checkpoints before the battery runs out. Painted arrows give a quick boost.</p>
+    <p class="hint">Left/right steer, up = gas, down = brake. Catch green batteries and cross the checkpoints before the battery runs out. Painted arrows give a quick boost. Obey the cryptid warning signs (or don't).</p>
   </div>
   <div class="game-overlay" id="gameOver" hidden>
     <p class="pixel">BATTERY EMPTY</p>
@@ -65,7 +65,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
     <button type="button" id="retryBtn" class="btn">Try again</button>
   </div>
   <div class="game-overlay" id="gameWin" hidden>
-    <p class="pixel">FRANCE REACHED!</p>
+    <p class="pixel">PARIS REACHED!</p>
     <p id="winTime">Your time: 0:00.0</p>
     <p class="hint" id="winWho"></p>
     <div class="row">
@@ -85,11 +85,11 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
 
 <section class="hof">
   <h2>Hall of fame</h2>
-  <p class="hint">Ranked by level reached, then driving time. <span id="hofJoin"><a href="/fans.php?v=join">Join the fan club</a> to play under your own username.</span></p>
+  <p class="hint">Ranked by kilometers driven (+500 km for each new country, +2,000 km for reaching Paris), then driving time. <span id="hofJoin"><a href="/fans.php?v=join">Join the fan club</a> to play under your own username.</span></p>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/road.js?v=3"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/road.js?v=4"></script>'); return; ?>
 <?php endif; ?>
 <?php if ($g === 'blocks'): ?>
 <h1>Leah's Blocks</h1>
@@ -102,7 +102,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
     <span id="hudLines">Lines 0</span>
     <button type="button" id="muteBtn" class="hud-btn" aria-pressed="false" aria-label="Mute sound">Sound on</button>
   </div>
-  <canvas id="gameCanvas" width="480" height="560" aria-label="Leah's Blocks game"></canvas>
+  <canvas id="gameCanvas" width="480" height="600" aria-label="Leah's Blocks game"></canvas>
   <div class="game-overlay" id="gameStart">
     <img class="road-logo" src="/assets/img/games/blocks.jpg" width="640" height="349" alt="Leah's Blocks">
     <button type="button" id="startBtn" class="btn">Start</button>
@@ -134,7 +134,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/blocks.js?v=1"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/blocks.js?v=2"></script>'); return; ?>
 <?php endif; ?>
 <h1>Surf cleanup</h1>
 <p class="lede">Clean the beach, collect the shells, build a water gun, then surf five waves and beat the sharks. You are ranked by the highest level you reach, then by your time. Fans play under their own username.</p>

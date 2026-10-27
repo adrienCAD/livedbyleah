@@ -212,11 +212,23 @@ function pending_support(): int {
 
 // ---------------------------------------------------------------- hall of fame summary (top 5 per game)
 const SCORE_ORDER = 's.won DESC, s.level DESC, s.ms ASC, s.id ASC';
+const ROAD_CUM = [0, 600, 2600, 5300, 6800, 7700];   // Leah's Outrun: km at the end of each level
+const ROAD_COUNTRY = ['Costa Rica', 'Mexico', 'the USA', 'Canada', 'France'];
+
+// Hall of fame order per game: Blocks by score, Outrun by km (bonuses included), Surf by clear/level/time.
+function score_order(string $game): string {
+    if ($game === 'blocks') { return 's.ms DESC, s.id ASC'; }
+    if ($game === 'road') { return 's.km DESC, s.ms ASC, s.id ASC'; }
+    return SCORE_ORDER;
+}
 const HOF_GAMES = ['surf' => 'Surf Cleanup', 'road' => "Leah's Outrun", 'blocks' => "Leah's Blocks"];
 
 function hof_result(string $game, array $r): string {
     if ($game === 'blocks') {
         return number_format((int)$r['ms']) . ' pts &middot; ' . (int)$r['level'] . ' lines';
+    }
+    if ($game === 'road') {
+        return number_format((int)$r['km']) . ' km &middot; ' . ((int)$r['won'] === 1 ? 'Cleared all 5' : 'reached ' . ROAD_COUNTRY[max(1, min(5, (int)$r['level'])) - 1]);
     }
     $sec = intdiv((int)$r['ms'], 1000);
     return ((int)$r['won'] === 1 ? 'Cleared all 5' : 'Level ' . (int)$r['level']) . ' &middot; ' . sprintf('%d:%02d', intdiv($sec, 60), $sec % 60);
@@ -229,8 +241,8 @@ function hof_summary(): array {
     $out = ['games' => [], 'champ' => null];
     $pts = [];
     foreach (HOF_GAMES as $g => $label) {
-        $order = $g === 'blocks' ? 's.ms DESC, s.id ASC' : SCORE_ORDER;
-        $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.pkey, f.last_login AS seen
+        $order = score_order($g);
+        $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.km, s.pkey, f.last_login AS seen
             FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE s.game = ' . db()->quote($g) . ' ORDER BY ' . $order)->fetchAll();
         $rec = null; $mine = null;
         foreach ($rows as $i => $r) {
@@ -315,10 +327,14 @@ function demo_add(): int {
             VALUES (?, ?, ?, ?, ?, ?, 1, 1, ?, ?, ?, 1)')
             ->execute(['demo' . ($i + 1) . '@demo.invalid', password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT), $first, substr($last, 0, 1), $last, $user, $created, $login, $created]);
         $fid = (int)$pdo->lastInsertId();
-        $ins = $pdo->prepare('INSERT INTO scores (name, ms, level, won, pkey, fan_id, game, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-        if ($surf[0] > 0) { $ins->execute([$user, $surf[2] * 1000, $surf[0], $surf[1], 'f' . $fid, $fid, 'surf', $login]); }
-        if ($road[0] > 0) { $ins->execute([$user, $road[2] * 1000, $road[0], $road[1], 'f' . $fid . ':road', $fid, 'road', $login]); }
-        if ($blocks[0] > 0) { $ins->execute([$user, $blocks[0], $blocks[1], 0, 'f' . $fid . ':blocks', $fid, 'blocks', $login]); }
+        $ins = $pdo->prepare('INSERT INTO scores (name, ms, level, won, pkey, fan_id, game, created_at, km) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        if ($surf[0] > 0) { $ins->execute([$user, $surf[2] * 1000, $surf[0], $surf[1], 'f' . $fid, $fid, 'surf', $login, 0]); }
+        if ($road[0] > 0) {
+            $lv = $road[0];
+            $km = $road[1] ? 7700 + 4 * 500 + 2000 : (int)round(ROAD_CUM[$lv - 1] + (0.3 + 0.05 * ($i % 9)) * (ROAD_CUM[$lv] - ROAD_CUM[$lv - 1])) + ($lv - 1) * 500;
+            $ins->execute([$user, $road[2] * 1000, $lv, $road[1], 'f' . $fid . ':road', $fid, 'road', $login, $km]);
+        }
+        if ($blocks[0] > 0) { $ins->execute([$user, $blocks[0], $blocks[1], 0, 'f' . $fid . ':blocks', $fid, 'blocks', $login, 0]); }
         $n++;
     }
     $pdo->commit();

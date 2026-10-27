@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 const SITE_NAME = 'Lived by Leah';
-const SITE_VERSION = '1.2.7';   // 1.2.1 Road Trip, 1.2.2 Blocks, 1.2.3 My account, 1.2.4 menu names, 1.2.5 ranking first, 1.2.6 hall of fame summary, 1.2.7 demo fans
+const SITE_VERSION = '1.2.8';   // see CLAUDE.md for the version list
 const DB_PATH = __DIR__ . '/../data/site.sqlite';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -164,6 +164,21 @@ function db(): PDO {
         // Which game the result is from: surf, road (Leah's Road Trip), later blocks. pkey is "<player>" for surf, "<player>:road" etc.
         if (!in_array('game', $scols, true)) {
             $pdo->exec('ALTER TABLE scores ADD COLUMN game TEXT NOT NULL DEFAULT "surf"');
+        }
+        // Leah's Outrun (v1.2.8) is ranked by kilometers driven (with level bonuses).
+        if (!in_array('km', $scols, true)) {
+            $pdo->exec('ALTER TABLE scores ADD COLUMN km INTEGER NOT NULL DEFAULT 0');
+        }
+        // One time: the old Outrun results used other levels and rules, so they are cleared. Demo fans get a km value instead.
+        if (setting_raw($pdo, 'road_reset_128') === null) {
+            $pdo->exec('DELETE FROM scores WHERE game = "road" AND (fan_id IS NULL OR fan_id NOT IN (SELECT id FROM fans WHERE demo = 1))');
+            $cum = [0, 600, 2600, 5300, 6800, 7700];
+            foreach ($pdo->query('SELECT id, level, won FROM scores WHERE game = "road"')->fetchAll() as $r) {
+                $lv = max(1, min(5, (int)$r['level']));
+                $km = (int)$r['won'] === 1 ? 7700 + 4 * 500 + 2000 : (int)round($cum[$lv - 1] + 0.55 * ($cum[$lv] - $cum[$lv - 1])) + ($lv - 1) * 500;
+                $pdo->prepare('UPDATE scores SET km = ? WHERE id = ?')->execute([$km, $r['id']]);
+            }
+            $pdo->prepare('INSERT INTO settings (k, v) VALUES ("road_reset_128", "1")')->execute();
         }
         // Screenshot proofs of likes / follows / comments. The image is deleted once reviewed.
         $pdo->exec('CREATE TABLE IF NOT EXISTS proofs (

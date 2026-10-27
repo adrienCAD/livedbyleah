@@ -18,14 +18,14 @@ const GAMES = [
 ];
 
 function top_scores(string $myKey, string $game): array {
-    $order = $game === 'blocks' ? 's.ms DESC, s.id ASC' : SCORE_ORDER;
-    $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.pkey, s.created_at, f.last_login AS seen
+    $order = score_order($game);
+    $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.km, s.pkey, s.created_at, f.last_login AS seen
         FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE s.game = ' . db()->quote($game) . ' ORDER BY ' . $order . ' LIMIT 10')->fetchAll();
     $out = [];
     foreach ($rows as $r) {
         $out[] = [
             'name' => $r['name'], 'ms' => (int)$r['ms'], 'level' => (int)$r['level'], 'won' => (int)$r['won'] === 1,
-            'score' => (int)$r['ms'], 'lines' => (int)$r['level'],
+            'score' => (int)$r['ms'], 'lines' => (int)$r['level'], 'km' => (int)$r['km'],
             'date' => substr((string)$r['created_at'], 0, 10), 'seen' => $r['seen'] ? ago($r['seen']) : null, 'mine' => $r['pkey'] !== null && $r['pkey'] === $myKey,
         ];
     }
@@ -122,29 +122,43 @@ if ($action === 'submit') {
         echo json_encode(['error' => 'That time was not accepted.']);
         exit;
     }
+    // Leah's Outrun: the km driven must fit the level reached. The server adds the bonuses itself.
+    $km = 0;
+    if ($game === 'road') {
+        $base = (int)($in['km'] ?? 0);
+        if ($won) { $base = ROAD_CUM[5]; }
+        if ($base < ROAD_CUM[$level - 1] || $base > ROAD_CUM[$level]) {
+            http_response_code(400);
+            echo json_encode(['error' => 'That distance was not accepted.']);
+            exit;
+        }
+        $km = $base + ($level - 1) * 500 + ($won ? 2000 : 0);
+    }
     // Level 1 is just the beach: nothing to rank yet.
     if ($level < $cfg['minLevelSaved']) {
         echo json_encode(['saved' => false, 'top' => top_scores($myKey, $game), 'me' => $meOut], JSON_UNESCAPED_UNICODE);
         exit;
     }
-    $st = db()->prepare('SELECT id, won, level, ms FROM scores WHERE pkey = ?');
+    $st = db()->prepare('SELECT id, won, level, ms, km FROM scores WHERE pkey = ?');
     $st->execute([$myKey]);
     $cur = $st->fetch();
     $improved = false;
     if (!$cur) {
-        db()->prepare('INSERT INTO scores (name, ms, pkey, fan_id, level, won, game) VALUES (?, ?, ?, ?, ?, ?, ?)')
-            ->execute([$me['name'], $ms, $myKey, $me['fan_id'], $level, $won ? 1 : 0, $game]);
+        db()->prepare('INSERT INTO scores (name, ms, pkey, fan_id, level, won, game, km) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+            ->execute([$me['name'], $ms, $myKey, $me['fan_id'], $level, $won ? 1 : 0, $game, $km]);
         $improved = true;
-        $best = ['level' => $level, 'won' => $won, 'ms' => $ms];
+        $best = ['level' => $level, 'won' => $won, 'ms' => $ms, 'km' => $km];
     } else {
-        $newBetter = [(int)$won, $level, -$ms] > [(int)$cur['won'], (int)$cur['level'], -(int)$cur['ms']];
+        $newBetter = $game === 'road'
+            ? [$km, -$ms] > [(int)$cur['km'], -(int)$cur['ms']]
+            : [(int)$won, $level, -$ms] > [(int)$cur['won'], (int)$cur['level'], -(int)$cur['ms']];
         if ($newBetter) {
-            db()->prepare('UPDATE scores SET name = ?, ms = ?, level = ?, won = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?')
-                ->execute([$me['name'], $ms, $level, $won ? 1 : 0, $cur['id']]);
+            db()->prepare('UPDATE scores SET name = ?, ms = ?, level = ?, won = ?, km = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?')
+                ->execute([$me['name'], $ms, $level, $won ? 1 : 0, $km, $cur['id']]);
             $improved = true;
-            $best = ['level' => $level, 'won' => $won, 'ms' => $ms];
+            $best = ['level' => $level, 'won' => $won, 'ms' => $ms, 'km' => $km];
         } else {
-            $best = ['level' => (int)$cur['level'], 'won' => (int)$cur['won'] === 1, 'ms' => (int)$cur['ms']];
+            $best = ['level' => (int)$cur['level'], 'won' => (int)$cur['won'] === 1, 'ms' => (int)$cur['ms'], 'km' => (int)$cur['km']];
         }
     }
     echo json_encode(['saved' => true, 'improved' => $improved, 'best' => $best, 'top' => top_scores($myKey, $game), 'me' => $meOut], JSON_UNESCAPED_UNICODE);
