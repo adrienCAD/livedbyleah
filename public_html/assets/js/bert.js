@@ -682,7 +682,7 @@
     x.textAlign = 'center'; x.font = '24px ' + pix; x.fillStyle = '#1E3248'; x.fillText('ALSO VERY IMPORTANT', CW / 2, 825);
     for (i = 0; i < chosen.length; i++) { x.font = '19px sans-serif'; x.fillText(chosen[i][0] + ': ' + chosen[i][1], CW / 2, 862 + i * 30, CW - 240); }
     x.imageSmoothingEnabled = false;
-    x.drawImage(MUMU.glide, 120, 990, 36 * 5, 25 * 5);
+    x.drawImage(MUMU.glide, 120, 972, 36 * 5, 25 * 5);
     // a mini pyramid in the four element colours
     LEVELS.forEach(function (lv, k) { var px = CW - 330 + k * 56, py = 1060; x.fillStyle = lv.sideL; x.fillRect(px, py, 24, 30); x.fillStyle = lv.sideR; x.fillRect(px + 24, py, 24, 30); x.fillStyle = lv.tops[2]; x.beginPath(); x.moveTo(px + 24, py - 12); x.lineTo(px + 48, py); x.lineTo(px + 24, py + 12); x.lineTo(px, py); x.closePath(); x.fill(); });
     x.textAlign = 'center'; x.fillStyle = '#1E3248'; x.font = '24px ' + pix;
@@ -717,6 +717,7 @@
       skipCard: function () { cardT = 0; mode = 'play'; }, god: function (v) { god = v !== false; }, hop: act,
       paintAll: function (leave) { var k = 0; for (var r = 0; r < ROWS; r++) { for (var c = 0; c <= r; c++) { if (k++ >= (leave || 0)) { tiles[r][c] = target(); } } } },
       clear: function () { for (var r = 0; r < ROWS; r++) { for (var c = 0; c <= r; c++) { tiles[r][c] = target(); } } checkClear(); }, lives: function (n) { lives = n; hud(); },
+      place: function (t, r, c) { var o = spawnMon(t); o.r = o.fr = r; o.c = o.fc = c; o.drop = 0; o.wait = 0.2; },
       spawn: spawnMon, heart: function (r, c) { heart = { r: r, c: c, t: 8 }; }, over: gameOver, won: function () { gameWon(); }, stats: function () { return ST; }
     };
   }
