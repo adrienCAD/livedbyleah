@@ -453,11 +453,11 @@
   var JEEPSIDE = null, JEEPCERT = null;   // cargo ship profile and certificate view (loaded images)
   (function () {
     function load(src, fn) { var im = new Image(); im.onload = function () { fn(im); }; im.src = src; }
-    load('/assets/img/jeep-rear.png?v=2', function (im) { JEEP[2] = im; });                                  // straight: view from behind
-    load('/assets/img/jeep-q1.png?v=2', function (im) { JEEP[3] = im; JEEP[1] = flip(im); });                 // short press: 1/4 view (mirrored for left)
-    load('/assets/img/jeep-q3.png?v=2', function (im) { JEEP[4] = im; JEEP[0] = flip(im); });                 // long press: 3/4 view (mirrored for left)
-    load('/assets/img/jeep-side.png?v=2', function (im) { JEEPSIDE = im; });
-    load('/assets/img/jeep-cert.png?v=2', function (im) { JEEPCERT = im; });
+    load('/assets/img/jeep-rear.png?v=3', function (im) { JEEP[2] = im; });                                  // straight: view from behind
+    load('/assets/img/jeep-q1.png?v=3', function (im) { JEEP[3] = im; JEEP[1] = flip(im); });                 // short press: 1/4 view (mirrored for left)
+    load('/assets/img/jeep-q3.png?v=3', function (im) { JEEP[4] = im; JEEP[0] = flip(im); });                 // long press: 3/4 view (mirrored for left)
+    load('/assets/img/jeep-side.png?v=3', function (im) { JEEPSIDE = im; });
+    load('/assets/img/jeep-cert.png?v=3', function (im) { JEEPCERT = im; });
   })();
 
   // ------------------------------------------------------------------ distant backgrounds (640 wide, tiled; horizon at HZ)
@@ -1042,8 +1042,8 @@
     var shx = sx - 92, shy = sy - 40;
     g.imageSmoothingEnabled = true; g.drawImage(SHIP, shx, shy, 188, 64); g.imageSmoothingEnabled = false;
     for (i = 0; i < 3; i++) { disc(g, 'rgba(220,220,230,' + (0.6 - i * 0.18) + ')', shx + 26 - i * 6 - (t * 8) % 6, shy + 2 - i * 6, 3 + i); }
-    var jf = JEEPSIDE || JEEP[2], jw = JEEPSIDE ? 50 : jf.width, jh = Math.round(jw * jf.height / jf.width);
-    g.imageSmoothingEnabled = true; g.drawImage(jf, shx + 124, shy + 41 - jh + Math.round(Math.sin(t * 5) * 0.5), jw, jh); g.imageSmoothingEnabled = false;
+    var jf = JEEPSIDE || JEEP[2], jw = JEEPSIDE ? 46 : jf.width, jh = Math.round(jw * jf.height / jf.width);
+    g.imageSmoothingEnabled = true; g.drawImage(jf, shx + 122, shy + 36 - jh + Math.round(Math.sin(t * 5) * 0.5), jw, jh); g.imageSmoothingEnabled = false;
     g.fillStyle = 'rgba(30,58,106,.9)'; g.fillRect(shx - 6, sy + 15, 200, 2);   // water in front of the hull
     for (i = 0; i < 14; i++) { g.fillStyle = 'rgba(210,235,255,.8)'; g.fillRect(Math.round(shx + 4 + i * 14 + (t * 14) % 14), sy + 15 + (i % 2), 5, 1); }
     g.fillStyle = '#ffffff'; for (i = 0; i < 3; i++) { var gx = (i * 90 + t * 25) % W, gy = 30 + i * 12; g.fillRect(Math.round(gx), gy, 3, 1); g.fillRect(Math.round(gx) + 3, gy - 1, 3, 1); }
@@ -1279,13 +1279,13 @@
     }
     // Leah in the Jeep (front-left view, leaning out with a thumbs up) and a cryptid who came to say hi
     x.imageSmoothingEnabled = JEEPCERT ? false : true;
-    var cj = JEEPCERT || JEEP[2], cw = JEEPCERT ? 340 : cj.width * 2, chh = Math.round(cw * cj.height / cj.width);
-    x.drawImage(cj, 120, 1235 - chh + 30, cw, chh);
+    var cj = JEEPCERT || JEEP[2], cw = JEEPCERT ? 370 : cj.width * 2, chh = Math.round(cw * cj.height / cj.width);
+    x.drawImage(cj, 90, 1262 - chh, cw, chh);
     x.imageSmoothingEnabled = true;
     var w2 = CRY.bigfoot.fr[0]; x.drawImage(w2, CW - 240, 1090, w2.width * 1.5, w2.height * 1.5);
     x.textAlign = 'center'; x.fillStyle = '#1E3248'; x.font = '24px ' + pix;
-    x.fillText(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), CW / 2, 1140);
-    x.fillText('livedbyleah.com', CW / 2, 1176);
+    x.fillText(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), CW / 2 + 40, 1160);
+    x.fillText('livedbyleah.com', CW / 2 + 40, 1196);
     c.toBlob(function (blob) {
       var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'outrun-certificate.png';
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
