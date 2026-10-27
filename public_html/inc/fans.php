@@ -180,7 +180,8 @@ function fan_count(): int {
 function fan_ranking(): array {
     $rows = db()->query('SELECT f.id, f.username, COALESCE(f.last_login, f.created_at) AS seen,
         COALESCE((SELECT SUM(CASE WHEN s.won = 1 THEN 15 ELSE (s.level - 1) * s.level / 2 END) FROM scores s WHERE s.fan_id = f.id AND s.game IN (\'surf\', \'road\')), 0)
-        + COALESCE((SELECT CASE WHEN s.ms >= 12000 THEN 15 WHEN s.ms >= 8000 THEN 10 WHEN s.ms >= 5000 THEN 6 WHEN s.ms >= 2500 THEN 3 WHEN s.ms >= 1000 THEN 1 ELSE 0 END FROM scores s WHERE s.fan_id = f.id AND s.game = \'blocks\'), 0) AS lvl_pts,
+        + COALESCE((SELECT CASE WHEN s.ms >= 12000 THEN 15 WHEN s.ms >= 8000 THEN 10 WHEN s.ms >= 5000 THEN 6 WHEN s.ms >= 2500 THEN 3 WHEN s.ms >= 1000 THEN 1 ELSE 0 END FROM scores s WHERE s.fan_id = f.id AND s.game = \'blocks\'), 0)
+        + COALESCE((SELECT CASE WHEN s.ms >= 35000 THEN 15 WHEN s.ms >= 20000 THEN 10 WHEN s.ms >= 10000 THEN 6 WHEN s.ms >= 5000 THEN 3 WHEN s.ms >= 2000 THEN 1 ELSE 0 END FROM scores s WHERE s.fan_id = f.id AND s.game = \'bert\'), 0) AS lvl_pts,
         COALESCE((SELECT SUM(p.points) FROM proofs p WHERE p.fan_id = f.id AND p.status = \'approved\'), 0) AS soc_pts
         FROM fans f WHERE f.confirmed = 1')->fetchAll();
     foreach ($rows as &$r) {
@@ -217,15 +218,19 @@ const ROAD_COUNTRY = ['Costa Rica', 'Mexico', 'the USA', 'Canada', 'France'];
 
 // Hall of fame order per game: Blocks by score, Outrun by km (bonuses included), Surf by clear/level/time.
 function score_order(string $game): string {
-    if ($game === 'blocks') { return 's.ms DESC, s.id ASC'; }
+    if ($game === 'blocks' || $game === 'bert') { return 's.ms DESC, s.id ASC'; }
     if ($game === 'road') { return 's.km DESC, s.ms ASC, s.id ASC'; }
     return SCORE_ORDER;
 }
-const HOF_GAMES = ['surf' => 'Surf Cleanup', 'road' => "Leah's Outrun", 'blocks' => "Leah's Blocks"];
+const HOF_GAMES = ['surf' => 'Surf Cleanup', 'road' => "Leah's Outrun", 'blocks' => "Leah's Blocks", 'bert' => 'L-Bert'];
+const BERT_ELEMENTS = ['Water', 'Earth', 'Air', 'Fire'];
 
 function hof_result(string $game, array $r): string {
     if ($game === 'blocks') {
         return number_format((int)$r['ms']) . ' pts &middot; ' . (int)$r['level'] . ' lines';
+    }
+    if ($game === 'bert') {
+        return number_format((int)$r['ms']) . ' pts &middot; ' . ((int)$r['won'] === 1 ? 'Cleared all 4' : 'reached ' . BERT_ELEMENTS[max(1, min(4, (int)$r['level'])) - 1]);
     }
     if ($game === 'road') {
         return number_format((int)$r['km']) . ' km &middot; ' . ((int)$r['won'] === 1 ? 'Cleared all 5' : 'reached ' . ROAD_COUNTRY[max(1, min(5, (int)$r['level'])) - 1]);
@@ -299,28 +304,28 @@ function demo_count(): int {
     return (int)db()->query('SELECT COUNT(*) FROM fans WHERE demo = 1')->fetchColumn();
 }
 
-// Adds fake fans with scores in the three games. They cannot log in (random password, fake email) and are flagged demo = 1.
+// Adds fake fans with scores in the four games. They cannot log in (random password, fake email) and are flagged demo = 1.
 function demo_add(): int {
     if (demo_count() > 0) { return 0; }
-    // first, last, username, days since joining, days since last seen, surf (level, won, sec), road (level, won, sec), blocks (score, lines)
+    // first, last, username, days since joining, days since last seen, surf (level, won, sec), road (level, won, sec), blocks (score, lines), L-Bert (score, level, won)
     $people = [
-        ['Mia', 'Kowalski', 'SunnyMia', 12, 0, [5, 1, 612], [3, 0, 190], [9400, 41]],
-        ['Noah', 'Brooks', 'NoahWaves', 11, 0, [5, 1, 705], [5, 1, 640], [4200, 22]],
-        ['Sofia', 'Reyes', 'SofiaStar', 11, 1, [4, 0, 480], [2, 0, 120], [13100, 58]],
-        ['Lucas', 'Meyer', 'LucasLegend', 10, 0, [3, 0, 330], [4, 0, 410], [2600, 15]],
-        ['Emma', 'Dubois', 'EmmaPixel', 9, 2, [2, 0, 150], [1, 0, 60], [6100, 30]],
-        ['Liam', 'Santos', 'TacoLiam', 9, 3, [5, 0, 560], [3, 0, 230], [1800, 11]],
-        ['Ava', 'Nguyen', 'AvaOnFire', 8, 1, [4, 0, 520], [5, 0, 470], [8300, 37]],
-        ['Ethan', 'Park', 'EthanTheBest', 7, 4, [2, 0, 170], [2, 0, 130], [1100, 8]],
-        ['Zoe', 'Fischer', 'ZoeZoom', 6, 0, [3, 0, 290], [4, 0, 360], [3500, 19]],
-        ['Mateo', 'Lopez', 'MateoMagic', 5, 2, [2, 0, 140], [1, 0, 70], [700, 6]],
-        ['Lily', 'Anderson', 'LilyBug', 4, 5, [0, 0, 0], [3, 0, 200], [0, 0]],
-        ['Oscar', 'Rossi', 'OscarOcean', 3, 1, [3, 0, 310], [0, 0, 0], [2100, 13]],
+        ['Mia', 'Kowalski', 'SunnyMia', 12, 0, [5, 1, 612], [3, 0, 190], [9400, 41], [36500, 4, 1]],
+        ['Noah', 'Brooks', 'NoahWaves', 11, 0, [5, 1, 705], [5, 1, 640], [4200, 22], [8200, 2, 0]],
+        ['Sofia', 'Reyes', 'SofiaStar', 11, 1, [4, 0, 480], [2, 0, 120], [13100, 58], [14200, 3, 0]],
+        ['Lucas', 'Meyer', 'LucasLegend', 10, 0, [3, 0, 330], [4, 0, 410], [2600, 15], [3100, 1, 0]],
+        ['Emma', 'Dubois', 'EmmaPixel', 9, 2, [2, 0, 150], [1, 0, 60], [6100, 30], [22400, 4, 0]],
+        ['Liam', 'Santos', 'TacoLiam', 9, 3, [5, 0, 560], [3, 0, 230], [1800, 11], [0, 0, 0]],
+        ['Ava', 'Nguyen', 'AvaOnFire', 8, 1, [4, 0, 520], [5, 0, 470], [8300, 37], [11800, 3, 0]],
+        ['Ethan', 'Park', 'EthanTheBest', 7, 4, [2, 0, 170], [2, 0, 130], [1100, 8], [1500, 1, 0]],
+        ['Zoe', 'Fischer', 'ZoeZoom', 6, 0, [3, 0, 290], [4, 0, 360], [3500, 19], [6400, 2, 0]],
+        ['Mateo', 'Lopez', 'MateoMagic', 5, 2, [2, 0, 140], [1, 0, 70], [700, 6], [2600, 1, 0]],
+        ['Lily', 'Anderson', 'LilyBug', 4, 5, [0, 0, 0], [3, 0, 200], [0, 0], [9900, 2, 0]],
+        ['Oscar', 'Rossi', 'OscarOcean', 3, 1, [3, 0, 310], [0, 0, 0], [2100, 13], [0, 0, 0]],
     ];
     $pdo = db();
     $pdo->beginTransaction();
     $n = 0;
-    foreach ($people as $i => [$first, $last, $user, $joined, $seen, $surf, $road, $blocks]) {
+    foreach ($people as $i => [$first, $last, $user, $joined, $seen, $surf, $road, $blocks, $bert]) {
         $created = gmdate('Y-m-d H:i:s', time() - $joined * 86400 - 3600 * ($i + 1));
         $login = gmdate('Y-m-d H:i:s', time() - $seen * 86400 - 600 * ($i + 1));
         $pdo->prepare('INSERT INTO fans (email, password_hash, first_name, last_initial, last_name, username, username_locked, confirmed, created_at, last_login, prev_login, demo)
@@ -335,6 +340,7 @@ function demo_add(): int {
             $ins->execute([$user, $road[2] * 1000, $lv, $road[1], 'f' . $fid . ':road', $fid, 'road', $login, $km]);
         }
         if ($blocks[0] > 0) { $ins->execute([$user, $blocks[0], $blocks[1], 0, 'f' . $fid . ':blocks', $fid, 'blocks', $login, 0]); }
+        if ($bert[0] > 0) { $ins->execute([$user, $bert[0], $bert[1], $bert[2], 'f' . $fid . ':bert', $fid, 'bert', $login, 0]); }
         $n++;
     }
     $pdo->commit();

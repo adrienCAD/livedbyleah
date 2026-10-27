@@ -19,8 +19,8 @@ Adrien is new to hosting. Explain things simply, in short steps. Keep replies cr
 - Palette: Golden Pollen #FDC921, Mustard #FDD85D, Frosted Blue #99D6EA, Blue Grey #6798C0, Porcelain #FFFDF7, ink #1E3248.
 
 ## Site map
-- Left menu, in order: Watch Vlogs (public home, `/vlogs.php`), Play Games (`/games.php`), Fan Fest (`/fans.php`, sign-up and login), then Writing Process (admins). "My account" sits at the bottom of the menu for signed-in fans only. Games page (`/games.php`: hub page with 3 art cards (images in `assets/img/games/`): Surf Cleanup `?g=surf`, Leah's Outrun `?g=road` (constant `$ROAD_NAME` in games.php), Leah's Blocks `?g=blocks`).
-- Site version is `SITE_VERSION` in `inc/bootstrap.php` (shown under the sidebar menu). 1.2.1 = Road Trip/Outrun, 1.2.2 = Leah's Blocks, 1.2.3 = My account tab, 1.2.4 = menu order and names (Play Games, Fan Fest), 1.2.5 = fan ranking moved to the top of Fan Fest (right under the fan's own rank card), 1.2.6 = hall of fame summary, 1.2.7 = demo fans, 1.2.8 = Outrun rebuild (countries, zones, cryptids, km ranking) + Blocks bottom row fix, 1.2.9 = Outrun art pass (Leah's new Jeep views, finer cars/ship/cryptids, 2 random cryptids per country), 1.2.10 = Leah's final Jeep pictures (rear, 1/4, 3/4, profile, certificate). Zips are named `livedbyleah-v<version>.zip` from now on.
+- Left menu, in order: Watch Vlogs (public home, `/vlogs.php`), Play Games (`/games.php`), Fan Fest (`/fans.php`, sign-up and login), then Writing Process (admins). "My account" sits at the bottom of the menu for signed-in fans only. Games page (`/games.php`: hub page with 4 art cards (images in `assets/img/games/`): Surf Cleanup `?g=surf`, Leah's Outrun `?g=road` (constant `$ROAD_NAME` in games.php), Leah's Blocks `?g=blocks`, L-Bert `?g=bert`).
+- Site version is `SITE_VERSION` in `inc/bootstrap.php` (shown under the sidebar menu). 1.2.1 = Road Trip/Outrun, 1.2.2 = Leah's Blocks, 1.2.3 = My account tab, 1.2.4 = menu order and names (Play Games, Fan Fest), 1.2.5 = fan ranking moved to the top of Fan Fest (right under the fan's own rank card), 1.2.6 = hall of fame summary, 1.2.7 = demo fans, 1.2.8 = Outrun rebuild (countries, zones, cryptids, km ranking) + Blocks bottom row fix, 1.2.9 = Outrun art pass (Leah's new Jeep views, finer cars/ship/cryptids, 2 random cryptids per country), 1.2.10 = Leah's final Jeep pictures (rear, 1/4, 3/4, profile, certificate), 1.3.0 = L-Bert (4th game). Zips are named `livedbyleah-v<version>.zip` from now on.
 - Writing Process (`/writing.php`) is a private tab, shown only when `is_admin()` (Leah or admin).
 - `/index.php` redirects to `/vlogs.php`. `/creative.php` is a 301 to `/games.php`.
 - Admin (`/admin/`): Dashboard, Vlogs, Writing posts, Comments, Fans, Screenshots, Support, Hall of fame, Settings.
@@ -35,7 +35,7 @@ Adrien is new to hosting. Explain things simply, in short steps. Keep replies cr
 - Cache-bust JS and CSS with `?v=N` in the includes when you change them (browsers cache hard).
 
 ## Database and migrations (SQLite, `data/site.sqlite`)
-- Tables: users (admins only), fans (public sign-ups), proofs, support_requests, vlogs (title, youtube_id, tiktok_url, instagram_url, why, yt_fetched, sort_order), posts, comments (UNIQUE source+ext_id, hidden flag), settings (key/value), scores (id, name, ms, created_at, pkey, fan_id, level, won, game: surf|road|blocks; pkey is `<player>` for surf and `<player>:<game>` for others, one best row per player per game).
+- Tables: users (admins only), fans (public sign-ups), proofs, support_requests, vlogs (title, youtube_id, tiktok_url, instagram_url, why, yt_fetched, sort_order), posts, comments (UNIQUE source+ext_id, hidden flag), settings (key/value), scores (id, name, ms, created_at, pkey, fan_id, level, won, km, game: surf|road|blocks|bert; pkey is `<player>` for surf and `<player>:<game>` for others, one best row per player per game).
 - Migrations live inside `db()` in `inc/bootstrap.php`, with no migration tool:
   - `CREATE TABLE IF NOT EXISTS`.
   - `PRAGMA table_info` then `ALTER TABLE ... ADD COLUMN`.
@@ -88,12 +88,27 @@ Falling-blocks game with a hand-drawn crayon look (wobbly cells drawn once per c
 - In-game title is spelled LEAH'S BLOCKS. The logo image `assets/img/games/blocks.jpg` (Leah's art) has a doubled L; it is only used on the hub card and start screen.
 - Test hook: `/games.php?g=blocks&debug=1` gives `window.__blocks` (info(), start(), end(score, lines), setGrid(rows), setPiece(type)).
 
+## Game 4 (v1.3.0): "L-Bert" (`games.php?g=bert` + `assets/js/bert.js`)
+Leah's take on the hopping-pyramid arcade game (she loves it), with original characters only. Canvas 320x240 shown at 2x, pixel art drawn in code, no libraries.
+- Hero: **Mumu**, an original winged lemur-like critter (golden fur, big blue-lined ears, green eyes, ringed tail with a white tip, glide wings). Inspired by, but NOT a copy of, any TV character: never draw Momo or any arcade character. Code-drawn placeholder until Leah draws Mumu.
+- Pyramid of 7 rows (28 stones). Mumu hops diagonally; each landing paints the stone. Round 1: one hop per stone; round 2: two hops (start, middle, finished colour); round 3: hopping a finished stone undoes it. All stones finished = round clear (+1,000 x level, +100 per unused cloud).
+- 4 levels in this order, 3 rounds each (about 2 min per level): Water (trash bag, crab), Earth (jackalope, mini Bigfoot), Air (ghost, bird), Fire (lava blob, smoke wisp). Last round of Fire has the boss, the Fire Shark. Colours per level in `LEVELS[].tops` (start, middle, finished).
+- Monster kinds (`MON`): bounce (hops down, falls off the bottom), chase (follows Mumu), undo (mini Bigfoot un-paints stones; touching him catches him, +300), ghost (wanders, only hurts when visible). Only 1 chaser at a time (2 in the boss round).
+- Escape clouds: 2 per round at the sides. Hop on one to fly back to the top; a chaser that follows jumps off (+500, the Fire Shark +3,000).
+- Lives: 3, max 5. Extra life at 5,000, 15,000 and 30,000 points, and from the heart power-up (appears now and then for 8 s, +1 life, +100). Hopping off the pyramid or touching a monster costs a life.
+- Glide: Space (or G/Shift, or the Glide button) arms a glide; the next hop goes 2 stones and is safe from monsters. 2 glides per level, shared by its 3 rounds.
+- Controls: arrows turned 45 degrees like the arcade (left = up-left, up = up-right, right = down-right, down = down-left), or Q/E/Z/C, numpad 7/9/1/3. Phones: tap beside Mumu, or 4 diagonal buttons + Glide.
+- Score: 15 or 25 per paint step, round bonus, catches, lures. Hall of fame `game=bert`: score in `scores.ms`, element level reached (1-4) in `scores.level`, `won` = cleared all 4; ranked by score. Server check: score <= 400 x seconds + 5,000, level 1-4, a win needs 100 s or more. Scores under 100 are not saved.
+- Fan points (score tiers, like Blocks): 2,000 = 1, 5,000 = 3, 10,000 = 6, 20,000 = 10, 35,000 = 15 (`fan_ranking()`). Certificate ("OF ELEMENTAL HOPPING") only for a full clear: hop stats, critter report and 4 random goofy stats (`goofyPool()`).
+- Hub card image `assets/img/games/bert.png` is a game screenshot with the title (placeholder until Leah's art).
+- Test hook: `/games.php?g=bert&debug=1` gives `window.__bert` (info(), start(), level(n, round), skipCard(), god(), hop(dir), paintAll(leave), clear(), lives(n), spawn(type), heart(r, c), over(), won(), stats()).
+
 ## Hall of fame summary (v1.2.6)
-- `hof_summary()` and `hof_render()` in `inc/fans.php`; shown to everyone on Fan Fest (`fans.php`, visitors and fans) and on the Play Games hub. Top 5 per game with medals for #1 to #3, result, the viewer's own rank per game, a Play button, and an overall champion (5 points for 1st down to 1 for 5th in each game, summed per player).
+- `hof_summary()` and `hof_render()` in `inc/fans.php`; shown to everyone on Fan Fest (`fans.php`, visitors and fans) and on the Play Games hub. Top 5 per game (all 4 games) with medals for #1 to #3, result, the viewer's own rank per game, a Play button, and an overall champion (5 points for 1st down to 1 for 5th in each game, summed per player).
 - Admins can play: `player()` in `inc/fans.php` saves an admin's scores under the admin username (pkey `u<user id>`). Leah plays as admin "LeahPunkStar"; her entries get a star, and "Leah's record" shows under a game when she is outside its top 5 (name from setting `leah_name`, default LeahPunkStar).
 
 ## Demo fans (v1.2.7)
-- Day-one filler. Admin > Settings > "Demo fans" has Add demo fans (12 fake fans with scores in all 3 games, `fans.demo = 1`, fake `@demo.invalid` emails, random passwords, so they cannot log in) and Remove all demo fans (deletes them plus their scores; real fans untouched). Code: `demo_add()` / `demo_remove()` in `inc/fans.php`. Demo fans count in the fan counter and ranking and show "(demo)" in admin/fans.php. Nothing is added automatically.
+- Day-one filler. Admin > Settings > "Demo fans" has Add demo fans (12 fake fans with scores in the games, including L-Bert, `fans.demo = 1`, fake `@demo.invalid` emails, random passwords, so they cannot log in) and Remove all demo fans (deletes them plus their scores; real fans untouched). Code: `demo_add()` / `demo_remove()` in `inc/fans.php`. Demo fans count in the fan counter and ranking and show "(demo)" in admin/fans.php. Nothing is added automatically.
 
 ## Fans (built in Updates D, E and F)
 - Code: `fans.php` (all views), `inc/fans.php` (helpers), `admin/fans.php`. Fans live in the `fans` table, separate from admins. Session key `fan_id`.

@@ -277,3 +277,11 @@ ol.fanlist { counter-reset: none; }
 .hofbox h3 { margin: 0 0 8px; }
 .hofbox .fanlist { margin-bottom: 8px; max-width: none; }
 .hofbox .fanlist li { flex-wrap: wrap; }
+
+/* L-Bert */
+.bert-touch { display: none; }
+@media (pointer: coarse) {
+  .bert-touch { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .bert-touch button { min-height: 56px; font-size: 26px; }
+  .bert-touch [data-key="glide"] { grid-row: span 2; font-size: 17px; }
+}

@@ -6,13 +6,13 @@ require __DIR__ . '/inc/layout.php';
 require __DIR__ . '/inc/fans.php';
 
 $g = (string)($_GET['g'] ?? '');
-$g = in_array($g, ['surf', 'road', 'blocks'], true) ? $g : '';
+$g = in_array($g, ['surf', 'road', 'blocks', 'bert'], true) ? $g : '';
 $ROAD_NAME = "Leah's Outrun";   // test name; the trademark-safe name is "Leah's Road Trip"
 
 page_header('Play Games', 'games');
 if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
 <h1>Play Games</h1>
-<p class="lede">Pick a game. Every game has its own hall of fame, and the levels you pass earn fan points.</p>
+<p class="lede">Pick a game. Every game has its own hall of fame, and the levels you pass or the scores you reach earn fan points.</p>
 <div class="gamecards">
   <a class="gamecard" href="/games.php?g=surf">
     <img src="/assets/img/games/surf.jpg" width="640" height="360" alt="Surf Cleanup: Leah surfing a wave" loading="lazy">
@@ -29,6 +29,11 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
     <span class="gc-title">Leah's Blocks</span>
     <span class="gc-text">Stack hand-drawn blocks, clear lines and chase the top score.</span>
   </a>
+  <a class="gamecard" href="/games.php?g=bert">
+    <img src="/assets/img/games/bert.png" width="640" height="360" alt="L-Bert: Mumu hopping on a pyramid of stones" loading="lazy">
+    <span class="gc-title">L-Bert</span>
+    <span class="gc-text">Hop Mumu across Water, Earth, Air and Fire. Paint every stone and dodge the critters!</span>
+  </a>
 </div>
 <h2>Hall of fame</h2>
 <?php hof_render(hof_summary()); ?>
@@ -38,6 +43,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
   <a href="/games.php?g=surf"<?= $g === 'surf' ? ' class="on" aria-current="page"' : '' ?>>Surf Cleanup</a>
   <a href="/games.php?g=road"<?= $g === 'road' ? ' class="on" aria-current="page"' : '' ?>><?= e($ROAD_NAME) ?></a>
   <a href="/games.php?g=blocks"<?= $g === 'blocks' ? ' class="on" aria-current="page"' : '' ?>>Leah's Blocks</a>
+  <a href="/games.php?g=bert"<?= $g === 'bert' ? ' class="on" aria-current="page"' : '' ?>>L-Bert</a>
 </nav>
 <?php if ($g === 'road'): ?>
 <h1><?= e($ROAD_NAME) ?></h1>
@@ -90,6 +96,59 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
 </section>
 
 <?php page_footer('<script src="/assets/js/road.js?v=6"></script>'); return; ?>
+<?php endif; ?>
+<?php if ($g === 'bert'): ?>
+<h1>L-Bert</h1>
+<p class="lede">Hop Mumu across a pyramid of stones and paint every top to clear the round. Four elements (Water, Earth, Air, Fire), three rounds each. Dodge the critters, catch mini Bigfoot, ride the clouds back to the top, and glide over trouble twice per level.</p>
+
+<div class="game bert-game" id="game">
+  <div class="game-hud game-hud-road">
+    <span id="hudScore">Score 0</span>
+    <span id="hudLives">Lives 3</span>
+    <span id="hudLevel">Water 1/3</span>
+    <span id="hudGlide">Glides 2</span>
+    <button type="button" id="muteBtn" class="hud-btn" aria-pressed="false" aria-label="Mute sound">Sound on</button>
+  </div>
+  <canvas id="gameCanvas" width="320" height="240" aria-label="L-Bert game"></canvas>
+  <div class="game-overlay road-start" id="gameStart">
+    <img class="road-logo" src="/assets/img/games/bert.png" width="640" height="360" alt="L-Bert">
+    <button type="button" id="startBtn" class="btn">Start</button>
+    <p class="hint">Arrow keys hop diagonally, like the arcade: &larr; up-left, &uarr; up-right, &rarr; down-right, &darr; down-left (or Q, E, Z, C). Space = glide (2 stones, twice per level). On a phone, tap beside Mumu or use the buttons.</p>
+  </div>
+  <div class="game-overlay" id="gameOver" hidden>
+    <p class="pixel">GAME OVER</p>
+    <p id="overMsg"></p>
+    <p class="hint" id="overInfo"></p>
+    <p class="hint" id="overNote"></p>
+    <button type="button" id="retryBtn" class="btn">Try again</button>
+  </div>
+  <div class="game-overlay" id="gameWin" hidden>
+    <p class="pixel">ALL 4 ELEMENTS!</p>
+    <p id="winScore">Score 0</p>
+    <p class="hint" id="winWho"></p>
+    <div class="row">
+      <button type="button" id="certBtn" class="btn">Download certificate</button>
+      <button type="button" id="againBtn" class="btn ghost">Play again</button>
+    </div>
+    <p class="hint" id="winNote"></p>
+  </div>
+  <div class="touch bert-touch" id="touch">
+    <button type="button" data-key="ul" aria-label="Hop up-left">&#8598;</button>
+    <button type="button" data-key="ur" aria-label="Hop up-right">&#8599;</button>
+    <button type="button" data-key="glide" aria-label="Glide">Glide</button>
+    <button type="button" data-key="dl" aria-label="Hop down-left">&#8601;</button>
+    <button type="button" data-key="dr" aria-label="Hop down-right">&#8600;</button>
+  </div>
+</div>
+<p class="hint">Mumu and the critters are drawn in code for now, in Leah's pixel style. Version <?= e(SITE_VERSION) ?>.</p>
+
+<section class="hof">
+  <h2>Hall of fame</h2>
+  <p class="hint">Ranked by score. Fan points: 2,000 = 1, 5,000 = 3 in total, up to 15 points at 35,000. Clear all 4 elements for the certificate. <span id="hofJoin"><a href="/fans.php?v=join">Join the fan club</a> to play under your own username.</span></p>
+  <ol id="hof"><li class="hint">Loading...</li></ol>
+</section>
+
+<?php page_footer('<script src="/assets/js/bert.js?v=1"></script>'); return; ?>
 <?php endif; ?>
 <?php if ($g === 'blocks'): ?>
 <h1>Leah's Blocks</h1>

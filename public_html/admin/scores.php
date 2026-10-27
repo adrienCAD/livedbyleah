@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     redirect('/admin/scores.php');
 }
-$rows = db()->query('SELECT s.id, s.game, COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.km, s.created_at FROM scores s LEFT JOIN fans f ON f.id = s.fan_id ORDER BY s.game, CASE WHEN s.game = "blocks" THEN -s.ms WHEN s.game = "road" THEN -s.km ELSE 0 END, s.won DESC, s.level DESC, s.ms ASC, s.id ASC LIMIT 100')->fetchAll();
+$rows = db()->query('SELECT s.id, s.game, COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.km, s.created_at FROM scores s LEFT JOIN fans f ON f.id = s.fan_id ORDER BY s.game, CASE WHEN s.game IN ("blocks", "bert") THEN -s.ms WHEN s.game = "road" THEN -s.km ELSE 0 END, s.won DESC, s.level DESC, s.ms ASC, s.id ASC LIMIT 100')->fetchAll();
 admin_header('Hall of fame');
 ?>
 <h1>Hall of fame</h1>
@@ -24,9 +24,9 @@ admin_header('Hall of fame');
 <thead><tr><th>#</th><th>Game</th><th>Name</th><th>Result</th><th>Time</th><th>Date</th><th></th></tr></thead>
 <tbody>
 <?php foreach ($rows as $i => $r): $s = intdiv((int)$r['ms'], 1000); ?>
-  <tr><td><?= $i + 1 ?></td><td><?= e(['surf' => 'Surf', 'road' => 'Outrun', 'blocks' => 'Blocks'][$r['game']] ?? $r['game']) ?></td><td><?= e($r['name']) ?></td>
-    <td><?= $r['game'] === 'blocks' ? (int)$r['level'] . ' lines' : ($r['game'] === 'road' ? hof_result('road', $r) : ($r['won'] ? 'Cleared all 5' : 'Level ' . (int)$r['level'])) ?></td>
-    <td><?= $r['game'] === 'blocks' ? number_format((int)$r['ms']) . ' pts' : sprintf('%d:%02d', intdiv($s, 60), $s % 60) ?></td><td><?= e(substr($r['created_at'], 0, 10)) ?></td>
+  <tr><td><?= $i + 1 ?></td><td><?= e(['surf' => 'Surf', 'road' => 'Outrun', 'blocks' => 'Blocks', 'bert' => 'L-Bert'][$r['game']] ?? $r['game']) ?></td><td><?= e($r['name']) ?></td>
+    <td><?= $r['game'] === 'blocks' ? (int)$r['level'] . ' lines' : ($r['game'] === 'bert' ? ((int)$r['won'] === 1 ? 'Cleared all 4' : 'reached ' . BERT_ELEMENTS[max(1, min(4, (int)$r['level'])) - 1]) : ($r['game'] === 'road' ? hof_result('road', $r) : ($r['won'] ? 'Cleared all 5' : 'Level ' . (int)$r['level']))) ?></td>
+    <td><?= in_array($r['game'], ['blocks', 'bert'], true) ? number_format((int)$r['ms']) . ' pts' : sprintf('%d:%02d', intdiv($s, 60), $s % 60) ?></td><td><?= e(substr($r['created_at'], 0, 10)) ?></td>
     <td class="actions"><form method="post" onsubmit="return confirm('Remove this entry?');"><?= csrf_field() ?>
       <input type="hidden" name="id" value="<?= (int)$r['id'] ?>"><button class="link-danger" type="submit">Remove</button></form></td></tr>
 <?php endforeach; ?>
