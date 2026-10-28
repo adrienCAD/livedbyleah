@@ -11,6 +11,7 @@
   var W = 320, H = 180, HZ = 76;                       // canvas size and horizon line (HZ changes for a moment while landmarks are drawn)
   var ROAD_W = 2000, SEG = 200, CAM_H = 1000, DRAW = 160, RUMBLE = 3;
   var CAM_D = 1 / Math.tan(50 * Math.PI / 180);        // field of view 100
+  var HARD_T = 1.0;                                    // hold left/right longer than this (s) for a hard turn
   var MAXS = SEG * 60;                                 // top speed (units per second) = 60 segments per second
   var PLAYER_Z = CAM_H * CAM_D;
   var ACCEL = MAXS / 4.5, BRAKE = -MAXS * 0.9, DECEL = -MAXS / 6, OFFDECEL = -MAXS / 2.2, OFFLIMIT = MAXS / 4, CENTRI = 0.3;
@@ -453,9 +454,11 @@
   var JEEPSIDE = null, JEEPCERT = null;   // cargo ship profile and certificate view (loaded images)
   (function () {
     function load(src, fn) { var im = new Image(); im.onload = function () { fn(im); }; im.src = src; }
-    load('/assets/img/jeep-rear.png?v=3', function (im) { JEEP[2] = im; });                                  // straight: view from behind
-    load('/assets/img/jeep-q1.png?v=3', function (im) { JEEP[3] = im; JEEP[1] = flip(im); });                 // short press: 1/4 view (mirrored for left)
-    load('/assets/img/jeep-q3.png?v=3', function (im) { JEEP[4] = im; JEEP[0] = flip(im); });                 // long press: 3/4 view (mirrored for left)
+    load('/assets/img/jeep-rear.png?v=4', function (im) { JEEP[2] = im; });   // straight: view from behind
+    load('/assets/img/jeep-l30.png?v=4', function (im) { JEEP[1] = im; });    // short press left (Leah's 30 view)
+    load('/assets/img/jeep-r30.png?v=4', function (im) { JEEP[3] = im; });    // short press right
+    load('/assets/img/jeep-l45.png?v=4', function (im) { JEEP[0] = im; });    // held more than 1 s, left (Leah's 45 view, slide with smoke)
+    load('/assets/img/jeep-r45.png?v=4', function (im) { JEEP[4] = im; });    // held more than 1 s, right
     load('/assets/img/jeep-side.png?v=3', function (im) { JEEPSIDE = im; });
     load('/assets/img/jeep-cert.png?v=3', function (im) { JEEPCERT = im; });
   })();
@@ -626,7 +629,7 @@
   var mode = 'idle';             // idle | card | drive | finish | dying | ship | over | win
   var level = 1, L = LEVELS[0];
   var segs = [], total = 0, cars = [], bgs = [], bgX = 0, zoneLen = 1, events = [], lastZone = 0;
-  var pos = 0, speed = 0, playerX = 0, steerV = 0, turnDir = 0, turnT = 0, turnLvl = 0, dropT = 0, lift = 0, boostT = 0, crashT = 0, timeLeft = 0, lvlMs = 0, clockMs = 0, cardT = 0, finT = 0, shipT = 0;
+  var pos = 0, speed = 0, playerX = 0, steerV = 0, turnDir = 0, turnT = 0, turnLvl = 0, dropT = 0, hardTurn = false, skidT = 0, puffs = [], lift = 0, boostT = 0, crashT = 0, timeLeft = 0, lvlMs = 0, clockMs = 0, cardT = 0, finT = 0, shipT = 0;
   var toast = '', toastT = 0, flash = 0;
   var cpDone = [], cpSegs = [], finishSeg = 0, runNonce = '', finalMs = 0, finalKm = 0, god = false, tick = 0;
   var me = { name: 'Driver', fan: false };
@@ -736,7 +739,7 @@
 
   function loadLevel(n) {
     level = n; buildLevel(n);
-    pos = 0; speed = 0; playerX = 0; steerV = 0; turnDir = 0; turnT = 0; turnLvl = 0; dropT = 0; boostT = 0; crashT = 0; lvlMs = 0; toast = ''; flash = 0; lastZone = 0;
+    pos = 0; speed = 0; playerX = 0; steerV = 0; turnDir = 0; turnT = 0; turnLvl = 0; dropT = 0; hardTurn = false; skidT = 0; puffs = []; boostT = 0; crashT = 0; lvlMs = 0; toast = ''; flash = 0; lastZone = 0;
     timeLeft = L.start + (loadLevel.carry || 0); loadLevel.carry = 0;
     mode = 'card'; cardT = 2.4;
     hud();
@@ -763,6 +766,7 @@
     batt: function () { beep(660, 1320, 0.14); },
     boost: function () { beep(200, 900, 0.35, 'sawtooth', 0.12); },
     crash: function () { beep(160, 40, 0.3, 'sawtooth', 0.2); },
+    skid: function () { beep(1150, 820, 0.3, 'sawtooth', 0.05); beep(1750, 1250, 0.22, 'square', 0.02); },
     cp: function () { beep(523, 523, 0.1); setTimeout(function () { beep(784, 784, 0.18); }, 110); },
     cry: function () { beep(300, 520, 0.25, 'triangle', 0.15); setTimeout(function () { beep(520, 280, 0.25, 'triangle', 0.15); }, 220); },
     horn: function () { beep(420, 420, 0.5, 'square', 0.12); },
@@ -780,6 +784,7 @@
     tick += dt;
     if (toastT > 0) { toastT -= dt; }
     if (flash > 0) { flash -= dt; }
+    if (puffs.length) { puffs.forEach(function (q) { q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.r = 2.5 + 7 * (q.t / q.life); }); puffs = puffs.filter(function (q) { return q.t < q.life; }); }
     if (mode === 'ship') { shipT += dt; if (shipT > 6.5) { endShip(); } return; }
     if (mode === 'card') { cardT -= dt; if (cardT <= 0) { mode = 'drive'; } }
     var driving = mode === 'drive';
@@ -790,10 +795,21 @@
     if (keys.left && !keys.right) { steerV = Math.max(-1, steerV - dt * 3.2); }
     else if (keys.right && !keys.left) { steerV = Math.min(1, steerV + dt * 3.2); }
     else { steerV = steerV > 0 ? Math.max(0, steerV - dt * 5) : Math.min(0, steerV + dt * 5); }
-    // Jeep view: quick press = 1/4 view, held more than 1/2 s = 3/4 view, released = view from behind
+    // Jeep view: quick press = 30 view, held more than 1 s = 45 view (hard turn: slide, smoke, faster steering, a little slower), released = view from behind
     var tdir = keys.left && !keys.right ? -1 : keys.right && !keys.left ? 1 : 0;
-    if (tdir !== 0) { if (tdir !== turnDir) { turnDir = tdir; turnT = 0; } turnT += dt; turnLvl = turnT >= 0.5 ? 2 : 1; dropT = 0.1; }
+    if (tdir !== 0) { if (tdir !== turnDir) { turnDir = tdir; turnT = 0; } turnT += dt; turnLvl = turnT >= HARD_T ? 2 : 1; dropT = 0.1; }
     else { dropT -= dt; if (dropT <= 0) { turnLvl = 0; turnDir = 0; turnT = 0; } else { turnLvl = Math.min(turnLvl, 1); } }
+    hardTurn = driving && tdir !== 0 && turnT >= HARD_T && speed > MAXS * 0.15;
+    skidT -= dt;
+    if (hardTurn) {
+      if (skidT <= 0) { SFX.skid(); skidT = 0.42; }
+      var sj = JEEP[tdir < 0 ? 0 : 4], sx0 = W / 2 - sj.width / 2, sy0 = H - sj.height - 2 - lift;
+      for (var pn = 0; pn < 2; pn++) {   // tire smoke from the rear wheels
+        var fr = tdir < 0 ? 0.5 + Math.random() * 0.36 : 0.14 + Math.random() * 0.36;
+        puffs.push({ x: sx0 + sj.width * fr, y: sy0 + sj.height - 3 - Math.random() * 3, vx: -tdir * (8 + Math.random() * 22), vy: -(6 + Math.random() * 16), r: 2, life: 0.55 + Math.random() * 0.35, t: 0 });
+      }
+      if (puffs.length > 120) { puffs.splice(0, puffs.length - 120); }
+    }
 
     if (driving || finishing) {
       var gas = driving && keys.gas, brake = keys.brake || mode === 'dying';
@@ -803,7 +819,7 @@
       if (mode === 'dying' && !gas) { speed += DECEL * 1.5 * dt; }
       speed -= (seg.y2 - seg.y1) / SEG * MAXS * 0.22 * dt;                     // uphill slows you a little, downhill helps
       if (driving) {
-        var dx = 2 * dt * Math.min(1, pct + 0.15);
+        var dx = 2 * dt * Math.min(1, pct + 0.15) * (hardTurn ? 1.25 : 1);
         if (keys.left) { playerX -= dx; } else if (keys.right) { playerX += dx; }
         playerX -= dx * pct * seg.curve * CENTRI;
       }
@@ -812,6 +828,7 @@
       if (boostT > 0) { boostT -= dt; }
       speed = clamp(speed, 0, boostT > 0 ? cap : Math.max(MAXS, speed - ACCEL * dt));
       if (speed > MAXS && boostT <= 0) { speed = Math.max(MAXS, speed - ACCEL * 1.5 * dt); }
+      if (hardTurn && boostT <= 0 && speed > MAXS * 0.92) { speed = Math.max(MAXS * 0.92, speed - MAXS * 0.6 * dt); }   // a hard turn costs about 8% of top speed
       var before = pos + PLAYER_Z;
       pos += speed * dt;
       bgX += seg.curve * pct * dt * 60 * 0.9;
@@ -1130,6 +1147,12 @@
       if (lift > 2) { g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(jx + 6, H - 4, jf.width - 12, 3); }
       g.drawImage(jf, jx, jy);
     }
+    // tire smoke while sliding: soft round grey-white puffs
+    puffs.forEach(function (q) {
+      var k = 1 - q.t / q.life;
+      g.fillStyle = 'rgba(120,120,135,' + (0.22 * k).toFixed(2) + ')'; g.beginPath(); g.arc(q.x, q.y + 1, q.r + 1.5, 0, 7); g.fill();
+      g.fillStyle = 'rgba(238,238,244,' + (0.62 * k).toFixed(2) + ')'; g.beginPath(); g.arc(q.x, q.y, q.r, 0, 7); g.fill();
+    });
     if (boostT > 0) { g.fillStyle = 'rgba(255,255,255,.55)'; for (i = 0; i < 6; i++) { g.fillRect(Math.round((i * 53 + tick * 600) % W), 100 + (i * 17) % 70, 2, 12); } }
     if (flash > 0) { g.fillStyle = 'rgba(120,255,120,.18)'; g.fillRect(0, 0, W, H); }
 
@@ -1301,7 +1324,7 @@
       info: function () {
         var s = segAt(pos + PLAYER_Z), idx = Math.floor((pos + PLAYER_Z) / SEG);
         return { mode: mode, level: level, pos: pos, idx: idx, finish: finishSeg, speed: speed, pct: speed / MAXS, x: playerX, curve: s.curve, time: timeLeft, ms: clockMs, lvlMs: lvlMs, boost: boostT,
-          km: kmNow(), steer: steerV, lift: lift, zone: L.zones[zoneAt(Math.min(idx, finishSeg)).a], stats: ST,
+          km: kmNow(), steer: steerV, hard: hardTurn, turnT: turnT, turnLvl: turnLvl, puffs: puffs.length, lift: lift, zone: L.zones[zoneAt(Math.min(idx, finishSeg)).a], stats: ST,
           ahead: cars.filter(function (c) { return c.z > pos + PLAYER_Z && c.z < pos + PLAYER_Z + SEG * 22; }).map(function (c) { return { dz: (c.z - pos - PLAYER_Z) / SEG, off: c.off }; }),
           events: events.map(function (ev) { return ev.seg + ':' + ev.state; }), cry: events.filter(function (ev) { return ev.state === 'cross' && ev.seg >= idx - 1; }).map(function (ev) { return { dz: ev.seg - idx, off: ev.off }; }),
           items: segs.slice(idx, idx + 14).filter(function (q) { return q.item && !q.item.got; }).map(function (q) { return q.item.off; }) };

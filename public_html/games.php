@@ -95,7 +95,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/road.js?v=6"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/road.js?v=7"></script>'); return; ?>
 <?php endif; ?>
 <?php if ($g === 'bert'): ?>
 <h1>Fossil Smash</h1>
