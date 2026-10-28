@@ -30,9 +30,9 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
     <span class="gc-text">Stack hand-drawn blocks, clear lines and chase the top score.</span>
   </a>
   <a class="gamecard" href="/games.php?g=bert">
-    <img src="/assets/img/games/bert.png" width="640" height="360" alt="L-Bert: Mumu hopping on a pyramid of stones" loading="lazy">
-    <span class="gc-title">L-Bert</span>
-    <span class="gc-text">Hop Mumu across Water, Earth, Air and Fire. Paint every stone and dodge the critters!</span>
+    <img src="/assets/img/games/bert.png?v=2" width="640" height="360" alt="Fossil Smash: Bagel the brachiosaurus stomping a pyramid of fossil stones" loading="lazy">
+    <span class="gc-title">Fossil Smash</span>
+    <span class="gc-text">Stomp Bagel across the Triassic, Jurassic, Cretaceous and Meteor Day. Smash every stone and dodge the critters!</span>
   </a>
 </div>
 <h2>Hall of fame</h2>
@@ -43,7 +43,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
   <a href="/games.php?g=surf"<?= $g === 'surf' ? ' class="on" aria-current="page"' : '' ?>>Surf Cleanup</a>
   <a href="/games.php?g=road"<?= $g === 'road' ? ' class="on" aria-current="page"' : '' ?>><?= e($ROAD_NAME) ?></a>
   <a href="/games.php?g=blocks"<?= $g === 'blocks' ? ' class="on" aria-current="page"' : '' ?>>Leah's Blocks</a>
-  <a href="/games.php?g=bert"<?= $g === 'bert' ? ' class="on" aria-current="page"' : '' ?>>L-Bert</a>
+  <a href="/games.php?g=bert"<?= $g === 'bert' ? ' class="on" aria-current="page"' : '' ?>>Fossil Smash</a>
 </nav>
 <?php if ($g === 'road'): ?>
 <h1><?= e($ROAD_NAME) ?></h1>
@@ -98,22 +98,22 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
 <?php page_footer('<script src="/assets/js/road.js?v=6"></script>'); return; ?>
 <?php endif; ?>
 <?php if ($g === 'bert'): ?>
-<h1>L-Bert</h1>
-<p class="lede">Hop Mumu across a pyramid of stones and paint every top to clear the round. Four elements (Water, Earth, Air, Fire), three rounds each. Dodge the critters, catch mini Bigfoot, ride the clouds back to the top, and glide over trouble twice per level.</p>
+<h1>Fossil Smash</h1>
+<p class="lede">Hop Bagel the brachiosaurus across a pyramid of fossil stones and smash every one to clear the round. Four ages (Triassic, Jurassic, Cretaceous, Meteor Day), three rounds each. Dodge meteors, fireballs, raptors and pterodactyls, catch the trilobites, ride the clouds back to the top, and glide on a big leaf over trouble twice per level.</p>
 
 <div class="game bert-game" id="game">
   <div class="game-hud game-hud-road">
     <span id="hudScore">Score 0</span>
     <span id="hudLives">Lives 3</span>
-    <span id="hudLevel">Water 1/3</span>
+    <span id="hudLevel">Triassic 1/3</span>
     <span id="hudGlide">Glides 2</span>
     <button type="button" id="muteBtn" class="hud-btn" aria-pressed="false" aria-label="Mute sound">Sound on</button>
   </div>
-  <canvas id="gameCanvas" width="320" height="240" aria-label="L-Bert game"></canvas>
+  <canvas id="gameCanvas" width="320" height="240" aria-label="Fossil Smash game"></canvas>
   <div class="game-overlay road-start" id="gameStart">
-    <img class="road-logo" src="/assets/img/games/bert.png" width="640" height="360" alt="L-Bert">
+    <img class="road-logo" src="/assets/img/games/bert.png?v=2" width="640" height="360" alt="Fossil Smash">
     <button type="button" id="startBtn" class="btn">Start</button>
-    <p class="hint">Arrow keys hop diagonally, like the arcade: &larr; up-left, &uarr; up-right, &rarr; down-right, &darr; down-left (or Q, E, Z, C). Space = glide (2 stones, twice per level). On a phone, tap beside Mumu or use the buttons.</p>
+    <p class="hint">Arrow keys hop diagonally, like the arcade: &larr; up-left, &uarr; up-right, &rarr; down-right, &darr; down-left (or Q, E, Z, C). Space = glide (2 stones, twice per level). On a phone, tap beside Bagel or use the buttons.</p>
   </div>
   <div class="game-overlay" id="gameOver" hidden>
     <p class="pixel">GAME OVER</p>
@@ -123,7 +123,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
     <button type="button" id="retryBtn" class="btn">Try again</button>
   </div>
   <div class="game-overlay" id="gameWin" hidden>
-    <p class="pixel">ALL 4 ELEMENTS!</p>
+    <p class="pixel">ALL 4 AGES SMASHED!</p>
     <p id="winScore">Score 0</p>
     <p class="hint" id="winWho"></p>
     <div class="row">
@@ -140,7 +140,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
     <button type="button" data-key="dr" aria-label="Hop down-right">&#8600;</button>
   </div>
 </div>
-<p class="hint">Mumu and the critters are drawn in code for now, in Leah's pixel style. Version <?= e(SITE_VERSION) ?>.</p>
+<p class="hint">Bagel, the meteor and the fireballs are Leah's art; the other critters are drawn in code for now, in her pixel style. Version <?= e(SITE_VERSION) ?>.</p>
 
 <section class="hof">
   <h2>Hall of fame</h2>
@@ -148,7 +148,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/bert.js?v=1"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/bert.js?v=2"></script>'); return; ?>
 <?php endif; ?>
 <?php if ($g === 'blocks'): ?>
 <h1>Leah's Blocks</h1>

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 const SITE_NAME = 'Lived by Leah';
-const SITE_VERSION = '1.3.0';   // see CLAUDE.md for the version list
+const SITE_VERSION = '1.4.0';   // see CLAUDE.md for the version list
 const DB_PATH = __DIR__ . '/../data/site.sqlite';
 
 if (session_status() === PHP_SESSION_NONE) {

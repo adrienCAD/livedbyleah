@@ -222,8 +222,8 @@ function score_order(string $game): string {
     if ($game === 'road') { return 's.km DESC, s.ms ASC, s.id ASC'; }
     return SCORE_ORDER;
 }
-const HOF_GAMES = ['surf' => 'Surf Cleanup', 'road' => "Leah's Outrun", 'blocks' => "Leah's Blocks", 'bert' => 'L-Bert'];
-const BERT_ELEMENTS = ['Water', 'Earth', 'Air', 'Fire'];
+const HOF_GAMES = ['surf' => 'Surf Cleanup', 'road' => "Leah's Outrun", 'blocks' => "Leah's Blocks", 'bert' => 'Fossil Smash'];
+const BERT_ELEMENTS = ['Triassic', 'Jurassic', 'Cretaceous', 'Meteor Day'];
 
 function hof_result(string $game, array $r): string {
     if ($game === 'blocks') {
@@ -307,7 +307,7 @@ function demo_count(): int {
 // Adds fake fans with scores in the four games. They cannot log in (random password, fake email) and are flagged demo = 1.
 function demo_add(): int {
     if (demo_count() > 0) { return 0; }
-    // first, last, username, days since joining, days since last seen, surf (level, won, sec), road (level, won, sec), blocks (score, lines), L-Bert (score, level, won)
+    // first, last, username, days since joining, days since last seen, surf (level, won, sec), road (level, won, sec), blocks (score, lines), Fossil Smash (score, level, won)
     $people = [
         ['Mia', 'Kowalski', 'SunnyMia', 12, 0, [5, 1, 612], [3, 0, 190], [9400, 41], [36500, 4, 1]],
         ['Noah', 'Brooks', 'NoahWaves', 11, 0, [5, 1, 705], [5, 1, 640], [4200, 22], [8200, 2, 0]],

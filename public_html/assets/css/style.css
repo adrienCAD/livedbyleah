@@ -278,7 +278,7 @@ ol.fanlist { counter-reset: none; }
 .hofbox .fanlist { margin-bottom: 8px; max-width: none; }
 .hofbox .fanlist li { flex-wrap: wrap; }
 
-/* L-Bert */
+/* Fossil Smash (was L-Bert) */
 .bert-touch { display: none; }
 @media (pointer: coarse) {
   .bert-touch { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
