@@ -103,7 +103,7 @@ Leah's take on the hopping-pyramid arcade game (she loves it), dinosaur themed, 
 - Controls: arrows turned 45 degrees like the arcade (left = up-left, up = up-right, right = down-right, down = down-left), or Q/E/Z/C, numpad 7/9/1/3. Phones: tap beside Bagel, or 4 diagonal buttons + Glide.
 - Score: 15 or 25 per stomp step, round bonus, catches, lures. Hall of fame `game=bert`: score in `scores.ms`, age level reached (1-4) in `scores.level` (names in `BERT_ELEMENTS`), `won` = cleared all 4; ranked by score. Server check: score <= 400 x seconds + 5,000, level 1-4, a win needs 100 s or more. Scores under 100 are not saved.
 - Fan points (score tiers, like Blocks): 2,000 = 1, 5,000 = 3, 10,000 = 6, 20,000 = 10, 35,000 = 15 (`fan_ranking()`). Certificate ("OF FOSSIL SMASHING") only for a full clear: hop stats, critter report, 4 random goofy stats (`goofyPool()`) and Bagel's picture.
-- Hub card image `assets/img/games/bert.png` is a game screenshot with the title (placeholder until Leah's art). Not yet confirmed live on the host (v1.4.0).
+- Hub card image `assets/img/games/bert.png` is a game screenshot with the title (placeholder until Leah's art).
 - Test hook: `/games.php?g=bert&debug=1` gives `window.__bert` (info(), start(), level(n, round), skipCard(), god(), hop(dir), paintAll(leave), clear(), lives(n), spawn(type: meteor|fireball|raptor|trilo|ptero|trex), place(type, r, c), heart(r, c), over(), won(), stats(), sprites()).
 
 ## Hall of fame summary (v1.2.6)

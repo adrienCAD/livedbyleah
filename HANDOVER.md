@@ -4,8 +4,7 @@ Read CLAUDE.md first for permanent architecture and rules. This file records the
 
 ## Status (as of 2026-10-28, site version 1.5.0)
 - `main` on GitHub = v1.5.0 (last commit 7187d93). Working tree clean. Local `data/site.sqlite` deleted.
-- **Confirmed live by Adrien:** everything through v1.3.0 (fan club, confirmation emails, screenshot uploads, 4 games, hall of fame).
-- **Built and pushed, NOT yet confirmed live:** v1.4.0 (Fossil Smash), v1.4.1 (Outrun Jeep 30/45 views, hard turn with smoke), v1.5.0 (Bake Off). Zips are in `/tmp/claude-0/out/` of the last session only (rebuild from `main` with the deploy routine if gone): `livedbyleah-v1.4.0.zip`, `-v1.4.1.zip`, `-v1.5.0.zip`. v1.5.0 contains everything, so deploying it alone is enough.
+- **Confirmed live by Adrien (2026-10-28): all updates through v1.5.0 work** (fan club, emails, screenshot uploads, Surf Cleanup, Outrun with the 30/45 Jeep, Bake Off, Fossil Smash, hall of fame). Nothing is waiting to be deployed.
 - The PRD artifact (https://claude.ai/artifact/MbrxkAeARiMFxm95G6LK3D) is at **Draft v7** (site 1.3.0). It does NOT yet cover v1.4.0, v1.4.1 or Bake Off. Adrien was offered "Draft v8" and has not answered. Show the text first, he approves with "go".
 
 ## Recent progress (this session, all merged to main)
@@ -17,17 +16,16 @@ Read CLAUDE.md first for permanent architecture and rules. This file records the
 - Git note: Leah/Adrien push art straight to `main`. If `git push` is rejected, `git fetch`, `git merge origin/main`, push again.
 
 ## Open items (priority order)
-1. Deploy v1.5.0 and confirm on the host: Fossil Smash, Outrun Jeep turns, Bake Off (hub card, play, row clear, hold, certificate at 12,000). Hard-refresh first.
-2. Real playtests by Leah and fans for difficulty: Surf Cleanup Level 5 (what killed her?), Outrun (cryptids, battery), Fossil Smash (4 levels, boss), Bake Off. All balance so far is from scripted tests only.
-3. PRD Draft v8 (see Status).
-4. Replace placeholder art with Leah's: Surf shells (4), shark, UFO; Outrun scenery, roadside sprites, cryptids, signs, cars, cargo ship; Fossil Smash critters (pterodactyl, trilobite, raptor, T. rex) and hub card (`bert.png` is a screenshot); Bake Off has no placeholders.
-5. Privacy policy and terms page.
-6. Weekly backup of `data/site.sqlite` (manual download today).
-7. Paste TikTok links per vlog via the gear icon.
-8. Editor role for Alessandro. Campaigns.
-9. Confirm `setup.php` is deleted on the server and the YouTube API key is set in Admin > Settings.
-10. Music for the games (none yet).
-11. After deploying, Admin > Settings > Remove demo fans, then Add demo fans, if Fossil Smash / Bake Off demo scores are wanted.
+1. Real playtests by Leah and fans for difficulty: Surf Cleanup Level 5 (what killed her?), Outrun (cryptids, battery), Fossil Smash (4 levels, boss), Bake Off. All balance so far is from scripted tests only.
+2. PRD Draft v8 (see Status).
+3. Replace placeholder art with Leah's: Surf shells (4), shark, UFO; Outrun scenery, roadside sprites, cryptids, signs, cars, cargo ship; Fossil Smash critters (pterodactyl, trilobite, raptor, T. rex) and hub card (`bert.png` is a screenshot); Bake Off has no placeholders.
+4. Privacy policy and terms page.
+5. Weekly backup of `data/site.sqlite` (manual download today).
+6. Paste TikTok links per vlog via the gear icon.
+7. Editor role for Alessandro. Campaigns.
+8. Confirm `setup.php` is deleted on the server and the YouTube API key is set in Admin > Settings.
+9. Music for the games (none yet).
+10. Demo fans: Admin > Settings > Remove demo fans, then Add demo fans, if Fossil Smash / Bake Off demo scores are wanted.
 
 ## Known issues and limitations
 - Bake Off: a few stray pixels outside a cell's 8x8 (sifter spout, triangle tip) are not drawn on the board. The cream mushroom is low contrast on the pale board (Leah's colours). NEXT shows 1 piece (the old game showed 3). The "next fan point" hint and the HTML score bar are not shown for this game (score, dishes, level are in the canvas panels; only the Sound button remains, bottom right).
@@ -115,11 +113,11 @@ Keep this block current.
 ```
 You are continuing work on livedbyleah.com, a vlog hub and fan site I (Adrien, architect and admin, new to hosting) am building for my 16-year-old daughter Leah (owner and creator). Repo: https://github.com/adrienCAD/livedbyleah (`main` is the truth, site code in public_html/). Before anything else, read CLAUDE.md (permanent architecture and rules), HANDOVER.md (status, open items, known issues, working agreements) and README.md in the repo root. Keep replies crisp, simple, short steps. I deploy by uploading zips to Namecheap cPanel by hand.
 
-State: site v1.5.0 on main. Four games, each with its own hall of fame: Surf Cleanup, Leah's Outrun, Bake Off (internal id "blocks"), Fossil Smash (internal id "bert"). Fan club, points, screenshots, support requests are live. v1.3.0 is confirmed live; v1.4.0, v1.4.1 and v1.5.0 are built and pushed but NOT yet confirmed on the host. The PRD artifact (https://claude.ai/artifact/MbrxkAeARiMFxm95G6LK3D) is at Draft v7 and needs Draft v8 (Fossil Smash, Jeep 1.4.1, Bake Off): show me the text first, I approve with "go".
+State: site v1.5.0 on main. Four games, each with its own hall of fame: Surf Cleanup, Leah's Outrun, Bake Off (internal id "blocks"), Fossil Smash (internal id "bert"). Fan club, points, screenshots, support requests are live. All updates through v1.5.0 are deployed and confirmed working on the host (2026-10-28). The PRD artifact (https://claude.ai/artifact/MbrxkAeARiMFxm95G6LK3D) is at Draft v7 and needs Draft v8 (Fossil Smash, Jeep 1.4.1, Bake Off, all confirmed live): show me the text first, I approve with "go".
 
 Rules: PHP 8 + SQLite, no frameworks; PDO prepared statements, CSRF on every POST, e() on output; migrations inside db() in inc/bootstrap.php; never touch data/site.sqlite; cache-bust JS/CSS/images with ?v=N; fan-facing text names only Leah. Use only Sonnet 5.5 (or Haiku 5.5) for subagents, never Opus or Fable without asking. When I write "STOP", ask all your questions in one batch and wait for "go". Branch per update (next: update-t), test locally with php -S 127.0.0.1:8099 and Playwright, delete data/site.sqlite and outbox.log, merge to main, push (if rejected: git fetch, git merge origin/main, push), build livedbyleah-v<version>.zip excluding data/*, setup.php and .DS_Store, send it, then add a dated entry to HANDOVER.md and update CLAUDE.md. Kill servers by port, never pkill -f.
 
-Open items, in order: (1) confirm v1.5.0 on the host; (2) real playtest feedback and difficulty tuning (Surf Level 5, Outrun, Fossil Smash, Bake Off); (3) PRD Draft v8; (4) replace placeholder art with Leah's (Surf shells, shark, UFO; Outrun scenery, cryptids, signs, cars, ship; Fossil Smash critters and hub card); (5) privacy policy and terms page; (6) weekly backup of data/site.sqlite; (7) TikTok links via the gear icon; (8) editor role for Alessandro, campaigns; (9) confirm setup.php deleted and YouTube API key set; (10) game music.
+Open items, in order: (1) real playtest feedback and difficulty tuning (Surf Level 5, Outrun, Fossil Smash, Bake Off); (2) PRD Draft v8; (3) replace placeholder art with Leah's (Surf shells, shark, UFO; Outrun scenery, cryptids, signs, cars, ship; Fossil Smash critters and hub card); (4) privacy policy and terms page; (5) weekly backup of data/site.sqlite; (6) TikTok links via the gear icon; (7) editor role for Alessandro, campaigns; (8) confirm setup.php deleted and YouTube API key set; (9) game music.
 
 Start by reading the three docs, then tell me in 3 lines what you understand and ask which open item to take first.
 ```
