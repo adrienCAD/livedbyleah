@@ -1,11 +1,49 @@
-# HANDOVER.md: rolling session log (newest at the bottom)
+# HANDOVER.md: rolling session log and current state
 
-Read CLAUDE.md first for permanent architecture. This file records what happened and what is open.
+Read CLAUDE.md first for permanent architecture and rules. This file records the current status, open items, known issues and history. Keep the restart prompt at the bottom current.
 
-## Status (as of 2026-10-25)
-- Live and deployed through update 8 (Update F), confirmed working by Adrien. `main` on GitHub matches.
-- Fonts confirmed working after a hard refresh.
-- Leah played a real run, reached Level 5, and then lost. She did not finish (see Feedback).
+## Status (as of 2026-10-28, site version 1.5.0)
+- `main` on GitHub = v1.5.0 (last commit 7187d93). Working tree clean. Local `data/site.sqlite` deleted.
+- **Confirmed live by Adrien:** everything through v1.3.0 (fan club, confirmation emails, screenshot uploads, 4 games, hall of fame).
+- **Built and pushed, NOT yet confirmed live:** v1.4.0 (Fossil Smash), v1.4.1 (Outrun Jeep 30/45 views, hard turn with smoke), v1.5.0 (Bake Off). Zips are in `/tmp/claude-0/out/` of the last session only (rebuild from `main` with the deploy routine if gone): `livedbyleah-v1.4.0.zip`, `-v1.4.1.zip`, `-v1.5.0.zip`. v1.5.0 contains everything, so deploying it alone is enough.
+- The PRD artifact (https://claude.ai/artifact/MbrxkAeARiMFxm95G6LK3D) is at **Draft v7** (site 1.3.0). It does NOT yet cover v1.4.0, v1.4.1 or Bake Off. Adrien was offered "Draft v8" and has not answered. Show the text first, he approves with "go".
+
+## Recent progress (this session, all merged to main)
+- **v1.3.0** L-Bert, the 4th game (hopping pyramid, original characters).
+- **v1.4.0** renamed **Fossil Smash**: dinosaur theme. Hero Bagel (blue brachiosaurus, Leah's art), Leah's meteor and 2 fireball frames, levels Triassic / Jurassic / Cretaceous / Meteor Day, fossil stones (sand, bone, amber with prints), critters pterodactyl, trilobite, egg-thief raptor, T. rex boss, new hub card and certificate.
+- **v1.4.1** Outrun Jeep uses Leah's five pictures: short press = 30 view, hold over 1 s = 45 view (hard turn: steering x1.25, speed capped at 92% of top, grey tire smoke, squeal every 0.42 s).
+- **v1.5.0** Leah's Blocks renamed **Bake Off**: Leah's 7 kitchen pieces (I spatula, O flour sack, T mushroom, S sifter, Z chocolate, J jar with tin, L triangle), her mockup layout (gingham, brown frame, checkered board, NEXT / HOLD / SCORE / DISHES / LEVEL, ART BY LEAH), each board cell keeps its own 8x8 slice so cleared rows cut pieces apart, bold pixel font drawn in code, "Dishes" replaces "Lines", certificate OF BAKING with all text in Myfont, new hub card, tap-shorter-than-a-frame fix. Piece PNGs are Leah's own cut files (`assets/bake-off/pieces/`), copied to `public_html/assets/img/bakeoff/`.
+- Synced Leah's draft art pushes into the repo (`art/`, `assets/bake-off/`; not deployed).
+- Git note: Leah/Adrien push art straight to `main`. If `git push` is rejected, `git fetch`, `git merge origin/main`, push again.
+
+## Open items (priority order)
+1. Deploy v1.5.0 and confirm on the host: Fossil Smash, Outrun Jeep turns, Bake Off (hub card, play, row clear, hold, certificate at 12,000). Hard-refresh first.
+2. Real playtests by Leah and fans for difficulty: Surf Cleanup Level 5 (what killed her?), Outrun (cryptids, battery), Fossil Smash (4 levels, boss), Bake Off. All balance so far is from scripted tests only.
+3. PRD Draft v8 (see Status).
+4. Replace placeholder art with Leah's: Surf shells (4), shark, UFO; Outrun scenery, roadside sprites, cryptids, signs, cars, cargo ship; Fossil Smash critters (pterodactyl, trilobite, raptor, T. rex) and hub card (`bert.png` is a screenshot); Bake Off has no placeholders.
+5. Privacy policy and terms page.
+6. Weekly backup of `data/site.sqlite` (manual download today).
+7. Paste TikTok links per vlog via the gear icon.
+8. Editor role for Alessandro. Campaigns.
+9. Confirm `setup.php` is deleted on the server and the YouTube API key is set in Admin > Settings.
+10. Music for the games (none yet).
+11. After deploying, Admin > Settings > Remove demo fans, then Add demo fans, if Fossil Smash / Bake Off demo scores are wanted.
+
+## Known issues and limitations
+- Bake Off: a few stray pixels outside a cell's 8x8 (sifter spout, triangle tip) are not drawn on the board. The cream mushroom is low contrast on the pale board (Leah's colours). NEXT shows 1 piece (the old game showed 3). The "next fan point" hint and the HTML score bar are not shown for this game (score, dishes, level are in the canvas panels; only the Sound button remains, bottom right).
+- Bake Off naming: internal id stays `blocks`; the API still calls dishes `lines` (stored in `scores.level`). `public_html/assets/img/games/blocks.jpg` is unused (old logo).
+- Debug hooks (`?debug=1`) fake results; the server rejects fake scores ("not accepted", HTTP 400 in the console). Expected.
+- Fossil Smash and Outrun use code-drawn placeholder art for most critters, scenery and signs.
+- No automatic backup, no email alerts for new screenshots or support requests (admin badges only).
+- Real difficulty is unknown until people play; do not retune from bot tests alone.
+- If a change does not show after upload, it is browser cache: hard-refresh, and bump `?v=N` on JS, CSS and images (current: `blocks.js?v=7`, `bert.js?v=2`, `road.js?v=7`, `style.css?v=13`, `bakeoff.png?v=2`, pieces `?v=2`).
+
+## Working agreements with Adrien
+- Replies crisp, simple, short steps (he is new to hosting). Fan-facing text names only Leah, never Adrien.
+- When he writes "STOP": ask all remaining questions in one batch and wait for "go". Show text (PRD, big plans) before applying; he approves with "go".
+- Subagents: Sonnet 5.5, or Haiku 5.5 for simple tasks. Never Opus or Fable without asking.
+- Branch per update (next: `update-t`), test locally (`php -S 127.0.0.1:8099`, Playwright via `NODE_PATH=$(npm root -g)`), delete `data/site.sqlite` and `data/outbox.log`, merge `--no-ff` to `main`, push, zip as `livedbyleah-v<version>.zip`, send the zip, add a dated entry here and update CLAUDE.md and the version list.
+- Kill the local server by port only. Never `pkill -f`.
 
 ## Log
 
@@ -58,97 +96,41 @@ Read CLAUDE.md first for permanent architecture. This file records what happened
 - PRD Draft v4 applied (see the PRD artifact).
 
 ### v1.2.1: Leah's Road Trip (branch `update-g`, `livedbyleah-v1.2.1.zip`)
-- Version numbering started: 1.2.1 = Road Trip, 1.2.2 = Leah's Blocks (Tetris-style, hand-drawn blocks, hold piece, Top 10 by score, fan points by score tiers, separate certificate). Blocks is NOT built yet; the Games menu shows it as "soon".
+- Version numbering started: 1.2.1 = Road Trip, 1.2.2 = Leah's Blocks (Tetris-style, hand-drawn blocks, hold piece, Top 10 by score, fan points by score tiers, separate certificate). Blocks was built right after (v1.2.2).
 - Also in this branch: screenshot form fixes (new thank-you text, Leah-only wording, photo/camera buttons, optional message to Leah, `proofs.fan_note`).
 - Road Trip: pseudo-3D driver, neon-green electric Jeep, 5 levels (Houston area, Mexico, Costa Rica, Colorado, France). Timer = battery; checkpoints and green batteries add time; yellow arrows boost. Own hall of fame (`scores.game = 'road'`) and certificate. Art is code-drawn placeholder pixel art, to be replaced with Leah's. No music yet.
-- Adrien's reference art (Leah's pixel scene and LEAH logo) is in the chat only; only the LEAH logo is in the repo (`assets/img/leah-logo.png`). The reference scene used the name "Leah's Outrun"; the game is called "Leah's Road Trip" to avoid the Sega trademark.
-
-## Open items
-- Paste the TikTok links per vlog via ⚙.
-- Replace my placeholder shells with Leah's own art. (The shark and UFO are also code-drawn.)
-- Fans: privacy policy and terms page; weekly backup of data/site.sqlite. Confirm screenshot uploads work on the live host after Update F.
-- Campaigns.
-- Editor role for Alessandro.
-- Confirm `setup.php` is deleted from the server (not confirmed this session).
-- Set up the YouTube API key if comments still show nothing (Adrien said he has the key and was told to paste it into admin/settings.php; result not confirmed).
-
-## Feedback to act on
-- Leah reached Level 5 for real, then lost. If it feels too hard or too easy, tune `LEVELS[5]` in `assets/js/game.js` (waveGain, gust, instab, gap, ufoFollow). Ask her what killed her (sharks, UFO, wave).
+- Adrien's reference art (Leah's pixel scene and LEAH logo) is in the chat only; only the LEAH logo is in the repo (`assets/img/leah-logo.png`). The reference scene used the name "Leah's Outrun"; the game was first called "Leah's Road Trip", and is now "Leah's Outrun" (v1.2.2).
 
 ## What failed or dead ends
 - WebFetch cannot read TikTok (robots), so TikTok links cannot be auto-matched.
 - `git push` was refused until the Claude GitHub App was installed and the repo added with `add_repo`.
 - Instagram seed did not run on a fresh DB because the flag was set before vlogs existed. Fixed: seed only when vlogs exist.
-- Debug `__lbl.won()` fakes the clock, so score submission fails with "That time was not accepted". It is expected. Test with a real run of 45 s or more.
+- Surf debug `__lbl.won()` fakes the clock, so score submission fails with "That time was not accepted". Expected. Pass a time under the real elapsed time to test saving.
+- Pixel-art cut-outs: BOX downsampling blurs; use NEAREST at the art's native pixel unit. Near-white fills can turn transparent in colour-key cut-outs (Bake Off mushroom, flour sack): prefer Leah's own cut files.
 - Do not use `pkill -f "php -S"` (it kills the shell). Kill by port.
-- Zip uploads: if a page looks unchanged, it is browser cache. Hard-refresh.
-- The sim is not a human. Real difficulty needs real play.
 
-## Handoff prompt (copy into a fresh session)
-Keep this block current. Update it whenever the status above changes.
+## Restart prompt (copy into a fresh session)
+Keep this block current.
 
 ```
-You are continuing work on livedbyleah.com, a vlog hub I (Adrien, architect and admin, new to hosting) am building for my 16-year-old daughter Leah (owner and creator). Read CLAUDE.md and HANDOVER.md in the repo root first. They are the source of truth for architecture, rules and history. Keep replies crisp and simple. I deploy by uploading zips by hand.
+You are continuing work on livedbyleah.com, a vlog hub and fan site I (Adrien, architect and admin, new to hosting) am building for my 16-year-old daughter Leah (owner and creator). Repo: https://github.com/adrienCAD/livedbyleah (`main` is the truth, site code in public_html/). Before anything else, read CLAUDE.md (permanent architecture and rules), HANDOVER.md (status, open items, known issues, working agreements) and README.md in the repo root. Keep replies crisp, simple, short steps. I deploy by uploading zips to Namecheap cPanel by hand.
 
-1. MAIN GOAL
-Keep building the site: a vlog hub (Watch Vlogs, Fans, Games, plus a private Writing Process tab for Leah and admins) and a fan game, "Surf Cleanup". Repo: https://github.com/adrienCAD/livedbyleah (code in public_html/). Hosting: Namecheap shared (PHP 8 + SQLite, no MySQL).
+State: site v1.5.0 on main. Four games, each with its own hall of fame: Surf Cleanup, Leah's Outrun, Bake Off (internal id "blocks"), Fossil Smash (internal id "bert"). Fan club, points, screenshots, support requests are live. v1.3.0 is confirmed live; v1.4.0, v1.4.1 and v1.5.0 are built and pushed but NOT yet confirmed on the host. The PRD artifact (https://claude.ai/artifact/MbrxkAeARiMFxm95G6LK3D) is at Draft v7 and needs Draft v8 (Fossil Smash, Jeep 1.4.1, Bake Off): show me the text first, I approve with "go".
 
-2. DECISIONS AND WHY
-- PHP 8 + SQLite, no frameworks: matches the shared host and keeps it simple. Auto-migrations live inside db() in inc/bootstrap.php, so uploading a zip upgrades the database with no manual steps.
-- Deploy = zip of public_html excluding data/*, setup.php and .DS_Store, uploaded via cPanel File Manager with Replace. Never touch data/site.sqlite.
-- Site font Shantell Sans, self-hosted. The certificate keeps its own font (Myfont-Digits.ttf). Palette: Pollen #FDC921, Mustard #FDD85D, Frosted Blue #99D6EA, Blue Grey #6798C0, Porcelain #FFFDF7, ink #1E3248.
-- Writing Process tab is private (admin only). Alessandro (future editor) is excluded for now. Public home is Watch Vlogs.
-- Comments: YouTube automatic via the Data API (key stored in Settings, cached 6 h, link comments skipped). TikTok and Instagram comments are pasted by Leah (they cannot be fetched). Names show as first name + last initial.
-- A vlog needs at least one link, so Instagram-only and TikTok-only vlogs are allowed. An admin-only gear icon edits links.
-- Game: 5 levels, one total timer, public Top 10 hall of fame (server rejects impossible times), 3 lives in total (max 5 with the UFO heart). Level 1 is the beach (4 trash + 4 shells, then a 4-piece gun puzzle). Levels 2-5 are surfing: left/right keep the board level (nose down = faster and right, nose up = slower and left), up = jump, up again = double jump + trick, Space = water gun along the board direction. UFO in levels 3-5: follows slowly, 3 s underneath = abduction, leaves after 10 s, 2 hits kill it and drop a +1 life heart. Touch controls and 8-bit sound.
-- Fans, points and screenshot proofs: see CLAUDE.md (Fans section). Built through Update F.
+Rules: PHP 8 + SQLite, no frameworks; PDO prepared statements, CSRF on every POST, e() on output; migrations inside db() in inc/bootstrap.php; never touch data/site.sqlite; cache-bust JS/CSS/images with ?v=N; fan-facing text names only Leah. Use only Sonnet 5.5 (or Haiku 5.5) for subagents, never Opus or Fable without asking. When I write "STOP", ask all your questions in one batch and wait for "go". Branch per update (next: update-t), test locally with php -S 127.0.0.1:8099 and Playwright, delete data/site.sqlite and outbox.log, merge to main, push (if rejected: git fetch, git merge origin/main, push), build livedbyleah-v<version>.zip excluding data/*, setup.php and .DS_Store, send it, then add a dated entry to HANDOVER.md and update CLAUDE.md. Kill servers by port, never pkill -f.
 
-3. CURRENT STATE
-Done and deployed (through livedbyleah-update5.zip = "Update C", merged to main; HTTPS redirect on since 2026-10-25): vlog drawer and comments, Instagram links, Shantell Sans, the full game with Leah's art, wave physics, UFO and heart, gun in hand, and shells. Fonts confirmed working after a hard refresh. Leah played for real, reached Level 5 and lost.
-Update D (fan club + level-based hall of fame, livedbyleah-update6.zip) is deployed and confirmed working; merged to main. Update E (fans list with last seen, settings gear, delete account, livedbyleah-update7.zip) is deployed and confirmed working; merged to main. In progress: Update F (fan counter, points ranking, screenshot proofs, full last name, one-time username with support requests) is deployed (livedbyleah-update8.zip), confirmed working, and merged to main.
-Open:
-- Paste the TikTok links per vlog via the gear icon.
-- Replace my placeholder shells (and the code-drawn shark and UFO) with Leah's art.
-- Fans: privacy policy and terms page; weekly backup of data/site.sqlite. Confirm screenshot uploads work on the live host after Update F.
-- Campaigns.
-- Editor role for Alessandro.
-- Confirm setup.php is deleted from the server and that the YouTube API key is set in admin/settings.php.
-- Get Leah's feedback on what killed her in Level 5 and tune LEVELS[5] if needed.
+Open items, in order: (1) confirm v1.5.0 on the host; (2) real playtest feedback and difficulty tuning (Surf Level 5, Outrun, Fossil Smash, Bake Off); (3) PRD Draft v8; (4) replace placeholder art with Leah's (Surf shells, shark, UFO; Outrun scenery, cryptids, signs, cars, ship; Fossil Smash critters and hub card); (5) privacy policy and terms page; (6) weekly backup of data/site.sqlite; (7) TikTok links via the gear icon; (8) editor role for Alessandro, campaigns; (9) confirm setup.php deleted and YouTube API key set; (10) game music.
 
-4. FILES AND LINKS
-- Repo https://github.com/adrienCAD/livedbyleah (Claude GitHub App installed, pushes work). CLAUDE.md and HANDOVER.md at the repo root.
-- inc/bootstrap.php (DB, migrations, seeds), inc/layout.php (tabs, admin bar), inc/comments.php, api/comments.php, api/scores.php, admin/*, vlogs.php, games.php.
-- assets/js/game.js (whole game, LEVELS config, debug hook at /games.php?debug=1 exposing window.__lbl), assets/js/site.js, assets/css/style.css.
-- Art: assets/img/surfer.png, assets/img/art/*.png (Leah's trash and gun parts; the shells are mine).
-- Secrets (YouTube API key, passwords) are never in the repo or this prompt.
-
-5. WHAT FAILED, DEAD ENDS
-- WebFetch cannot read TikTok pages, so do not try to auto-match TikTok links.
-- Never run pkill -f "php -S" (kills the shell). Kill by port.
-- Debug __lbl.won() fakes the clock, so score submission is rejected. That is expected. Test with a real 45 s+ run.
-- If a change does not show up after upload, it is browser cache. Hard-refresh. Bump ?v=N on JS and CSS.
-- Pushes were refused until the Claude GitHub App was installed. The site was only tested by scripted bots, so real playtests matter.
-
-6. NEXT STEPS
-1. Read CLAUDE.md and HANDOVER.md. Ask me what is next, or pick the first open item I name.
-2. Ask me (and Leah) how the Level 5 run went. Then tune difficulty in LEVELS if needed.
-3. Build the next update on a new branch (update-d), test locally with php -S and Playwright, delete data/site.sqlite, merge to main, push, build livedbyleah-update6.zip, and add a dated entry to HANDOVER.md.
-4. Before any new phase (privacy pages, new campaign types), ask me the rules in one batch of questions.
+Start by reading the three docs, then tell me in 3 lines what you understand and ask which open item to take first.
 ```
 
-
+## Version log (one line per release)
 v1.2.2 (2026-10-25): Leah's Blocks added (see CLAUDE.md, Game 3), Games hub page with 3 art cards, Leah's Jeep art in Outrun, game name Leah's Outrun for testing, per-game hall of fame (scores.game), blocks fan point tiers. Zip: livedbyleah-v1.2.2.zip. Branch update-g.
-
 v1.2.3 (2026-10-25): gear moved to a 'My account' tab in the left menu for signed-in fans. Zip: livedbyleah-v1.2.3.zip.
-
 v1.2.4 (2026-10-25): menu order Watch Vlogs, Play Games, Fan Fest; My account at the bottom. Zip: livedbyleah-v1.2.4.zip.
-
 v1.2.5 (2026-10-25): fan ranking list moved to the top of Fan Fest for signed-in fans. Zip: livedbyleah-v1.2.5.zip.
-
 v1.2.6 (2026-10-25): hall of fame summary (top 5 per game, medals, champion) on Fan Fest and Play Games; admins can save scores (Leah as LeahPunkStar). Zip: livedbyleah-v1.2.6.zip.
-
 v1.2.7 (2026-10-25): demo fans (add/remove buttons in admin Settings). Zip: livedbyleah-v1.2.7.zip.
-
 v1.2.8 (2026-10-27): Leah's Outrun rebuilt (Costa Rica > Mexico > USA > Canada > ship > France, scenery zones and transitions, cryptids and fun signs, better hills, no green lines on the road, 5 Jeep frames, km hall of fame, stats certificate). Blocks bottom row fixed. Zip: livedbyleah-v1.2.8.zip.
 v1.2.9 (2026-10-27): Outrun art pass: Leah's new Jeep views (rear, 1/4, 3/4 by how long the key is held; profile on the cargo ship; front-left view with a thumbs-up on the certificate), finer cars/ship/cryptids, two cryptids per country picked at random and slower (Big Blue Jeans Frog, Dama Blanca, Jackalope, Ogopogo, Loup-Garou, Witch added). Zip: livedbyleah-v1.2.9.zip.
 v1.2.10 (2026-10-27): Leah's final Jeep pictures: rear, 1/4 and 3/4 views for steering, profile on the cargo ship, front-left view with a thumbs up on the certificate. Zip: livedbyleah-v1.2.10.zip.

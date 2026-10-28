@@ -1,26 +1,35 @@
 # Lived by Leah (livedbyleah.com)
 
-Vlog hub for Leah: Watch Vlogs (home), Fans (coming soon), Games (surf cleanup), and a private Writing Process tab for Leah/admins. Each vlog has a drawer with Leah's note and top comments (YouTube automatic, TikTok/Instagram picked by Leah).
-PHP 8 + SQLite (a single file, no database setup). Everything the site serves lives in `public_html/`.
+Vlog hub and fan club for Leah (16, owner and creator), built by her father Adrien (architect and admin). Site version: **1.5.0** (`SITE_VERSION` in `public_html/inc/bootstrap.php`).
 
-## Deploy to Namecheap (first time)
-1. In cPanel open **File Manager** and go to the `public_html` folder of livedbyleah.com.
-2. Upload the *contents* of this repo's `public_html/` folder, including the hidden `.htaccess` files (turn on "Show hidden files" in File Manager). `data/` and `inc/` must keep their `.htaccess`.
-3. Visit https://livedbyleah.com/setup.php. Create Leah's admin login. The 14 vlogs are loaded automatically.
-4. **Delete `setup.php` from the server.**
-5. Log in at https://livedbyleah.com/admin/login.php.
-6. After the free SSL is installed, edit `.htaccess` and remove the `#` on the 3 HTTPS redirect lines.
+**What is on the site**
+- **Watch Vlogs** (home): Leah's vlogs with a drawer for her "why I made this" note and top comments (YouTube automatic, TikTok and Instagram pasted by Leah).
+- **Play Games**: four games with Leah's art and one hall of fame per game: Surf Cleanup, Leah's Outrun, Bake Off, Fossil Smash.
+- **Fan Fest**: fan sign-up and login (email confirmation), live fan counter, points and ranking, screenshot proofs, username requests, hall of fame summary.
+- **Writing Process**: private tab for Leah and admins.
+- **Admin** (`/admin/`): vlogs, writing posts, comments, fans, screenshots, support requests, hall of fame, settings (YouTube key, demo fans).
+
+**Stack:** PHP 8 + SQLite (one file, no setup), plain PHP pages, one CSS file, vanilla JS, no frameworks, no build step. Namecheap shared hosting (cPanel). Everything the site serves is in `public_html/`.
+
+**Docs:** `CLAUDE.md` = permanent architecture and rules (read first). `HANDOVER.md` = current status, open items, known issues, history and a restart prompt.
+
+**Repo layout:** `public_html/` (the site) · `art/` and `assets/bake-off/` (Leah's drafts and cut pieces, NOT deployed) · `CLAUDE.md`, `HANDOVER.md`, `README.md`.
+
+## Deploy (Adrien does this by hand)
+1. Build the zip: `cd public_html && zip -qr /tmp/livedbyleah-v<version>.zip . -x 'data/*' setup.php '*.DS_Store'`
+2. cPanel > File Manager > `public_html`: upload the zip, Extract, choose Replace.
+3. The database migrates itself on the first page load. Hard-refresh (Cmd+Shift+R).
+Never overwrite or delete `data/site.sqlite` (Leah's content, comments, fans and scores). `setup.php` must NOT exist on the server.
+
+## First-time setup
+Upload the contents of `public_html/` (including the hidden `.htaccess` files), open `/setup.php` once to create Leah's admin login, then delete `setup.php` from the server. HTTPS redirect is already ON in `.htaccess`.
 
 ## YouTube comments
-Admin > Settings: paste a YouTube Data API v3 key. Comments are cached for 6 hours per vlog; links are skipped; names show as first name + last initial; any comment can be hidden in Admin > Comments.
+Admin > Settings: paste a YouTube Data API v3 key. Comments are cached 6 hours per vlog, links are skipped, names show as first name + last initial, any comment can be hidden in Admin > Comments.
 
-## Updating later
-Re-upload only the changed files. Never overwrite `data/site.sqlite` (it holds the posts and vlogs added through the admin).
-Back up `data/site.sqlite` weekly (download it from File Manager).
+## Run locally
+    cd public_html && php -S 127.0.0.1:8099
+Open http://127.0.0.1:8099/. Stop it with `lsof -ti tcp:8099 | xargs kill` (never `pkill -f php`). Delete `public_html/data/site.sqlite` and `data/outbox.log` before committing or zipping. Test hooks: add `&debug=1` to a game URL (see CLAUDE.md).
 
-## Run locally (Mac)
-    cd public_html && php -S 127.0.0.1:8000
-then open http://127.0.0.1:8000/setup.php
-
-## Next phases
-Fans sign-up and ranking, campaigns, editor role, Leah's own pixel art.
+## Backups
+Download `data/site.sqlite` from File Manager weekly (no automatic backup yet).
