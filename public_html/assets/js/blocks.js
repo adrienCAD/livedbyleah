@@ -44,7 +44,7 @@
       }
       SPR[t] = list; if (++loaded === TYPES.length) { ready = true; }
     };
-    im.src = '/assets/img/bakeoff/' + FILES[t] + '.png?v=1';
+    im.src = '/assets/img/bakeoff/' + FILES[t] + '.png?v=2';
     IMG[t] = im;
   });
   function slice(t, r, cx, cy, px, py, alpha) {

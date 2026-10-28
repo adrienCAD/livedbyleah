@@ -25,7 +25,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
     <span class="gc-text">Drive Leah's electric Jeep from Costa Rica to Paris. Watch out for cryptids!</span>
   </a>
   <a class="gamecard" href="/games.php?g=blocks">
-    <img src="/assets/img/games/bakeoff.png?v=1" width="640" height="360" alt="Bake Off: Leah's kitchen pieces falling onto a checkered board" loading="lazy">
+    <img src="/assets/img/games/bakeoff.png?v=2" width="640" height="360" alt="Bake Off: Leah's kitchen pieces falling onto a checkered board" loading="lazy">
     <span class="gc-title">Bake Off</span>
     <span class="gc-text">Stack Leah's kitchen pieces, clear the dishes and chase the top score.</span>
   </a>
@@ -163,7 +163,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
   </div>
   <canvas id="gameCanvas" width="156" height="206" aria-label="Bake Off game"></canvas>
   <div class="game-overlay" id="gameStart">
-    <img class="road-logo" src="/assets/img/games/bakeoff.png?v=1" width="640" height="360" alt="Bake Off">
+    <img class="road-logo" src="/assets/img/games/bakeoff.png?v=2" width="640" height="360" alt="Bake Off">
     <button type="button" id="startBtn" class="btn">Start</button>
     <p class="hint">Left/right move, up rotates, down drops the piece, C or Shift holds a piece, space speeds it up. Phones get buttons.</p>
   </div>
@@ -193,7 +193,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/blocks.js?v=6"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/blocks.js?v=7"></script>'); return; ?>
 <?php endif; ?>
 <h1>Surf cleanup</h1>
 <p class="lede">Clean the beach, collect the shells, build a water gun, then surf five waves and beat the sharks. You are ranked by the highest level you reach, then by your time. Fans play under their own username.</p>
