@@ -25,9 +25,9 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
     <span class="gc-text">Drive Leah's electric Jeep from Costa Rica to Paris. Watch out for cryptids!</span>
   </a>
   <a class="gamecard" href="/games.php?g=blocks">
-    <img src="/assets/img/games/blocks.jpg" width="640" height="349" alt="Leah's Blocks" loading="lazy">
-    <span class="gc-title">Leah's Blocks</span>
-    <span class="gc-text">Stack hand-drawn blocks, clear lines and chase the top score.</span>
+    <img src="/assets/img/games/bakeoff.png?v=1" width="640" height="360" alt="Bake Off: Leah's kitchen pieces falling onto a checkered board" loading="lazy">
+    <span class="gc-title">Bake Off</span>
+    <span class="gc-text">Stack Leah's kitchen pieces, clear the dishes and chase the top score.</span>
   </a>
   <a class="gamecard" href="/games.php?g=bert">
     <img src="/assets/img/games/bert.png?v=2" width="640" height="360" alt="Fossil Smash: Bagel the brachiosaurus stomping a pyramid of fossil stones" loading="lazy">
@@ -42,7 +42,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
   <a href="/games.php">&larr; All games</a>
   <a href="/games.php?g=surf"<?= $g === 'surf' ? ' class="on" aria-current="page"' : '' ?>>Surf Cleanup</a>
   <a href="/games.php?g=road"<?= $g === 'road' ? ' class="on" aria-current="page"' : '' ?>><?= e($ROAD_NAME) ?></a>
-  <a href="/games.php?g=blocks"<?= $g === 'blocks' ? ' class="on" aria-current="page"' : '' ?>>Leah's Blocks</a>
+  <a href="/games.php?g=blocks"<?= $g === 'blocks' ? ' class="on" aria-current="page"' : '' ?>>Bake Off</a>
   <a href="/games.php?g=bert"<?= $g === 'bert' ? ' class="on" aria-current="page"' : '' ?>>Fossil Smash</a>
 </nav>
 <?php if ($g === 'road'): ?>
@@ -151,19 +151,19 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
 <?php page_footer('<script src="/assets/js/bert.js?v=2"></script>'); return; ?>
 <?php endif; ?>
 <?php if ($g === 'blocks'): ?>
-<h1>Leah's Blocks</h1>
-<p class="lede">Stack the falling blocks, clear lines and climb the hall of fame. Rotate with the up arrow, drop with the down arrow, and save a piece with C or Shift.</p>
+<h1>Bake Off</h1>
+<p class="lede">Stack the falling kitchen pieces, clear full rows of dishes and climb the hall of fame. Rotate with the up arrow, drop with the down arrow, and save a piece with C or Shift.</p>
 
 <div class="game blocks-game" id="game">
   <div class="game-hud game-hud-road">
     <span id="hudScore">Score 0</span>
     <span id="hudLevel">Level 1</span>
-    <span id="hudLines">Lines 0</span>
+    <span id="hudDishes">Dishes 0</span>
     <button type="button" id="muteBtn" class="hud-btn" aria-pressed="false" aria-label="Mute sound">Sound on</button>
   </div>
-  <canvas id="gameCanvas" width="480" height="600" aria-label="Leah's Blocks game"></canvas>
+  <canvas id="gameCanvas" width="156" height="206" aria-label="Bake Off game"></canvas>
   <div class="game-overlay" id="gameStart">
-    <img class="road-logo" src="/assets/img/games/blocks.jpg" width="640" height="349" alt="Leah's Blocks">
+    <img class="road-logo" src="/assets/img/games/bakeoff.png?v=1" width="640" height="360" alt="Bake Off">
     <button type="button" id="startBtn" class="btn">Start</button>
     <p class="hint">Left/right move, up rotates, down drops the piece, C or Shift holds a piece, space speeds it up. Phones get buttons.</p>
   </div>
@@ -185,7 +185,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
     <button type="button" data-key="hold" aria-label="Hold piece">Hold</button>
   </div>
 </div>
-<p class="hint">Blocks are drawn by hand (for now, in code). Version <?= e(SITE_VERSION) ?>.</p>
+<p class="hint">All the art in Bake Off is by Leah. Version <?= e(SITE_VERSION) ?>.</p>
 
 <section class="hof">
   <h2>Hall of fame</h2>
@@ -193,7 +193,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/blocks.js?v=2"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/blocks.js?v=6"></script>'); return; ?>
 <?php endif; ?>
 <h1>Surf cleanup</h1>
 <p class="lede">Clean the beach, collect the shells, build a water gun, then surf five waves and beat the sharks. You are ranked by the highest level you reach, then by your time. Fans play under their own username.</p>

@@ -222,7 +222,7 @@ function score_order(string $game): string {
     if ($game === 'road') { return 's.km DESC, s.ms ASC, s.id ASC'; }
     return SCORE_ORDER;
 }
-const HOF_GAMES = ['surf' => 'Surf Cleanup', 'road' => "Leah's Outrun", 'blocks' => "Leah's Blocks", 'bert' => 'Fossil Smash'];
+const HOF_GAMES = ['surf' => 'Surf Cleanup', 'road' => "Leah's Outrun", 'blocks' => "Bake Off", 'bert' => 'Fossil Smash'];
 const BERT_ELEMENTS = ['Triassic', 'Jurassic', 'Cretaceous', 'Meteor Day'];
 
 function hof_result(string $game, array $r): string {

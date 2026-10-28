@@ -262,7 +262,9 @@ ol.fanlist { counter-reset: none; }
 .gamecard img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; image-rendering: pixelated; border-bottom: 4px solid var(--ink); background: var(--frost, #99D6EA); }
 .gc-title { font-family: var(--font-pixel); font-size: 22px; font-weight: 800; padding: 10px 12px 2px; }
 .gc-text { padding: 0 12px 14px; font-size: 14px; color: var(--muted); }
-.blocks-game { max-width: 480px; }
+.blocks-game { max-width: 468px; }
+.blocks-game .game-hud { left: auto; right: 8px; top: auto; bottom: 8px; }
+.blocks-game .game-hud span { display: none; }
 .blocks-touch { flex-wrap: wrap; }
 .blocks-touch button { flex: 1 1 18%; min-width: 0; font-size: 14px; }
 
