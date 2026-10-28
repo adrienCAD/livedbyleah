@@ -408,7 +408,7 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
   <ul>
     <li><strong>Join the club:</strong> <?= SIGNUP_POINTS ?> points</li>
     <li><strong>Pass levels in the surf game and in Leah's Outrun:</strong> level 1 = 1 point, level 2 = 2 points, up to level 5 = 5 points (15 in total per game, each counted once). <a href="/games.php">Play now</a></li>
-    <li><strong>Score in Leah's Blocks:</strong> 1,000 = 1 point, 2,500 = 3, 5,000 = 6, 8,000 = 10, 12,000 = 15 (in total).</li>
+    <li><strong>Score in Bake Off:</strong> 1,000 = 1 point, 2,500 = 3, 5,000 = 6, 8,000 = 10, 12,000 = 15 (in total).</li>
     <li><strong>Like a vlog</strong> on YouTube, Instagram or TikTok: <?= PROOF_POINTS['like'] ?> points each</li>
     <li><strong>Follow or subscribe</strong> on each platform: <?= PROOF_POINTS['follow'] ?> points each</li>
     <li><strong>Comment on a vlog:</strong> <?= PROOF_POINTS['comment'] ?> points each</li>

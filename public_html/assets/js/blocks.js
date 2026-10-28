@@ -1,66 +1,126 @@
-// Leah's Blocks: falling blocks with a hand-drawn look. 10x20 board, 7 shapes in a shuffled bag, hold piece,
-// next-piece preview, ghost piece. Canvas 480x600, no libraries. Ranked by score; fan points by score tiers (see inc/fans.php).
+// Bake Off (internal id "blocks"): falling kitchen pieces, drawn by Leah. 10x20 board, 7 pieces in a shuffled bag, hold,
+// next preview, ghost. Native canvas 156x206 (8 px per cell) shown scaled with crisp pixels. Pieces are Leah's pictures; every
+// board cell keeps its own 8x8 slice, so cleared rows cut pieces apart like Tetris. Ranked by score (see inc/fans.php).
 (function () {
   'use strict';
   var cv = document.getElementById('gameCanvas');
   if (!cv) { return; }
   var g = cv.getContext('2d');
+  g.imageSmoothingEnabled = false;
 
-  var COLS = 10, ROWS = 20, CELL = 26, BX = 20, BY = 62, PX = 304;
+  var W = 156, H = 206, CS = 8, COLS = 10, ROWS = 20, BX = 8, BY = 25;
   var CERT_SCORE = 12000;
   var TYPES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
-  var SHAPES = {
-    I: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]], O: [[1, 1], [1, 1]], T: [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
-    S: [[0, 1, 1], [1, 1, 0], [0, 0, 0]], Z: [[1, 1, 0], [0, 1, 1], [0, 0, 0]], J: [[1, 0, 0], [1, 1, 1], [0, 0, 0]], L: [[0, 0, 1], [1, 1, 1], [0, 0, 0]]
+  var FILES = { I: 'spatula', O: 'sack', T: 'mushroom', S: 'sifter', Z: 'chocolate', J: 'jartin', L: 'triangle' };
+  // Cells are [x, y] in the picture as Leah drew it (rotation 0). pv = turning point (centre of a cell, or a corner).
+  var BASE = {
+    I: { w: 1, h: 4, cells: [[0, 0], [0, 1], [0, 2], [0, 3]], pv: [0.5, 1.5] },
+    O: { w: 2, h: 2, cells: [[0, 0], [1, 0], [0, 1], [1, 1]], pv: [1, 1] },
+    T: { w: 3, h: 2, cells: [[0, 0], [1, 0], [2, 0], [1, 1]], pv: [1.5, 0.5] },
+    S: { w: 3, h: 2, cells: [[1, 0], [2, 0], [0, 1], [1, 1]], pv: [1.5, 1.5] },
+    Z: { w: 3, h: 2, cells: [[0, 0], [1, 0], [1, 1], [2, 1]], pv: [1.5, 1.5] },
+    J: { w: 2, h: 3, cells: [[1, 0], [1, 1], [0, 2], [1, 2]], pv: [1.5, 1.5] },
+    L: { w: 2, h: 3, cells: [[0, 0], [0, 1], [0, 2], [1, 2]], pv: [0.5, 1.5] }
   };
-  var COLORS = ['#28d4e8', '#f9d423', '#a24bd8', '#3ccf3a', '#e8392f', '#2f7be8', '#ff8a1f'];
-  var DARK = ['#0f6f80', '#9a7d00', '#5f2690', '#17801a', '#8e1810', '#173f96', '#a8520a'];
+  var ROT = {};   // ROT[type][r] = { w, h, cells, pv } for the 4 turns
+  TYPES.forEach(function (t) {
+    var a = [BASE[t]];
+    for (var r = 1; r < 4; r++) {
+      var p = a[r - 1];
+      a.push({ w: p.h, h: p.w, pv: [p.h - p.pv[1], p.pv[0]], cells: p.cells.map(function (c) { return [p.h - 1 - c[1], c[0]]; }) });
+    }
+    ROT[t] = a;
+  });
 
-  function rng(seed) { var a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-  function mix(hex, to, p) {
-    var a = parseInt(hex.slice(1), 16), b = to === 'w' ? 0xffffff : 0x000000;
-    function ch(s) { var x = (a >> s) & 255, y = (b >> s) & 255; return Math.round(x + (y - x) * p); }
-    return 'rgb(' + ch(16) + ',' + ch(8) + ',' + ch(0) + ')';
+  // ------------------------------------------------------------------ Leah's art (pictures turned in 90 degree steps)
+  var IMG = {}, SPR = {}, loaded = 0, ready = false;
+  TYPES.forEach(function (t) {
+    var im = new Image();
+    im.onload = function () {
+      var list = [], c0 = document.createElement('canvas'); c0.width = im.width; c0.height = im.height; c0.getContext('2d').drawImage(im, 0, 0); list.push(c0);
+      for (var r = 1; r < 4; r++) {
+        var p = list[r - 1], c = document.createElement('canvas'); c.width = p.height; c.height = p.width;
+        var x = c.getContext('2d'); x.translate(c.width, 0); x.rotate(Math.PI / 2); x.drawImage(p, 0, 0); list.push(c);
+      }
+      SPR[t] = list; if (++loaded === TYPES.length) { ready = true; }
+    };
+    im.src = '/assets/img/bakeoff/' + FILES[t] + '.png?v=1';
+    IMG[t] = im;
+  });
+  function slice(t, r, cx, cy, px, py, alpha) {
+    if (!SPR[t]) { return; }
+    g.globalAlpha = alpha == null ? 1 : alpha;
+    g.drawImage(SPR[t][r], cx * CS, cy * CS, CS, CS, Math.round(px), Math.round(py), CS, CS);
+    g.globalAlpha = 1;
+  }
+  function drawPiece(t, r, ox, oy, alpha) {
+    ROT[t][r].cells.forEach(function (c) { slice(t, r, c[0], c[1], ox + c[0] * CS, oy + c[1] * CS, alpha); });
+  }
+
+  // ------------------------------------------------------------------ bold pixel font (5x7 letters, drawn in code)
+  var F = {
+    A: '01110,10001,10001,11111,10001,10001,10001', B: '11110,10001,10001,11110,10001,10001,11110', C: '01110,10001,10000,10000,10000,10001,01110',
+    D: '11110,10001,10001,10001,10001,10001,11110', E: '11111,10000,10000,11110,10000,10000,11111', F: '11111,10000,10000,11110,10000,10000,10000',
+    G: '01110,10001,10000,10111,10001,10001,01111', H: '10001,10001,10001,11111,10001,10001,10001', I: '01110,00100,00100,00100,00100,00100,01110',
+    J: '00111,00010,00010,00010,00010,10010,01100', K: '10001,10010,10100,11000,10100,10010,10001', L: '10000,10000,10000,10000,10000,10000,11111',
+    M: '10001,11011,10101,10101,10001,10001,10001', N: '10001,11001,10101,10011,10001,10001,10001', O: '01110,10001,10001,10001,10001,10001,01110',
+    P: '11110,10001,10001,11110,10000,10000,10000', Q: '01110,10001,10001,10001,10101,10010,01101', R: '11110,10001,10001,11110,10100,10010,10001',
+    S: '01111,10000,10000,01110,00001,00001,11110', T: '11111,00100,00100,00100,00100,00100,00100', U: '10001,10001,10001,10001,10001,10001,01110',
+    V: '10001,10001,10001,10001,10001,01010,00100', W: '10001,10001,10001,10101,10101,11011,10001', X: '10001,10001,01010,00100,01010,10001,10001',
+    Y: '10001,10001,01010,00100,00100,00100,00100', Z: '11111,00001,00010,00100,01000,10000,11111',
+    0: '01110,10001,10011,10101,11001,10001,01110', 1: '00100,01100,00100,00100,00100,00100,01110', 2: '01110,10001,00001,00010,00100,01000,11111',
+    3: '11110,00001,00001,01110,00001,00001,11110', 4: '00010,00110,01010,10010,11111,00010,00010', 5: '11111,10000,11110,00001,00001,10001,01110',
+    6: '00110,01000,10000,11110,10001,10001,01110', 7: '11111,00001,00010,00100,01000,01000,01000', 8: '01110,10001,10001,01110,10001,10001,01110',
+    9: '01110,10001,10001,01111,00001,00010,01100',
+    ',': '00000,00000,00000,00000,01100,00100,01000', '.': '00000,00000,00000,00000,00000,01100,01100', '-': '00000,00000,00000,11111,00000,00000,00000',
+    ' ': '00000,00000,00000,00000,00000,00000,00000'
+  };
+  var GL = {};
+  Object.keys(F).forEach(function (k) { GL[k] = F[k].split(','); });
+  // Bold = every lit pixel is drawn twice as wide, so each letter is 6 wide. Advance 7 (or 6 when the text must squeeze in).
+  function textW(s, sc, adv) { return Math.max(0, s.length * adv - 1) * sc; }
+  function text(s, x, y, color, sc, align, maxW, outline) {
+    s = String(s).toUpperCase(); sc = sc || 1;
+    var adv = 7;
+    if (maxW && textW(s, sc, adv) > maxW) { adv = 6; }
+    var w = textW(s, sc, adv);
+    var x0 = align === 'center' ? Math.round(x - w / 2) : align === 'right' ? Math.round(x - w) : x;
+    for (var pass = outline ? 0 : 1; pass < 2; pass++) {
+      g.fillStyle = pass === 0 ? outline : (typeof color === 'function' ? '' : color);
+      for (var i = 0; i < s.length; i++) {
+        var gl = GL[s[i]]; if (!gl) { continue; }
+        if (pass === 1 && typeof color === 'function') { g.fillStyle = color(i); }
+        for (var r = 0; r < 7; r++) { for (var c = 0; c < 5; c++) {
+          if (gl[r][c] !== '1') { continue; }
+          var px = x0 + (i * adv + c) * sc, py = y + r * sc;
+          if (pass === 0) { g.fillRect(px - 1, py - 1, 2 * sc + 2, sc + 2); } else { g.fillRect(px, py, 2 * sc, sc); }
+        } }
+      }
+    }
   }
   function fmtN(n) { return Math.round(n).toLocaleString('en-US'); }
 
-  // ------------------------------------------------------------------ hand-drawn cells (drawn once per colour and variant)
-  var cellCache = {};
-  function cellSprite(ci, v) {
-    var key = ci * 8 + v;
-    if (cellCache[key]) { return cellCache[key]; }
-    var S = CELL + 6, c = document.createElement('canvas'); c.width = S; c.height = S;
-    var x = c.getContext('2d'), r = rng(ci * 131 + v * 17 + 7), j = function (m) { return (r() - 0.5) * m; };
-    var o = 3, a = CELL;
-    function poly(inset, wob) {
-      x.beginPath();
-      x.moveTo(o + inset + j(wob), o + inset + j(wob)); x.lineTo(o + a - inset + j(wob), o + inset + j(wob));
-      x.lineTo(o + a - inset + j(wob), o + a - inset + j(wob)); x.lineTo(o + inset + j(wob), o + a - inset + j(wob)); x.closePath();
-    }
-    poly(1, 2.6); x.fillStyle = COLORS[ci]; x.fill();                                    // crayon fill
-    x.save(); poly(3, 2.4); x.fillStyle = mix(COLORS[ci], 'w', 0.28); x.fill(); x.restore();      // lighter patch, a bit off-centre
-    for (var i = 0; i < 7; i++) { x.fillStyle = 'rgba(255,255,255,' + (0.18 + r() * 0.2) + ')'; x.fillRect(o + 3 + r() * (a - 8), o + 3 + r() * (a - 8), 1 + r() * 2, 1 + r() * 2); }
-    x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(o + 4 + j(2), o + 4 + j(2), 7 + r() * 3, 2);   // shine stroke
-    x.lineJoin = 'round'; x.lineCap = 'round';
-    poly(1, 2.2); x.strokeStyle = DARK[ci]; x.lineWidth = 2.2; x.stroke();                      // pencil outline, drawn twice
-    poly(0.5, 3); x.strokeStyle = 'rgba(20,20,30,.55)'; x.lineWidth = 1.1; x.stroke();
-    cellCache[key] = c;
+  // ------------------------------------------------------------------ backgrounds (made once)
+  function mkCanvas(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+  var bgGingham = (function () {
+    var c = mkCanvas(W, H), x = c.getContext('2d'), i, j;
+    x.fillStyle = '#F8E6E1'; x.fillRect(0, 0, W, H);
+    for (i = 0; i < W; i += 16) { x.fillStyle = 'rgba(226,160,150,.38)'; x.fillRect(i, 0, 8, H); }
+    for (j = 0; j < H; j += 16) { x.fillStyle = 'rgba(226,160,150,.38)'; x.fillRect(0, j, W, 8); }
     return c;
-  }
-  function drawCell(px, py, ci, v, alpha, scale) {
-    var s = cellSprite(ci, v & 7);
-    g.globalAlpha = alpha == null ? 1 : alpha;
-    var sz = s.width * (scale || 1);
-    g.drawImage(s, Math.round(px - 3 * (scale || 1)), Math.round(py - 3 * (scale || 1)), sz, sz);
-    g.globalAlpha = 1;
-  }
+  })();
+  var bgBoard = (function () {
+    var c = mkCanvas(COLS * CS, ROWS * CS), x = c.getContext('2d');
+    for (var r = 0; r < ROWS; r++) { for (var q = 0; q < COLS; q++) { x.fillStyle = (r + q) % 2 ? '#DCEAF0' : '#E8F2F6'; x.fillRect(q * CS, r * CS, CS, CS); } }
+    return c;
+  })();
 
   // ------------------------------------------------------------------ state
-  var el = { score: document.getElementById('hudScore'), level: document.getElementById('hudLevel'), lines: document.getElementById('hudLines'),
+  var el = { score: document.getElementById('hudScore'), level: document.getElementById('hudLevel'), dishes: document.getElementById('hudDishes'),
     start: document.getElementById('gameStart'), over: document.getElementById('gameOver') };
-  var grid, cur, hold, canHold, queue, bag, score, lines, level, mode = 'idle', gravT, lockT, lockResets, clearRows, clearT, runNonce = '', tick = 0, softOn = false;
-  var keys = { left: false, right: false, soft: false }, dasT = 0, arrT = 0, lastDir = 0;
-  var me = { name: 'Player', fan: false }, finalScore = 0, finalLines = 0, vseed = 0;
+  var grid, cur, hold, canHold, queue, bag, score, lines, level, mode = 'idle', gravT, lockT, lockResets, clearRows, clearT, runNonce = '', tick = 0;
+  var keys = { left: false, right: false, soft: false }, pend = { left: false, right: false }, dasT = 0, arrT = 0, lastDir = 0;
+  var me = { name: 'Player', fan: false }, finalScore = 0, finalLines = 0;
 
   function newGrid() { var a = []; for (var y = 0; y < ROWS; y++) { a.push(new Array(COLS).fill(null)); } return a; }
   function refill() {
@@ -69,40 +129,38 @@
     bag = bag.concat(b);
   }
   function draw1() { if (bag.length < 7) { refill(); } return bag.shift(); }
-  function mkPiece(type) {
-    var m = SHAPES[type].map(function (r) { return r.slice(); });
-    return { t: type, ci: TYPES.indexOf(type), m: m, x: Math.floor((COLS - m.length) / 2), y: type === 'I' ? -1 : 0, v: Math.floor(Math.random() * 8) };
-  }
-  function rotCW(m) { var n = m.length, r = []; for (var y = 0; y < n; y++) { r.push([]); for (var x = 0; x < n; x++) { r[y].push(m[n - 1 - x][y]); } } return r; }
-  function collides(m, px, py) {
-    for (var y = 0; y < m.length; y++) { for (var x = 0; x < m[y].length; x++) {
-      if (!m[y][x]) { continue; }
-      var gx = px + x, gy = py + y;
+  function mkPiece(type) { var d = ROT[type][0]; return { t: type, r: 0, x: Math.floor((COLS - d.w) / 2), y: 0 }; }
+  function dOf(p) { return ROT[p.t][p.r]; }
+  function collides(cells, px, py) {
+    for (var i = 0; i < cells.length; i++) {
+      var gx = px + cells[i][0], gy = py + cells[i][1];
       if (gx < 0 || gx >= COLS || gy >= ROWS) { return true; }
       if (gy >= 0 && grid[gy][gx]) { return true; }
-    } }
+    }
     return false;
   }
   function spawn(type) {
     cur = mkPiece(type || queue.shift());
     while (queue.length < 4) { queue.push(draw1()); }
     gravT = 0; lockT = 0; lockResets = 0; canHold = type ? canHold : true;
-    if (collides(cur.m, cur.x, cur.y)) { gameOver(); }
+    if (collides(dOf(cur).cells, cur.x, cur.y)) { gameOver(); }
   }
   function interval() { return Math.max(0.05, Math.pow(0.8 - (level - 1) * 0.007, level - 1)); }
-  function onGround() { return collides(cur.m, cur.x, cur.y + 1); }
-  function ghostY() { var y = cur.y; while (!collides(cur.m, cur.x, y + 1)) { y++; } return y; }
+  function onGround() { return collides(dOf(cur).cells, cur.x, cur.y + 1); }
+  function ghostY() { var y = cur.y, c = dOf(cur).cells; while (!collides(c, cur.x, y + 1)) { y++; } return y; }
 
   function move(dx) {
-    if (!collides(cur.m, cur.x + dx, cur.y)) { cur.x += dx; touched(); SFX.move(); return true; }
+    if (!collides(dOf(cur).cells, cur.x + dx, cur.y)) { cur.x += dx; touched(); SFX.move(); return true; }
     return false;
   }
   function touched() { if (onGround() && lockResets < 15) { lockT = 0; lockResets++; } }
   function rotate() {
-    var r = rotCW(cur.m), kicks = [[0, 0], [-1, 0], [1, 0], [-2, 0], [2, 0], [0, -1], [-1, -1], [1, -1]];
     if (cur.t === 'O') { return; }
+    var d0 = dOf(cur), nr = (cur.r + 1) % 4, d1 = ROT[cur.t][nr];
+    var bx = cur.x + d0.pv[0] - d1.pv[0], by = cur.y + d0.pv[1] - d1.pv[1];
+    var kicks = [[0, 0], [-1, 0], [1, 0], [-2, 0], [2, 0], [0, -1], [-1, -1], [1, -1], [0, -2]];
     for (var i = 0; i < kicks.length; i++) {
-      if (!collides(r, cur.x + kicks[i][0], cur.y + kicks[i][1])) { cur.m = r; cur.x += kicks[i][0]; cur.y += kicks[i][1]; touched(); SFX.rot(); return; }
+      if (!collides(d1.cells, bx + kicks[i][0], by + kicks[i][1])) { cur.r = nr; cur.x = bx + kicks[i][0]; cur.y = by + kicks[i][1]; touched(); SFX.rot(); return; }
     }
   }
   function hardDrop() {
@@ -116,12 +174,14 @@
     SFX.hold();
   }
   function lockPiece() {
-    for (var y = 0; y < cur.m.length; y++) { for (var x = 0; x < cur.m[y].length; x++) {
-      if (cur.m[y][x] && cur.y + y >= 0) { grid[cur.y + y][cur.x + x] = { c: cur.ci, v: (cur.v + x + y * 3) & 7 }; }
-    } }
+    var d = dOf(cur);
+    d.cells.forEach(function (c) {
+      var gy = cur.y + c[1];
+      if (gy >= 0) { grid[gy][cur.x + c[0]] = { t: cur.t, r: cur.r, cx: c[0], cy: c[1] }; }
+    });
     var full = [];
     for (var r = 0; r < ROWS; r++) { if (grid[r].every(function (c) { return c; })) { full.push(r); } }
-    if (full.length) { clearRows = full; clearT = 0.28; mode = 'clear'; SFX.clear(full.length); }
+    if (full.length) { clearRows = full; clearT = 0.3; mode = 'clear'; SFX.clear(full.length); }
     else { spawn(); }
     hud();
   }
@@ -161,7 +221,7 @@
     if (master) { master.gain.value = muted ? 0 : 0.5; }
   });
 
-  // ------------------------------------------------------------------ hall of fame
+  // ------------------------------------------------------------------ hall of fame (the API still calls dishes "lines")
   function api(body) {
     body.game = 'blocks';
     return fetch('/api/scores.php', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); });
@@ -175,7 +235,7 @@
       var li = document.createElement('li');
       if (r.mine) { li.className = 'me'; }
       var tt = document.createElement('span'); tt.className = 't'; tt.textContent = fmtN(r.score) + ' pts';
-      var lv = document.createElement('span'); lv.className = 'lv'; lv.textContent = r.lines + ' lines';
+      var lv = document.createElement('span'); lv.className = 'lv'; lv.textContent = r.lines + (Number(r.lines) === 1 ? ' dish' : ' dishes');
       li.appendChild(document.createTextNode(r.name + ' ')); li.appendChild(lv); li.appendChild(tt);
       if (r.seen) { var sn = document.createElement('span'); sn.className = 'seen'; sn.textContent = 'last seen ' + r.seen; li.appendChild(sn); }
       ol.appendChild(li);
@@ -201,14 +261,14 @@
   }
 
   // ------------------------------------------------------------------ run control
-  var MSG = ['The tower had other plans.', 'Blocks happen. Stack again!', 'So close! The ceiling won.', 'Leah says: try a tall, flat stack.', 'Every line is a win. Go again!', 'The blocks are getting too crafty.'];
+  var MSG = ['The kitchen is a mess. Clean up and go again!', 'Too many dishes on the counter!', 'The oven timer rang. Try again!', 'So close! The pantry is full.', 'Leah says: keep the stack flat.', 'Every dish counts. Bake again!'];
   var msgIdx = 0;
   function hud() {
-    el.score.textContent = 'Score ' + fmtN(score); el.level.textContent = 'Level ' + level; el.lines.textContent = 'Lines ' + lines;
+    el.score.textContent = 'Score ' + fmtN(score); el.level.textContent = 'Level ' + level; el.dishes.textContent = 'Dishes ' + lines;
   }
   function beginRun() {
     audio();
-    grid = newGrid(); bag = []; queue = []; hold = null; canHold = true; score = 0; lines = 0; level = 1; softOn = false;
+    grid = newGrid(); bag = []; queue = []; hold = null; canHold = true; score = 0; lines = 0; level = 1;
     keys.left = keys.right = keys.soft = false; runNonce = '';
     for (var i = 0; i < 4; i++) { queue.push(draw1()); }
     el.start.hidden = true; el.over.hidden = true;
@@ -220,7 +280,7 @@
     mode = 'over'; SFX.over();
     finalScore = Math.round(score); finalLines = lines;
     document.getElementById('overMsg').textContent = MSG[msgIdx++ % MSG.length];
-    document.getElementById('overInfo').textContent = 'Score ' + fmtN(finalScore) + ' with ' + finalLines + ' lines (level ' + level + ').';
+    document.getElementById('overInfo').textContent = 'Score ' + fmtN(finalScore) + ' with ' + finalLines + (finalLines === 1 ? ' dish' : ' dishes') + ' (level ' + level + ').';
     document.getElementById('certBtn').hidden = finalScore < CERT_SCORE;
     el.over.hidden = false;
     saveRun(document.getElementById('overNote'));
@@ -233,11 +293,12 @@
     tick += dt;
     if (mode === 'clear') { clearT -= dt; if (clearT <= 0) { finishClear(); } return; }
     if (mode !== 'play') { return; }
-    // sideways: first move, then repeat after a short delay
+    // a tap shorter than one frame still moves the piece once
+    if (pend.left && !keys.left) { move(-1); } if (pend.right && !keys.right) { move(1); }
+    pend.left = pend.right = false;
     var dir = keys.left && !keys.right ? -1 : keys.right && !keys.left ? 1 : 0;
     if (dir !== lastDir) { lastDir = dir; dasT = 0; arrT = 0; if (dir) { move(dir); } }
     else if (dir) { dasT += dt; if (dasT > 0.17) { arrT += dt; while (arrT > 0.05) { arrT -= 0.05; move(dir); } } }
-    // gravity (space = faster)
     var iv = keys.soft ? Math.min(interval(), 0.04) : interval();
     if (onGround()) {
       lockT += dt;
@@ -250,56 +311,48 @@
     hud();
   }
 
-  // ------------------------------------------------------------------ drawing
-  function drawPiece(m, ci, v, ox, oy, cell, alpha) {
-    for (var y = 0; y < m.length; y++) { for (var x = 0; x < m[y].length; x++) { if (m[y][x]) { drawCell(ox + x * cell, oy + y * cell, ci, v + x + y * 3, alpha, cell / CELL); } } }
+  // ------------------------------------------------------------------ drawing (native 156x206 pixels)
+  var INK = '#5B4636', TAN = '#B79F7E', CREAM = '#FCF7E8', BLUE = '#6798C0';
+  function panel(x, y, w, h) {
+    g.fillStyle = TAN; g.fillRect(x, y, w, h); g.fillStyle = CREAM; g.fillRect(x + 2, y + 2, w - 4, h - 4);
   }
-  function previewPiece(type, cx, cy, cell, alpha) {
-    var m = SHAPES[type], rows = [], cols = [];
-    for (var y = 0; y < m.length; y++) { for (var x = 0; x < m[y].length; x++) { if (m[y][x]) { rows.push(y); cols.push(x); } } }
-    var w = (Math.max.apply(null, cols) - Math.min.apply(null, cols) + 1) * cell, h = (Math.max.apply(null, rows) - Math.min.apply(null, rows) + 1) * cell;
-    drawPiece(m, TYPES.indexOf(type), 3, cx - w / 2 - Math.min.apply(null, cols) * cell, cy - h / 2 - Math.min.apply(null, rows) * cell, cell, alpha);
-  }
-  function panel(x, y, w, h, title) {
-    g.fillStyle = '#10142a'; g.fillRect(x, y, w, h); g.strokeStyle = '#6798C0'; g.lineWidth = 3; g.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
-    g.fillStyle = '#FDD85D'; g.font = '700 15px "Shantell Sans", sans-serif'; g.textAlign = 'center'; g.fillText(title, x + w / 2, y + 22);
+  function preview(t, px, py, pw, ph, alpha) {
+    var r = t === 'I' ? 1 : 0, d = ROT[t][r];   // the spatula lies down so it fits the box
+    drawPiece(t, r, px + Math.floor((pw - d.w * CS) / 2), py + Math.floor((ph - d.h * CS) / 2), alpha);
   }
   function draw() {
     var x, y;
-    g.fillStyle = '#161a30'; g.fillRect(0, 0, cv.width, cv.height);
-    // faint brick wall behind everything
-    g.fillStyle = 'rgba(255,255,255,.035)';
-    for (y = 0; y < cv.height; y += 18) { for (x = (y / 18) % 2 ? -20 : 0; x < cv.width; x += 40) { g.fillRect(x + 1, y + 1, 38, 16); } }
-    // board
-    g.fillStyle = '#0b0e1e'; g.fillRect(BX - 4, BY - 4, COLS * CELL + 8, ROWS * CELL + 8);
-    g.strokeStyle = '#FDC921'; g.lineWidth = 3; g.strokeRect(BX - 3.5, BY - 3.5, COLS * CELL + 7, ROWS * CELL + 7);
-    g.strokeStyle = 'rgba(153,214,234,.12)'; g.lineWidth = 1; g.beginPath();
-    for (x = 1; x < COLS; x++) { g.moveTo(BX + x * CELL + 0.5, BY); g.lineTo(BX + x * CELL + 0.5, BY + ROWS * CELL); }
-    for (y = 1; y < ROWS; y++) { g.moveTo(BX, BY + y * CELL + 0.5); g.lineTo(BX + COLS * CELL, BY + y * CELL + 0.5); }
-    g.stroke();
-    if (!grid) { return; }
-    for (y = 0; y < ROWS; y++) { for (x = 0; x < COLS; x++) { var c = grid[y][x]; if (c) { drawCell(BX + x * CELL, BY + y * CELL, c.c, c.v, 1, 1); } } }
-    if (cur && (mode === 'play' || mode === 'over')) {
-      var gy = ghostY();
-      if (mode === 'play') { drawPiece(cur.m, cur.ci, cur.v, BX + cur.x * CELL, BY + gy * CELL, CELL, 0.22); }
-      var clipTop = BY; g.save(); g.beginPath(); g.rect(BX, clipTop, COLS * CELL, ROWS * CELL); g.clip();
-      drawPiece(cur.m, cur.ci, cur.v, BX + cur.x * CELL, BY + cur.y * CELL, CELL, 1); g.restore();
+    g.drawImage(bgGingham, 0, 0);
+    // title
+    var TC = ['#6EA0D0', '#F0A867', '#E58AA0', '#8CC59A', '#000', '#6EA0D0', '#F0A867', '#E58AA0'];
+    text('BAKE OFF', W / 2, 4, function (i) { return TC[i]; }, 2, 'center', 0, INK);
+    // frame and board
+    g.fillStyle = TAN; g.fillRect(BX - 3, BY - 3, COLS * CS + 6, ROWS * CS + 6);
+    g.fillStyle = INK; g.fillRect(BX - 2, BY - 2, COLS * CS + 4, ROWS * CS + 4);
+    g.drawImage(bgBoard, BX, BY);
+    if (grid) {
+      for (y = 0; y < ROWS; y++) { for (x = 0; x < COLS; x++) { var c = grid[y][x]; if (c) { slice(c.t, c.r, c.cx, c.cy, BX + x * CS, BY + y * CS); } } }
+      if (cur && (mode === 'play' || mode === 'over')) {
+        if (mode === 'play') { drawPiece(cur.t, cur.r, BX + cur.x * CS, BY + ghostY() * CS, 0.28); }
+        g.save(); g.beginPath(); g.rect(BX, BY, COLS * CS, ROWS * CS); g.clip();
+        drawPiece(cur.t, cur.r, BX + cur.x * CS, BY + cur.y * CS, 1); g.restore();
+      }
+      if (mode === 'clear' && clearRows) {
+        clearRows.forEach(function (r) { g.fillStyle = 'rgba(255,255,255,' + (0.55 + 0.4 * Math.sin(tick * 40)) + ')'; g.fillRect(BX, BY + r * CS, COLS * CS, CS); });
+      }
     }
-    if (mode === 'clear' && clearRows) {
-      clearRows.forEach(function (r) { g.fillStyle = 'rgba(255,255,255,' + (0.5 + 0.4 * Math.sin(tick * 40)) + ')'; g.fillRect(BX, BY + r * CELL, COLS * CELL, CELL); });
-    }
-    // side panel
-    panel(PX, BY - 4, 156, 96, 'HOLD');
-    if (hold) { previewPiece(hold, PX + 78, BY + 50, 20, canHold ? 1 : 0.35); }
-    panel(PX, BY + 108, 156, 232, 'NEXT');
-    for (var i = 0; i < 3; i++) { previewPiece(queue[i] || 'I', PX + 78, BY + 160 + i * 62, i === 0 ? 20 : 16, 1); }
-    g.textAlign = 'left'; g.fillStyle = '#f2f2f2'; g.font = '700 17px "Shantell Sans", sans-serif';
-    g.fillStyle = '#99D6EA'; g.fillText('SCORE', PX, BY + 372); g.fillStyle = '#fff'; g.font = '700 24px "Shantell Sans", sans-serif'; g.fillText(fmtN(score), PX, BY + 400);
-    g.fillStyle = '#99D6EA'; g.font = '700 17px "Shantell Sans", sans-serif'; g.fillText('LEVEL', PX, BY + 436); g.fillStyle = '#fff'; g.font = '700 22px "Shantell Sans", sans-serif'; g.fillText(String(level), PX, BY + 462);
-    g.fillStyle = '#99D6EA'; g.font = '700 17px "Shantell Sans", sans-serif'; g.fillText('LINES', PX + 80, BY + 436); g.fillStyle = '#fff'; g.font = '700 22px "Shantell Sans", sans-serif'; g.fillText(String(lines), PX + 80, BY + 462);
-    var next = [1000, 2500, 5000, 8000, 12000].filter(function (t) { return score < t; })[0];
-    g.fillStyle = '#FDD85D'; g.font = '700 13px "Shantell Sans", sans-serif';
-    g.fillText(next ? 'Next fan point: ' + fmtN(next) : 'All 15 fan points!', PX, BY + 494);
+    // right column
+    var RX = 96, RW = 52;
+    panel(RX, 22, RW, 42); text('NEXT', RX + RW / 2, 25, INK, 1, 'center');
+    if (queue && queue[0]) { preview(queue[0], RX + 2, 33, RW - 4, 29, 1); }
+    panel(RX, 68, RW, 42); text('HOLD', RX + RW / 2, 71, INK, 1, 'center');
+    if (hold) { preview(hold, RX + 2, 79, RW - 4, 29, canHold ? 1 : 0.35); }
+    var rows = [['SCORE', fmtN(score || 0)], ['DISHES', String(lines || 0)], ['LEVEL', String(level || 1)]];
+    rows.forEach(function (r, i) {
+      var py = 114 + i * 26;
+      panel(RX, py, RW, 22); text(r[0], RX + 4, py + 3, INK, 1, 'left'); text(r[1], RX + 4, py + 12, BLUE, 1, 'left', RW - 8);
+    });
+    text('ART BY LEAH', 48, 194, INK, 1, 'center');
   }
 
   var last = 0;
@@ -321,7 +374,7 @@
     var k = KEYMAP[e.key];
     if (!k) { return; }
     if (mode === 'play' || mode === 'clear') { e.preventDefault(); }
-    if (k === 'left' || k === 'right' || k === 'soft') { keys[k] = true; return; }
+    if (k === 'left' || k === 'right' || k === 'soft') { if (!keys[k] && k !== 'soft') { pend[k] = true; } keys[k] = true; return; }
     if (e.repeat) { return; }
     act(k);
   });
@@ -334,36 +387,43 @@
     b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('pointerleave', off);
   });
 
-  // ------------------------------------------------------------------ certificate (drawn in the browser, nothing stored)
+  // ------------------------------------------------------------------ certificate (drawn in the browser, all text in Leah's Myfont)
   document.getElementById('certBtn').addEventListener('click', function () {
     var load = document.fonts && document.fonts.load ? document.fonts.load('20px "Myfont"') : Promise.resolve();
-    load.catch(function () {}).then(function () { makeCertificate(me.name || 'Block Builder', finalScore, finalLines); });
+    load.catch(function () {}).then(function () { makeCertificate(me.name || 'Master Baker', finalScore, finalLines); });
   });
   function makeCertificate(name, sc, ln) {
     var c = document.createElement('canvas'); c.width = 1200; c.height = 850;
-    var x = c.getContext('2d');
+    var x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+    var pix = '"Myfont", sans-serif', i;
     x.fillStyle = '#FFFDF7'; x.fillRect(0, 0, c.width, c.height);
     x.fillStyle = '#FDC921'; x.fillRect(0, 0, c.width, 36); x.fillRect(0, c.height - 36, c.width, 36);
     x.fillStyle = '#99D6EA'; x.fillRect(0, 36, c.width, 14); x.fillRect(0, c.height - 50, c.width, 14);
     x.strokeStyle = '#1E3248'; x.lineWidth = 6; x.strokeRect(50, 70, c.width - 100, c.height - 140);
     x.textAlign = 'center'; x.fillStyle = '#1E3248';
-    var pix = '"Myfont", "DM Sans", sans-serif';
-    x.font = '56px ' + pix; x.fillText('CERTIFICATE', c.width / 2, 190);
-    x.font = '34px ' + pix; x.fillText('OF BLOCK BUILDING', c.width / 2, 245);
-    x.font = '20px sans-serif'; x.fillText('This certifies that', c.width / 2, 330);
-    var size = 84; x.font = size + 'px ' + pix;
+    x.font = '76px ' + pix; x.fillText('CERTIFICATE', c.width / 2, 190);
+    x.font = '52px ' + pix; x.fillText('OF BAKING', c.width / 2, 252);
+    x.font = '40px ' + pix; x.fillText('This certifies that', c.width / 2, 325);
+    var size = 100; x.font = size + 'px ' + pix;
     while (x.measureText(name).width > c.width - 260 && size > 20) { size -= 2; x.font = size + 'px ' + pix; }
-    x.fillStyle = '#6798C0'; x.fillText(name, c.width / 2, 420);
-    x.fillStyle = '#1E3248'; x.font = '20px sans-serif';
-    x.fillText('stacked, turned and cleared the blocks like a champion in Leah\'s Blocks,', c.width / 2, 490);
-    x.fillText('clearing ' + ln + ' lines on the way.', c.width / 2, 522);
-    x.font = '44px ' + pix; x.fillStyle = '#6798C0'; x.fillText('Score: ' + fmtN(sc), c.width / 2, 590);
-    for (var i = 0; i < 7; i++) { var s = cellSprite(i, 3); x.drawImage(s, 600 - 7 * 38 / 2 + i * 38, 620, 32, 32); }
-    x.fillStyle = '#1E3248'; x.font = '24px ' + pix;
-    x.fillText(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), c.width / 2, 712);
-    x.fillText('livedbyleah.com', c.width / 2, 748);
+    x.fillStyle = '#6798C0'; x.fillText(name, c.width / 2, 425);
+    x.fillStyle = '#1E3248'; x.font = '42px ' + pix;
+    x.fillText('stacked up a whole kitchen in Bake Off', c.width / 2, 490);
+    x.fillText('and served ' + ln + (ln === 1 ? ' dish' : ' dishes') + ' on the way', c.width / 2, 540);
+    x.font = '62px ' + pix; x.fillStyle = '#6798C0'; x.fillText('Score ' + fmtN(sc), c.width / 2, 600);
+    // Leah's seven pieces along the bottom (drawn from the pictures, bottoms aligned)
+    var sc3 = 3, gap = 30, tot = -gap, widths = [];
+    TYPES.forEach(function (t) { var w = (SPR[t] ? SPR[t][0].width : 16) * sc3; widths.push(w); tot += w + gap; });
+    var px = Math.round(600 - tot / 2);
+    TYPES.forEach(function (t, k) {
+      if (SPR[t]) { var im = SPR[t][0]; x.drawImage(im, px, 688 - im.height * sc3 + 12, im.width * sc3, im.height * sc3); }
+      px += widths[k] + gap;
+    });
+    x.fillStyle = '#1E3248'; x.font = '36px ' + pix;
+    x.fillText(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), c.width / 2, 736);
+    x.fillText('livedbyleah.com', c.width / 2, 768);
     c.toBlob(function (blob) {
-      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'blocks-certificate.png';
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'bake-off-certificate.png';
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
     }, 'image/png');
   }
@@ -371,10 +431,11 @@
   // Test hook: only when the page is opened with ?debug=1
   if (/[?&]debug=1/.test(location.search)) {
     window.__blocks = {
-      info: function () { return { mode: mode, score: score, lines: lines, level: level, cur: cur && { t: cur.t, x: cur.x, y: cur.y }, hold: hold, queue: queue && queue.slice(), grid: grid && grid.map(function (r) { return r.map(function (c) { return c ? 1 : 0; }).join(''); }) }; },
+      info: function () { return { mode: mode, score: score, lines: lines, level: level, ready: ready, cur: cur && { t: cur.t, r: cur.r, x: cur.x, y: cur.y }, hold: hold, queue: queue && queue.slice(), grid: grid && grid.map(function (r) { return r.map(function (c) { return c ? 1 : 0; }).join(''); }) }; },
       start: beginRun, end: function (sc, ln) { score = sc; lines = ln; level = 1 + Math.floor(ln / 10); gameOver(); },
-      setGrid: function (rows) { rows.forEach(function (str, i) { var y = ROWS - rows.length + i; for (var x = 0; x < COLS; x++) { grid[y][x] = str[x] === '1' ? { c: 0, v: x & 7 } : null; } }); },
-      setPiece: function (t) { cur = mkPiece(t); }
+      setGrid: function (rows) { rows.forEach(function (str, i) { var y = ROWS - rows.length + i; for (var x = 0; x < COLS; x++) { grid[y][x] = str[x] === '1' ? { t: 'O', r: 0, cx: x & 1, cy: y & 1 } : null; } }); },
+      setPiece: function (t) { cur = mkPiece(t); },
+      cert: function (n, s, l) { makeCertificate(n || 'Test Baker', s || 12345, l || 42); }
     };
   }
 

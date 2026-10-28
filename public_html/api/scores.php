@@ -13,7 +13,7 @@ header('Cache-Control: no-store');
 const GAMES = [
     'surf'  => ['minWin' => 45000, 'perLevel' => 9000,  'minLevelSaved' => 2],
     'road'  => ['minWin' => 120000, 'perLevel' => 20000, 'minLevelSaved' => 1],
-    // blocks: the score is stored in `ms`, the lines cleared in `level`, won = 0. Ranked by score.
+    // blocks (Bake Off): the score is stored in `ms`, the dishes (rows) cleared in `level`, won = 0. Ranked by score.
     'blocks' => ['score' => true],
     // bert (Fossil Smash, was L-Bert): the score is stored in `ms`, the age level reached (1-4) in `level`, won = cleared all 4. Ranked by score.
     'bert' => ['score' => true, 'elements' => true],
@@ -64,7 +64,7 @@ if ($action === 'start') {
 
 if ($action === 'submit') {
     $run = $_SESSION[$runKey] ?? null;
-    if (!empty($cfg['score'])) {   // ---- Leah's Blocks and Fossil Smash: ranked by score
+    if (!empty($cfg['score'])) {   // ---- Bake Off and Fossil Smash: ranked by score
         $score = (int)($in['score'] ?? 0);
         $isBert = !empty($cfg['elements']);
         $lines = $isBert ? (int)($in['level'] ?? 0) : (int)($in['lines'] ?? 0);   // Fossil Smash: level reached, Blocks: lines
