@@ -13,13 +13,15 @@ Vlog hub and fan club for Leah (16, owner and creator), built by her father Adri
 
 **Docs:** `CLAUDE.md` = permanent architecture and rules (read first). `HANDOVER.md` = current status, open items, known issues, history and a restart prompt.
 
-**Repo layout:** `public_html/` (the site) · `art/` and `assets/bake-off/` (Leah's drafts and cut pieces, NOT deployed) · `CLAUDE.md`, `HANDOVER.md`, `README.md`.
+**Repo layout:** `public_html/` (the site) · `scripts/release.sh` (builds the deploy zip) · `art/` and `assets/bake-off/` (Leah's drafts and cut pieces, NOT deployed) · `CLAUDE.md`, `HANDOVER.md`, `README.md`.
 
-## Deploy (Adrien does this by hand)
-1. Build the zip: `cd public_html && zip -qr /tmp/livedbyleah-v<version>.zip . -x 'data/*' setup.php '*.DS_Store'`
-2. cPanel > File Manager > `public_html`: upload the zip, Extract, choose Replace.
-3. The database migrates itself on the first page load. Hard-refresh (Cmd+Shift+R).
-Never overwrite or delete `data/site.sqlite` (Leah's content, comments, fans and scores). `setup.php` must NOT exist on the server.
+## Deploy (Adrien does this by hand, zip built by script)
+1. Commit and push to `main`.
+2. Build the zip from that commit: `./scripts/release.sh` (saves `livedbyleah-v<version>-<commit>.zip` in `~/Downloads`; it stops with a `STOP:` message if anything is unpushed or uncommitted).
+3. cPanel > File Manager > `public_html`: upload the zip, Extract, choose Replace.
+4. Open `public_html/BUILD.txt` on the server: the commit must match the zip name and GitHub `main`.
+5. The database migrates itself on the first page load. Hard-refresh (Cmd+Shift+R).
+Never overwrite or delete `data/site.sqlite` (Leah's content, comments, fans and scores). The zip never contains it. `setup.php` must NOT exist on the server (the zip leaves it out).
 
 ## First-time setup
 Upload the contents of `public_html/` (including the hidden `.htaccess` files), open `/setup.php` once to create Leah's admin login, then delete `setup.php` from the server. HTTPS redirect is already ON in `.htaccess`.

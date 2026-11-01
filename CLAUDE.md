@@ -132,18 +132,19 @@ Leah's take on the hopping-pyramid arcade game (she loves it), dinosaur themed, 
 - Current status, open items and known issues live in HANDOVER.md (read it right after this file). README.md is the short overview and deploy guide.
 - Fan points: Surf and Outrun are level-based; Bake Off and Fossil Smash are score tiers (see their sections).
 
-## Deploy routine (Adrien does this by hand)
-1. Build a zip of `public_html` EXCLUDING `data/*`, `setup.php` and `.DS_Store`:
-   `cd public_html && zip -qr /tmp/livedbyleah-updateN.zip . -x 'data/*' setup.php '*.DS_Store'`
-2. Adrien uploads the zip into `public_html` via cPanel File Manager, extracts it, and chooses Replace.
-3. The DB migrates itself on the first page load. Then hard-refresh (Cmd+Shift+R).
-Never overwrite or delete `data/site.sqlite` (it holds Leah's content, comments and scores).
+## Deploy routine (Adrien does this by hand, zip built by script)
+1. Commit and push to `main` first. The script refuses to build otherwise.
+2. In Terminal, from the repo: `./scripts/release.sh` (optional argument: output folder, default `~/Downloads`). It checks you are on `main`, that `public_html` has no uncommitted changes and that local `main` equals GitHub `main`. It then builds `livedbyleah-v<version>-<commit>.zip` from that commit only (`git archive`), without `data/`, `setup.php` and `.DS_Store`, and adds `BUILD.txt` (version, full commit, build time).
+3. Adrien uploads the zip into `public_html` via cPanel File Manager, extracts it, and chooses Replace.
+4. Check `public_html/BUILD.txt` on the server: its commit must match the zip name and GitHub `main`. The version also shows under the sidebar menu.
+5. The DB migrates itself on the first page load. Then hard-refresh (Cmd+Shift+R).
+Never overwrite or delete `data/site.sqlite` (it holds Leah's content, comments and scores). It is not in the zip, so a normal deploy leaves it alone. `BUILD.txt` exists only on the server (generated inside the zip, never committed).
 
 ## Git workflow
 - Branch per update, then merge to `main` and push (the Claude GitHub App is installed on the repo).
 - Commit messages end with the attribution lines the session gives. Do not push secrets.
 - When working locally: run `php -S 127.0.0.1:<port>` from `public_html/`. Kill by port (`lsof -ti tcp:<port> | xargs kill`), never `pkill -f php`.
-- Delete the local `data/site.sqlite` before committing or zipping.
+- Delete the local `data/site.sqlite` before committing.
 
 ## Known constraints
 - TikTok blocks fetching, so TikTok links cannot be matched automatically. They are pasted via the ⚙ icon.
