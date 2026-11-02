@@ -23,7 +23,8 @@ const GAMES = [
 function top_scores(string $myKey, string $game): array {
     $order = score_order($game);
     $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.km, s.pts, s.pkey, s.created_at, f.last_login AS seen
-        FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE (f.id IS NULL OR f.suspended = 0) AND s.game = ' . db()->quote($game) . ' ORDER BY ' . $order . ' LIMIT 10')->fetchAll();
+        FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE (f.id IS NULL OR f.suspended = 0) AND s.game = ' . db()->quote($game) . ' ORDER BY ' . $order)->fetchAll();
+    $rows = array_slice(dedupe_by_name($rows), 0, 10);
     $out = [];
     foreach ($rows as $r) {
         $out[] = [

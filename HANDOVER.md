@@ -160,3 +160,8 @@ v1.5.0 (2026-10-27): Leah's Blocks becomes Bake Off: Leah's 7 kitchen pieces (sp
 - Surf: shot/dodged/UFO/lives-left bonuses. Fossil Smash: +3000 no-bonk, +300 per spare glide.
 - Fan points: +3 per game first played (`game_plays`, counted at start), top-5 bonus 10/7/5/3/2 per visible game.
 - Migration converts old test scores once (legacy_points_sql). DB migrates itself.
+
+## v1.8.2 (2026-11-02): built and tested locally
+- Boards show one row per person (`dedupe_by_name()` in inc/fans.php; also applied to top-5 fan bonus and api/scores.php top 10). Fixes an admin account and a fan with the same name both appearing.
+- Username: already one free change, then a request to Leah (support_requests, admin Support page + badge). Added visible links on Fan Fest and clearer "Ask Leah" wording.
+- Outrun card uses an in-game Mexico screenshot (`assets/img/games/road-mexico.jpg`); art captions removed on Outrun and Fossil Smash, only the version remains.

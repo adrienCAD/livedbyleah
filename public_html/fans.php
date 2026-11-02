@@ -349,33 +349,33 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
   <p><strong>Your login before that:</strong> <?= $fan['prev_login'] ? time_tag($fan['prev_login']) : 'this is your first visit' ?></p>
 </div>
 
-<h2>Your username</h2>
+<h2 id="username">Your username</h2>
 <?php if ($fan['username_locked']):
     $rq = db()->prepare('SELECT wanted, status, note FROM support_requests WHERE fan_id = ? ORDER BY id DESC LIMIT 1');
     $rq->execute([$fan['id']]);
     $req = $rq->fetch(); ?>
-<p>Your username is <strong><?= e($fan['username']) ?></strong>. It is locked, because you already chose it.</p>
+<p>Your username is <strong><?= e($fan['username']) ?></strong>. You already used your one free change, so only Leah can change it now. Ask her below and she will review your request.</p>
 <?php if ($req && $req['status'] === 'pending'): ?>
 <p class="notice">Your request for <strong><?= e($req['wanted']) ?></strong> is waiting for support.</p>
 <?php else: ?>
 <?php if ($req && $req['status'] === 'declined'): ?><p class="hint">Your last request for <?= e($req['wanted']) ?> was declined<?= $req['note'] ? ': ' . e($req['note']) : '' ?>.</p>
 <?php elseif ($req && $req['status'] === 'approved'): ?><p class="hint">Your last request was approved.</p><?php endif; ?>
-<h3>Need a change? Ask support</h3>
+<h3>Need another change? Ask Leah</h3>
 <form method="post" action="/fans.php?v=settings" class="form">
   <?= csrf_field() ?><input type="hidden" name="action" value="support">
   <label for="wanted">The username you would like</label>
   <input id="wanted" name="wanted" minlength="3" maxlength="20" required>
   <label for="why">Why do you need the change?</label>
   <textarea id="why" name="reason" maxlength="300" rows="3" required></textarea>
-  <button class="btn" type="submit">Send to support</button>
+  <button class="btn" type="submit">Send to Leah</button>
 </form>
 <?php endif; ?>
 <?php else: ?>
-<form method="post" action="/fans.php?v=settings" class="form" onsubmit="return confirm('You can only choose your username once. After that, only support can change it. Save it?');">
+<form method="post" action="/fans.php?v=settings" class="form" onsubmit="return confirm('You can only choose your username once. After that, you will need to ask Leah. Save it?');">
   <?= csrf_field() ?><input type="hidden" name="action" value="username">
   <label for="username">Name shown in the hall of fame and on the fans page</label>
   <input id="username" name="username" value="<?= e($fan['username']) ?>" minlength="3" maxlength="20" required>
-  <p class="hint"><strong>You can choose only once.</strong> After you save, it is locked and only support can change it. 3 to 20 characters: letters, numbers, spaces, dots, dashes. Pick a nickname if you prefer not to show your name.</p>
+  <p class="hint"><strong>You get one free change.</strong> After you save, it is locked and you will need to ask Leah for any other change. 3 to 20 characters: letters, numbers, spaces, dots, dashes. Pick a nickname if you prefer not to show your name.</p>
   <button class="btn" type="submit">Save username</button>
 </form>
 <?php endif; ?>
@@ -428,7 +428,7 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
     $sub->execute([$fan['id']]);
     $subs = $sub->fetchAll();
     ?>
-<p class="lede">Hey <strong><?= e($fan['username']) ?></strong>, you are part of the fan club. Everything you do on the site shows up under this name.</p>
+<p class="lede">Hey <strong><?= e($fan['username']) ?></strong>, you are part of the fan club. Everything you do on the site shows up under this name. <a href="/fans.php?v=settings#username"><?= $fan['username_locked'] ? 'Want a different one? Ask Leah.' : 'Change your username (one free change).' ?></a></p>
 <?php if ($mine): ?>
 <div class="soon rankcard">
   <p><strong>You are fan #<?= (int)$mine['rank'] ?> with <?= (int)$mine['pts'] ?> points.</strong></p>

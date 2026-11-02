@@ -26,7 +26,7 @@ if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
     <span class="gc-text">Pick up the trash on the beach, build a water gun, then go surf. There are sharks. And UFOs. Don't ask.</span>
   </a>
   <a class="gamecard" href="/games.php?g=road">
-    <img src="/assets/img/games/road-hand.jpg" width="640" height="349" alt="<?= e($ROAD_NAME) ?>: a hand-drawn picture of Leah's green Jeep on Route 1" loading="lazy">
+    <img src="/assets/img/games/road-mexico.jpg" width="640" height="361" alt="<?= e($ROAD_NAME) ?>: Leah's green Jeep driving through Mexico" loading="lazy">
     <span class="gc-title"><?= e($ROAD_NAME) ?></span>
     <span class="gc-text">Take my green Jeep from Costa Rica all the way to Paris. Keep an eye on the battery, and on Bigfoot.</span>
   </a>
@@ -94,7 +94,7 @@ if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
     <button type="button" data-key="gas" aria-label="Gas">Gas</button>
   </div>
 </div>
-<p class="hint">Jeep and scenery drawn in the style of Leah's pixel art. Version <?= e(SITE_VERSION) ?>.</p>
+<p class="hint">Version <?= e(SITE_VERSION) ?>.</p>
 
 <section class="hof">
   <h2>Hall of fame</h2>
@@ -146,7 +146,7 @@ if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
     <button type="button" data-key="dr" aria-label="Hop down-right">&#8600;</button>
   </div>
 </div>
-<p class="hint">Bagel, the meteor and the fireballs are Leah's art; the other critters are drawn in code for now, in her pixel style. Version <?= e(SITE_VERSION) ?>.</p>
+<p class="hint">Version <?= e(SITE_VERSION) ?>.</p>
 
 <section class="hof">
   <h2>Hall of fame</h2>

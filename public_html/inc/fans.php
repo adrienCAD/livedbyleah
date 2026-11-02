@@ -195,9 +195,9 @@ function fan_ranking(bool $withSuspended = false): array {
         if (in_array($g['game'], $games, true)) { $play[(int)$g['fan_id']] = ($play[(int)$g['fan_id']] ?? 0) + PLAY_FAN_PTS; }
     }
     foreach ($games as $g) {
-        $q = db()->query('SELECT s.fan_id FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE (f.id IS NULL OR f.suspended = 0) AND s.game = ' . db()->quote($g) . ' ORDER BY ' . score_order($g) . ' LIMIT 5');
-        foreach ($q->fetchAll(PDO::FETCH_COLUMN) as $i => $fid) {
-            if ($fid !== null) { $top[(int)$fid] = ($top[(int)$fid] ?? 0) + TOP_FAN_PTS[$i]; }
+        $q = db()->query('SELECT s.fan_id, COALESCE(f.username, s.name) AS name FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE (f.id IS NULL OR f.suspended = 0) AND s.game = ' . db()->quote($g) . ' ORDER BY ' . score_order($g));
+        foreach (array_slice(dedupe_by_name($q->fetchAll()), 0, 5) as $i => $row) {
+            if ($row['fan_id'] !== null) { $top[(int)$row['fan_id']] = ($top[(int)$row['fan_id']] ?? 0) + TOP_FAN_PTS[$i]; }
         }
     }
     foreach ($rows as &$r) {
@@ -253,6 +253,17 @@ function hof_result(string $game, array $r): string {
     return $pts . ' &middot; ' . ((int)$r['won'] === 1 ? 'Cleared all 5' : 'Level ' . (int)$r['level']);
 }
 
+// One row per person: the same name never appears twice on a board (best result first, so the first row wins).
+function dedupe_by_name(array $rows): array {
+    $seen = []; $out = [];
+    foreach ($rows as $r) {
+        $k = mb_strtolower((string)$r['name']);
+        if (isset($seen[$k])) { continue; }
+        $seen[$k] = true; $out[] = $r;
+    }
+    return $out;
+}
+
 // Everything the summary needs: top 5 per game, Leah's record, the viewer's rank, and the overall champion.
 function hof_summary(): array {
     $leah = setting('leah_name') ?: 'LeahPunkStar';
@@ -264,6 +275,7 @@ function hof_summary(): array {
         $order = score_order($g);
         $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.km, s.pts, s.pkey, f.last_login AS seen
             FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE (f.id IS NULL OR f.suspended = 0) AND s.game = ' . db()->quote($g) . ' ORDER BY ' . $order)->fetchAll();
+        $rows = dedupe_by_name($rows);
         $rec = null; $mine = null;
         foreach ($rows as $i => $r) {
             $key = (string)$r['pkey'];
