@@ -23,7 +23,11 @@ $sections = [
 page_header('Home', 'home');
 ?>
 <section class="hero">
-  <img class="hero-logo" src="/assets/img/leah-logo.png" width="400" height="190" alt="Leah">
+  <div class="hero-pic">
+    <img class="hero-photo" src="/assets/img/leah-umbrella.png" width="276" height="380" alt="Leah as a little girl, holding a big black umbrella">
+    <img class="sea s-crab" src="/assets/img/sea/crab.png" alt="" width="110" height="75">
+    <img class="sea s-heart" src="/assets/img/sea/heart.png" alt="" width="34" height="38">
+  </div>
   <div>
     <p class="hero-kicker">Hi, I'm Leah.</p>
     <h1>Welcome to Lived by Leah</h1>
@@ -56,8 +60,10 @@ page_header('Home', 'home');
 
 <h2>What's on the site</h2>
 <div class="tour">
-<?php foreach ($sections as [$href, $label, $k, $text]): ?>
+<?php $mascot = ['v' => 'clown', 'g' => 'crab', 'h' => 'orca2', 'f' => 'orca1', 'i' => 'squid', 'b' => 'shell'];
+foreach ($sections as [$href, $label, $k, $text]): ?>
   <a class="tour-card tc-<?= e($k) ?>" href="<?= e($href) ?>">
+    <img class="tc-mascot" src="/assets/img/sea/<?= e($mascot[$k]) ?>.png" alt="" loading="lazy">
     <span class="tc-title"><?= e($label) ?></span>
     <span class="tc-text"><?= e($text) ?></span>
   </a>

@@ -294,7 +294,7 @@ ol.fanlist { counter-reset: none; }
 .btn.google::before { content: "G"; display: inline-block; font-weight: 800; color: #4285F4; margin-right: 8px; }
 form.inline { display: inline; margin: 0; }
 
-.hero { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 28px; align-items: center; margin-bottom: 18px; }
+.hero { display: grid; grid-template-columns: minmax(0, 290px) minmax(0, 1fr); gap: 28px; align-items: center; margin-bottom: 18px; }
 .hero-logo { width: 100%; height: auto; transform: rotate(-3deg); }
 .hero-kicker { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--bluegrey); margin: 0 0 4px; }
 .hero h1 { margin-bottom: 12px; }
@@ -390,3 +390,16 @@ a.yc-src:hover { background: var(--pollen); }
 
 .pts-list { list-style: none; padding: 0; margin: 6px 0 0; font-size: 13px; text-align: left; display: inline-block; }
 .pts-list li { padding: 1px 0; }
+
+/* ---------------- v1.8.1: Home photo and sea-creature stickers ---------------- */
+.hero-pic { position: relative; }
+.hero-photo { display: block; width: 100%; height: auto; filter: drop-shadow(0 8px 10px rgba(30, 50, 80, .22)); }
+.sea { position: absolute; height: auto; pointer-events: none; }
+.s-crab { width: 36%; right: -2%; bottom: -3%; transform: rotate(8deg); }
+.s-heart { width: 11%; left: 2%; top: 4%; transform: rotate(-12deg); }
+.tour-card { position: relative; }
+.tc-mascot { position: absolute; right: 10px; top: 8px; height: 54px; width: auto; max-width: 70px; object-fit: contain; pointer-events: none; transition: transform .2s; }
+.tour-card:hover .tc-mascot, .tour-card:focus-visible .tc-mascot { transform: rotate(-8deg) scale(1.1); }
+.tour-card .tc-title { padding-right: 76px; min-height: 40px; }
+@media (max-width: 760px) { .hero-photo { max-width: 230px; } .s-crab { right: auto; left: 140px; } }
+@media (prefers-reduced-motion: reduce) { .tc-mascot { transition: none; } }
