@@ -33,6 +33,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         redirect('/admin/settings.php');
     }
+    if (($_POST['action'] ?? '') === 'contact') {
+        $m = trim((string)($_POST['contact_email'] ?? ''));
+        if ($m !== '' && !filter_var($m, FILTER_VALIDATE_EMAIL)) {
+            flash('That does not look like an email address.');
+        } else {
+            set_setting('contact_email', $m);
+            flash($m === '' ? 'Contact email removed from the Privacy Policy and Terms.' : 'Contact email saved. It now shows on the Privacy Policy and Terms.');
+        }
+        redirect('/admin/settings.php');
+    }
     if (($_POST['action'] ?? '') === 'games') {
         set_setting('game_blocks_public', !empty($_POST['blocks_public']) ? '1' : '0');
         flash(!empty($_POST['blocks_public']) ? 'Bake Off is now open to everyone.' : 'Bake Off is hidden. Only Leah and the admins can see it.');
@@ -86,6 +96,14 @@ admin_header('Settings');
   <div class="row"><button class="btn" type="submit">Save</button><?php if (google_enabled()): ?> <button class="link-danger" type="submit" name="off" value="1">Turn Google sign-in off</button><?php endif; ?></div>
 </form>
 <h2>Games</h2>
+<h2>Contact email (Privacy Policy and Terms)</h2>
+<p>The email address people can write to about their data. It is shown publicly on <a href="/privacy-policy">/privacy-policy</a> and <a href="/terms">/terms</a>, so use one you are happy to share (a dedicated address is best). Leave empty to point people to the support form instead.</p>
+<form method="post" class="form"><?= csrf_field() ?><input type="hidden" name="action" value="contact">
+  <label for="ce">Contact email</label>
+  <input id="ce" name="contact_email" type="email" maxlength="120" value="<?= e(setting('contact_email')) ?>" placeholder="hello@livedbyleah.com">
+  <button class="btn" type="submit">Save</button>
+</form>
+
 <form method="post" class="form"><?= csrf_field() ?><input type="hidden" name="action" value="games">
   <label><input type="checkbox" name="blocks_public" value="1" style="width:auto"<?= game_public('blocks') ? ' checked' : '' ?>> Show Bake Off to everyone</label>
   <p class="hint">When unticked, Bake Off is hidden from visitors and fans (card, game page and hall of fame). Leah and the admins can still play it. Scores already saved are kept.</p>

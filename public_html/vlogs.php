@@ -3,6 +3,10 @@
 declare(strict_types=1);
 require __DIR__ . '/inc/bootstrap.php';
 require __DIR__ . '/inc/layout.php';
+require __DIR__ . '/inc/fans.php';
+require __DIR__ . '/inc/fancomments.php';
+
+$fan = current_fan();
 
 $vlogs = db()->query('SELECT * FROM vlogs ORDER BY sort_order ASC, id DESC')->fetchAll();
 
@@ -39,10 +43,24 @@ page_header('Watch Vlogs', 'vlogs');
       <?php if ($v['instagram_url']): ?><a href="<?= e($v['instagram_url']) ?>" target="_blank" rel="noopener">Instagram</a><?php endif; ?>
       <?php if (is_admin()): ?><a class="gear" href="/admin/vlogs.php?edit=<?= (int)$v['id'] ?>" title="Edit links (admin only)" aria-label="Edit links for <?= e($v['title']) ?>">&#9881;</a><?php endif; ?>
     </p>
-    <button type="button" class="drawer-btn" aria-expanded="false" data-vlog="<?= (int)$v['id'] ?>">Why I made this + comments</button>
+    <button type="button" class="drawer-btn" aria-expanded="false" data-vlog="<?= (int)$v['id'] ?>">Comments</button>
   </article>
 <?php endforeach; ?>
 </div>
+
+<template id="cformTpl">
+<?php if ($fan): ?>
+  <form class="cform" method="post" action="/api/fan-comment.php" data-fan="<?= e($fan['username']) ?>">
+    <?= csrf_field() ?><input type="hidden" name="vlog" value="">
+    <label class="sr" for="cf-body">Add a comment</label>
+    <textarea id="cf-body" name="body" rows="2" maxlength="<?= FC_MAX ?>" required placeholder="Add a comment as <?= e($fan['username']) ?>..."></textarea>
+    <div class="cform-row"><button class="btn" type="submit">Comment</button><span class="hint cform-msg" role="status"></span></div>
+    <p class="hint">Leah reads every comment before it goes live. No links please.</p>
+  </form>
+<?php else: ?>
+  <?= fc_guest_prompt() ?>
+<?php endif; ?>
+</template>
 
 <template id="drawerTpl">
   <section class="drawer" aria-live="polite">

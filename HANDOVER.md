@@ -142,3 +142,14 @@ v1.3.0 (2026-10-27): L-Bert, the 4th game: Mumu hops a pyramid across Water, Ear
 v1.4.0 (2026-10-27): L-Bert becomes Fossil Smash: dinosaur theme with Leah's art (Bagel the brachiosaurus, meteor, 2 fireball frames), levels Triassic, Jurassic, Cretaceous and Meteor Day, fossil stones, new critters (pterodactyl, trilobite, egg-thief raptor) and a T. rex boss, new hub card and certificate. Same hall of fame (old scores kept). Zip: livedbyleah-v1.4.0.zip.
 v1.4.1 (2026-10-27): Leah's Outrun: new Jeep pictures for steering (30 left/right for a short press, 45 left/right after holding more than 1 s), hard turn steers faster and costs a little speed, with tire smoke and a squeal. Zip: livedbyleah-v1.4.1.zip.
 v1.5.0 (2026-10-27): Leah's Blocks becomes Bake Off: Leah's 7 kitchen pieces (spatula, flour sack, mushroom, sifter, chocolate, jar with tin, triangle), her mockup layout with HOLD, pieces are cut apart by cleared rows, bold pixel font, Dishes instead of Lines, certificate OF BAKING in Myfont. Internal id stays blocks, so scores survive. Zip: livedbyleah-v1.5.0.zip.
+
+## v1.7.0 (2026-11-02): built and tested locally, NOT committed, NOT deployed
+- Home: "Play games" button; guest-only "Not a fan yet?" nudge (random lines).
+- Vlogs: "My thought process" removed (the `vlogs.why` column stays unused). Drawer is now one YouTube-style feed (Leah's picks + approved fan comments, source tags link to that vlog's YouTube/TikTok/Instagram URL). Fans comment via `api/fan-comment.php`.
+- Fan comments: table `fan_comments` (pending/approved/hidden), approved in Admin > Fan comments. A post linked to a vlog shares that vlog's thread; an unlinked post has its own. Fans see their own pending comments on Behind the Scenes. Code: `inc/fancomments.php`.
+- Admin > Fans > Manage (`admin/fan.php`): bonus points +/- with a note only the fan sees (shown on Fan Fest), suspend/unsuspend (signed out, hidden, cannot log in), everything the fan posted with delete buttons, delete completely (type the username). New columns `fans.suspended/bonus_points/bonus_note`.
+- Hall of Fame: top 5, "Show top 10" button, random playful line (`HOF_LAGGARD_LINES` in `inc/fans.php`).
+- Ideas: fans can delete their own ideas unless Leah chose them.
+- `/privacy-policy` and `/terms` (privacy.php, terms.php, rewrite rules in `.htaccess`), with Google sign-in sections. Contact email is set in Admin > Settings (`contact_email`); until set they point to the support form.
+- Go-live: commit, push, `./scripts/release.sh`, upload, check BUILD.txt. Then set the contact email in Admin > Settings and add the two URLs to the Google consent screen. Database migrates itself.
+- Next (v1.8.0): points rework (all games), Outrun certificate (Leah in blue shirt, cryptids, "Vámonos, muchachos!"), fan points for playing and top-5.

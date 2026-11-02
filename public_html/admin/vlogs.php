@@ -24,7 +24,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $yt = $ytRaw === '' ? '' : youtube_id($ytRaw);
         $tt = clean_url((string)($_POST['tiktok_url'] ?? ''));
         $ig = clean_url((string)($_POST['instagram_url'] ?? ''));
-        $why = mb_substr(trim((string)($_POST['why'] ?? '')), 0, 1200);
         if ($title === '' || mb_strlen($title) > 200) {
             flash('Add a title (up to 200 characters).');
         } elseif ($yt === null) {
@@ -32,14 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($yt === '' && $tt === null && $ig === null) {
             flash('Add at least one link: YouTube, TikTok or Instagram.');
         } elseif ($id > 0) {
-            $pdo->prepare('UPDATE vlogs SET title=?, youtube_id=?, tiktok_url=?, instagram_url=?, why=? WHERE id=?')
-                ->execute([$title, $yt, $tt, $ig, $why, $id]);
+            $pdo->prepare('UPDATE vlogs SET title=?, youtube_id=?, tiktok_url=?, instagram_url=? WHERE id=?')
+                ->execute([$title, $yt, $tt, $ig, $id]);
             flash('Vlog saved.');
         } else {
             // New vlogs go to the top of the list.
             $pdo->exec('UPDATE vlogs SET sort_order = sort_order + 1');
-            $pdo->prepare('INSERT INTO vlogs (title, youtube_id, tiktok_url, instagram_url, why, sort_order) VALUES (?, ?, ?, ?, ?, 0)')
-                ->execute([$title, $yt, $tt, $ig, $why]);
+            $pdo->prepare('INSERT INTO vlogs (title, youtube_id, tiktok_url, instagram_url, sort_order) VALUES (?, ?, ?, ?, 0)')
+                ->execute([$title, $yt, $tt, $ig]);
             flash('Vlog added.');
         }
         redirect('/admin/vlogs.php');
@@ -71,8 +70,6 @@ admin_header('Vlogs');
   <input id="tiktok_url" name="tiktok_url" value="<?= e($editing['tiktok_url'] ?? '') ?>">
   <label for="instagram_url">Instagram link (optional)</label>
   <input id="instagram_url" name="instagram_url" value="<?= e($editing['instagram_url'] ?? '') ?>">
-  <label for="why">My thought process (why I made this video)</label>
-  <textarea id="why" name="why" rows="4" maxlength="1200"><?= e($editing['why'] ?? '') ?></textarea>
   <div class="row">
     <button class="btn" type="submit"><?= $editing ? 'Save changes' : 'Add vlog' ?></button>
     <?php if ($editing): ?><a class="btn ghost" href="/admin/vlogs.php">Cancel</a><?php endif; ?>

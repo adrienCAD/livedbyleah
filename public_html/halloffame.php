@@ -19,12 +19,15 @@ page_header('Hall of Fame', 'hof');
 <p class="empty">No fans yet. <a href="/fans.php?v=join">Be the first!</a></p>
 <?php else: ?>
 <p class="hint">Fan points come from joining, game levels, screenshots and chosen ideas. <a href="/fans.php">How to earn points</a></p>
-<ol class="fanlist ranking">
-<?php foreach (array_slice($ranking, 0, 10) as $f): $me = $fan && $f['id'] === (int)$fan['id']; ?>
-  <li<?= $me ? ' class="me"' : '' ?>><span class="nm">#<?= (int)$f['rank'] ?> <?= e($f['username']) ?><?= $me ? ' (you)' : '' ?></span>
+<div class="more-box" id="more-fans"><ol class="fanlist ranking">
+<?php foreach (array_slice($ranking, 0, 10) as $i => $f): $me = $fan && $f['id'] === (int)$fan['id']; ?>
+  <?php if ($i === 5): ?><li class="extra laggard"><?= e(hof_laggard_line()) ?></li><?php endif; ?>
+  <li class="<?= trim(($me ? 'me ' : '') . ($i >= 5 ? 'extra' : '')) ?>"><span class="nm">#<?= (int)$f['rank'] ?> <?= e($f['username']) ?><?= $me ? ' (you)' : '' ?></span>
     <span class="seen"><?= (int)$f['pts'] ?> points</span></li>
 <?php endforeach; ?>
 </ol>
+<?php if (count($ranking) > 5): ?><p><button type="button" class="btn ghost" data-more="more-fans" data-open="Show top 10" data-close="Back to top 5" aria-expanded="false">Show top 10</button></p><?php endif; ?>
+</div>
 <?php endif; ?>
 <?php endif; ?>
 <?php if (!$fan && !is_admin()): ?>

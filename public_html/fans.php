@@ -116,7 +116,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($f && $f['locked_until'] > time()) {
             $errors[] = 'Too many tries. Wait a few minutes and try again.';
         } elseif ($f && password_verify($pass, $f['password_hash'])) {
-            if (!$f['confirmed']) {
+            if ((int)$f['suspended']) {
+                $errors[] = 'This fan account is paused. Please contact Leah if you think that is a mistake.';
+            } elseif (!$f['confirmed']) {
                 $errors[] = 'Please confirm your email first (check your inbox and spam folder).';
                 $old['unconfirmed'] = $email;
             } else {
@@ -430,7 +432,8 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
 <?php if ($mine): ?>
 <div class="soon rankcard">
   <p><strong>You are fan #<?= (int)$mine['rank'] ?> with <?= (int)$mine['pts'] ?> points.</strong></p>
-  <p class="hint"><?= SIGNUP_POINTS ?> for joining + <?= (int)$mine['lvl_pts'] ?> for game levels + <?= (int)$mine['soc_pts'] ?> for approved screenshots<?= (int)$mine['idea_pts'] ? ' + ' . (int)$mine['idea_pts'] . ' for chosen ideas' : '' ?>.
+  <p class="hint"><?= SIGNUP_POINTS ?> for joining + <?= (int)$mine['lvl_pts'] ?> for game levels + <?= (int)$mine['soc_pts'] ?> for approved screenshots<?= (int)$mine['idea_pts'] ? ' + ' . (int)$mine['idea_pts'] . ' for chosen ideas' : '' ?><?= (int)$mine['bonus_pts'] ? ' ' . ((int)$mine['bonus_pts'] > 0 ? '+' : '-') . ' ' . abs((int)$mine['bonus_pts']) . ' bonus from Leah' : '' ?>.
+  <?php if (trim((string)$mine['bonus_note']) !== ''): ?><br><em>Note from Leah: <?= e($mine['bonus_note']) ?></em><?php endif; ?>
   <?php if ($b): $s = intdiv((int)$b['ms'], 1000); ?>
     Best surf run: <?= $b['won'] ? 'cleared all 5 levels' : 'reached level ' . (int)$b['level'] ?> in <?= sprintf('%d:%02d', intdiv($s, 60), $s % 60) ?>.
   <?php else: ?>

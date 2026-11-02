@@ -70,6 +70,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('/ideas.php?open=' . $ideaId . '#i-' . $ideaId);
         }
         $old['c' . $ideaId] = $body;
+    } elseif ($action === 'delete_idea') {
+        // Fans can take back an idea unless Leah already chose it (points were given for it).
+        $st = db()->prepare("DELETE FROM ideas WHERE id = ? AND fan_id = ? AND status IN ('pending', 'open', 'declined')");
+        $st->execute([$ideaId, $fan['id']]);
+        flash($st->rowCount() ? 'Your idea was deleted.' : 'That idea cannot be deleted (Leah already chose it).');
+        redirect('/ideas.php#mine');
     } elseif ($action === 'uncomment') {
         db()->prepare('DELETE FROM idea_comments WHERE id = ? AND fan_id = ?')->execute([(int)($_POST['comment_id'] ?? 0), $fan['id']]);
         redirect('/ideas.php?open=' . $ideaId . '#i-' . $ideaId);
@@ -93,7 +99,7 @@ if ($ideas) {
 }
 $mine = [];
 if ($fan) {
-    $st = db()->prepare("SELECT title, status, points, leah_note, created_at FROM ideas WHERE fan_id = ? ORDER BY id DESC LIMIT 20");
+    $st = db()->prepare("SELECT id, title, status, points, leah_note, created_at FROM ideas WHERE fan_id = ? ORDER BY id DESC LIMIT 20");
     $st->execute([$fan['id']]);
     $mine = $st->fetchAll();
 }
@@ -143,6 +149,9 @@ page_header('Ideas for Leah', 'ideas');
       <?php else: ?>
       <span class="like" title="Fans can like ideas">&#9829; <?= (int)$i['likes'] ?></span>
       <?php endif; ?>
+      <?php if ($fan && (int)$i['fan_id'] === $myId && $i['status'] === 'open'): ?>
+      <form method="post" action="/ideas.php" class="inline" onsubmit="return confirm('Delete your idea? Likes and comments on it go too.');"><?= csrf_field() ?><input type="hidden" name="action" value="delete_idea"><input type="hidden" name="idea_id" value="<?= $id ?>"><button class="link-danger" type="submit">delete my idea</button></form>
+      <?php endif; ?>
     </footer>
     <details class="idea-comments"<?= $openId === $id ? ' open' : '' ?>>
       <summary><?= count($cs) ?> <?= count($cs) === 1 ? 'comment' : 'comments' ?></summary>
@@ -170,7 +179,8 @@ page_header('Ideas for Leah', 'ideas');
 <ul class="fanlist subs">
 <?php foreach ($mine as $m): ?>
   <li><span class="nm"><?= e($m['title']) ?><?= $m['leah_note'] && in_array($m['status'], ['pending', 'declined'], true) ? '<br><span class="seen">Leah: ' . e($m['leah_note']) . '</span>' : '' ?></span>
-    <span class="seen st-<?= in_array($m['status'], ['chosen', 'done'], true) ? 'approved' : ($m['status'] === 'declined' ? 'rejected' : 'pending') ?>"><?= e(IDEA_STATUS[$m['status']]) ?><?= (int)$m['points'] ? ' &middot; +' . (int)$m['points'] . ' points' : '' ?></span></li>
+    <span class="seen st-<?= in_array($m['status'], ['chosen', 'done'], true) ? 'approved' : ($m['status'] === 'declined' ? 'rejected' : 'pending') ?>"><?= e(IDEA_STATUS[$m['status']]) ?><?= (int)$m['points'] ? ' &middot; +' . (int)$m['points'] . ' points' : '' ?>
+    <?php if (in_array($m['status'], ['pending', 'open', 'declined'], true)): ?><form method="post" action="/ideas.php" class="inline" onsubmit="return confirm('Delete this idea?');"><?= csrf_field() ?><input type="hidden" name="action" value="delete_idea"><input type="hidden" name="idea_id" value="<?= (int)$m['id'] ?>"><button class="link-danger" type="submit">delete</button></form><?php endif; ?></span></li>
 <?php endforeach; ?>
 </ul>
 <?php endif; ?>

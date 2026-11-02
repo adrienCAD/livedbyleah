@@ -42,6 +42,12 @@ if (!$id) {
     }
 }
 if ($id) {
+    $sp = db()->prepare('SELECT suspended FROM fans WHERE id = ?');
+    $sp->execute([$id]);
+    if ((int)$sp->fetchColumn()) {
+        flash('This fan account is paused. Please contact Leah if you think that is a mistake.');
+        redirect('/fans.php');
+    }
     fan_sign_in($id);
     redirect('/fans.php');
 }

@@ -9,6 +9,17 @@
     });
   }
 
+  // "Show top 10" buttons (Hall of Fame).
+  document.querySelectorAll('[data-more]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var box = document.getElementById(b.getAttribute('data-more'));
+      if (!box) { return; }
+      var open = box.classList.toggle('open');
+      b.textContent = b.getAttribute(open ? 'data-close' : 'data-open');
+      b.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  });
+
   // Load the player only when someone taps the thumbnail (faster page, fewer trackers).
   document.querySelectorAll('.vlog-thumb[data-yt]').forEach(function (thumb) {
     thumb.addEventListener('click', function () {
@@ -36,18 +47,45 @@
     if (text !== undefined) { n.textContent = text; }
     return n;
   }
-  function commentList(title, list, empty) {
-    var box = el('div', 'cgroup');
-    box.appendChild(el('h3', '', title));
-    if (!list.length) { box.appendChild(el('p', 'hint', empty)); return box; }
-    list.forEach(function (c) {
-      var q = el('blockquote', 'comment');
-      q.appendChild(el('p', '', c.body));
-      var by = c.author + (c.likes > 0 ? ' \u00b7 ' + c.likes + (c.likes === 1 ? ' like' : ' likes') : '');
-      q.appendChild(el('footer', '', by));
-      box.appendChild(q);
+  // One feed, YouTube/Instagram style: round avatar, bold name, small source link, time, text, likes.
+  var SRC = { youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram', fan: 'Fan Club' };
+  function hue(name) { var h = 0; for (var i = 0; i < name.length; i++) { h = (h * 31 + name.charCodeAt(i)) % 360; } return h; }
+  function commentItem(c, links) {
+    var row = el('div', 'yc');
+    var av = el('span', 'yc-av', (c.author || '?').charAt(0).toUpperCase());
+    av.style.background = 'hsl(' + hue(c.author || '') + ', 55%, 42%)';
+    row.appendChild(av);
+    var main = el('div', 'yc-main');
+    var head = el('div', 'yc-head');
+    head.appendChild(el('strong', '', c.author));
+    var url = links[c.source];
+    if (c.source === 'fan') { head.appendChild(el('span', 'yc-src fan', 'Fan'));
+    } else if (url) {
+      var a = el('a', 'yc-src', SRC[c.source]); a.href = url; a.target = '_blank'; a.rel = 'noopener'; head.appendChild(a);
+    } else { head.appendChild(el('span', 'yc-src', SRC[c.source] || c.source)); }
+    head.appendChild(el('span', 'yc-ago', c.ago));
+    main.appendChild(head);
+    main.appendChild(el('p', 'yc-text', c.body));
+    if (c.likes > 0) { main.appendChild(el('span', 'yc-likes', '\u2665 ' + c.likes)); }
+    row.appendChild(main);
+    return row;
+  }
+  function wireForm(form, vlogId, onPosted) {
+    form.querySelector('[name=vlog]').value = vlogId;
+    var msg = form.querySelector('.cform-msg'), btn = form.querySelector('button');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      btn.disabled = true; msg.textContent = '';
+      fetch(form.action, { method: 'POST', body: new FormData(form) })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          msg.textContent = d.msg || '';
+          msg.className = 'hint cform-msg ' + (d.ok ? 'ok' : 'bad');
+          if (d.ok) { form.querySelector('textarea').value = ''; if (onPosted) { onPosted(); } }
+        })
+        .catch(function () { msg.textContent = 'Could not send that right now. Try again.'; msg.className = 'hint cform-msg bad'; })
+        .then(function () { btn.disabled = false; });
     });
-    return box;
   }
   document.querySelectorAll('.drawer-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -70,13 +108,17 @@
         .then(function (d) {
           if (openDrawer !== tpl) { return; }
           body.textContent = '';
-          body.appendChild(el('h3', '', 'My thought process'));
-          body.appendChild(el('p', 'why', d.why || 'Leah has not added a note for this vlog yet.'));
-          var cols = el('div', 'cols');
-          cols.appendChild(commentList('YouTube', d.youtube, 'No comments yet.'));
-          cols.appendChild(commentList('TikTok', d.tiktok, 'Leah has not picked any yet.'));
-          cols.appendChild(commentList('Instagram', d.instagram, 'Leah has not picked any yet.'));
-          body.appendChild(cols);
+          body.appendChild(el('h3', '', 'Comments'));
+          var fTpl = document.getElementById('cformTpl');
+          if (fTpl) {
+            var fc = fTpl.content.cloneNode(true), f = fc.querySelector('form');
+            if (f) { wireForm(f, btn.getAttribute('data-vlog')); }
+            body.appendChild(fc);
+          }
+          var feed = el('div', 'yc-feed');
+          if (!d.comments.length) { feed.appendChild(el('p', 'hint', 'No comments yet. Be the first!')); }
+          d.comments.forEach(function (c) { feed.appendChild(commentItem(c, d.links)); });
+          body.appendChild(feed);
         })
         .catch(function () { body.textContent = 'Could not load this right now. Try again in a moment.'; });
     });

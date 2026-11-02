@@ -6,6 +6,10 @@ RewriteEngine On
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
 
+# Friendly URLs for the legal pages.
+RewriteRule ^privacy-policy/?$ privacy.php [L]
+RewriteRule ^terms/?$ terms.php [L]
+
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "SAMEORIGIN"

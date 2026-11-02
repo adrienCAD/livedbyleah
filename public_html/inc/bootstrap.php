@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 const SITE_NAME = 'Lived by Leah';
-const SITE_VERSION = '1.6.1';   // see CLAUDE.md for the version list
+const SITE_VERSION = '1.7.0';   // see CLAUDE.md for the version list
 const DB_PATH = __DIR__ . '/../data/site.sqlite';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -262,6 +262,29 @@ function db(): PDO {
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )');
         $pdo->exec('CREATE INDEX IF NOT EXISTS idea_comments_idea ON idea_comments(idea_id)');
+        // v1.7.0: fan comments on vlogs / Behind the Scenes posts (Leah approves them first), and admin tools for fans.
+        // vlog_id = the vlog the thread belongs to (a post linked to a vlog shares that vlog's thread); post_id = the post it was written on.
+        $pdo->exec('CREATE TABLE IF NOT EXISTS fan_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fan_id INTEGER NOT NULL REFERENCES fans(id) ON DELETE CASCADE,
+            vlog_id INTEGER REFERENCES vlogs(id) ON DELETE CASCADE,
+            post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+            body TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT "pending",
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS fan_comments_vlog ON fan_comments(vlog_id, status)');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS fan_comments_post ON fan_comments(post_id, status)');
+        $fcols = array_column($pdo->query('PRAGMA table_info(fans)')->fetchAll(), 'name');
+        if (!in_array('suspended', $fcols, true)) {
+            $pdo->exec('ALTER TABLE fans ADD COLUMN suspended INTEGER NOT NULL DEFAULT 0');
+        }
+        if (!in_array('bonus_points', $fcols, true)) {
+            $pdo->exec('ALTER TABLE fans ADD COLUMN bonus_points INTEGER NOT NULL DEFAULT 0');
+        }
+        if (!in_array('bonus_note', $fcols, true)) {
+            $pdo->exec('ALTER TABLE fans ADD COLUMN bonus_note TEXT');
+        }
     }
     return $pdo;
 }

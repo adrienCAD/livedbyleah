@@ -357,3 +357,33 @@ html.fs-lock, html.fs-lock body { overflow: hidden; overscroll-behavior: none; }
 .game.fs .game-overlay { overflow: auto; }
 @media (max-height: 480px) { .game.fs .game-overlay { gap: 6px; padding: 8px; } .game.fs .road-logo { max-height: 22vh; width: auto; } .game.fs .pixel { font-size: 20px; } }
 @media (max-height: 480px) { .game.fs .road-start .hint, .game.fs .game-overlay .hint { display: none; } }
+
+/* Comments, YouTube/Instagram style (v1.7.0) */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.yc-feed { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; max-width: 70ch; }
+.yc { display: flex; gap: 12px; align-items: flex-start; }
+.yc-av { flex: none; width: 38px; height: 38px; border-radius: 50%; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.yc-main { min-width: 0; }
+.yc-head { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; font-size: 14px; }
+.yc-src { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; padding: 1px 6px; border-radius: 999px; background: var(--frost, #99D6EA); color: var(--ink); text-decoration: none; }
+a.yc-src:hover { background: var(--pollen); }
+.yc-src.fan { background: var(--pollen); }
+.yc-ago { color: var(--muted); font-size: 13px; }
+.yc-text { margin: 2px 0 2px; font-size: 15px; overflow-wrap: anywhere; white-space: pre-line; }
+.yc-likes { font-size: 13px; color: var(--muted); font-weight: 700; }
+.cform { display: flex; flex-direction: column; gap: 6px; max-width: 70ch; margin: 6px 0 4px; }
+.cform textarea { width: 100%; }
+.cform-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.cform-msg.ok { color: #1f7a3a; font-weight: 700; } .cform-msg.bad { color: #b3261e; font-weight: 700; }
+.cform-guest { margin: 6px 0; }
+.post-comments { margin-top: 14px; padding-top: 10px; border-top: 2px dashed var(--bluegrey); max-width: 70ch; }
+.post-comments h3 { font-size: 17px; margin: 0 0 6px; }
+.yc.waiting { opacity: .7; }
+
+/* Hall of Fame top 5 / top 10 (v1.7.0) */
+.more-box:not(.open) .extra { display: none; }
+.more-box .laggard { font-style: italic; color: var(--muted); justify-content: center; background: #FFF8DC; border-bottom: 0; }
+.join-nudge { margin-top: 24px; }
+
+.site-legal { margin: 14px 0 0; font-size: 12px; } .site-legal a { color: var(--ink); opacity: .75; }
+.legal-links { margin-top: 28px; }

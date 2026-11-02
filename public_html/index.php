@@ -12,7 +12,7 @@ $nGames = count(array_filter(['surf', 'road', 'blocks', 'bert'], 'game_public'))
 $fan = current_fan();
 
 $sections = [
-    ['/vlogs.php', 'Watch Vlogs', 'v', 'All my vlogs in one place. Tap one to watch it right here, and open "Why I made this" to see the story behind it and the best comments.'],
+    ['/vlogs.php', 'Watch Vlogs', 'v', 'All my vlogs in one place. Tap one to watch it right here, and open Comments to see what everyone says.'],
     ['/games.php', 'Play Games', 'g', 'Little pixel games I drew the art for. Surf, drive, stomp. Each one has its own leaderboard.'],
     ['/halloffame.php', 'Hall of Fame', 'h', 'The best scores in every game and the overall champion. Can you beat my record?'],
     ['/fans.php', 'Fan Fest', 'f', 'The fan club. Join for free, pick a username and earn points by playing, liking, commenting and following.'],
@@ -30,7 +30,8 @@ page_header('Home', 'home');
     <p class="lede">This is my corner of the internet. I make vlogs about my life and the places I go, and this site is where it all lives: the videos, the stories behind them, some games I made the art for, and a fan club where you can hang out and help me decide what comes next.</p>
     <p class="row">
       <a class="btn" href="/vlogs.php">Watch the vlogs</a>
-      <?php if (!$fan): ?><a class="btn ghost" href="/fans.php?v=join">Join the fan club</a><?php else: ?><a class="btn ghost" href="/fans.php">Go to Fan Fest</a><?php endif; ?>
+      <a class="btn" href="/games.php">Play games</a>
+      <?php if (!$fan): ?><a class="btn ghost" href="/fans.php?v=join">Join the fan club</a><?php else: ?><a class="btn ghost" href="/fans.php">Go to the fan club</a><?php endif; ?>
     </p>
   </div>
 </section>
@@ -69,6 +70,18 @@ page_header('Home', 'home');
   <li><strong>Earn points.</strong> Pass game levels, send screenshots of your likes, follows and comments, and send me ideas.</li>
   <li><strong>Climb the ranking.</strong> The more points you have, the higher you go. Top fans get bragging rights (for now).</li>
 </ol>
+
+<?php if (!$fan && !is_admin()):
+  $nudges = [
+    ['Not a fan yet? Awkward.', 'Fix that in about 30 seconds. Free, no dues, no secret handshake (yet).'],
+    ['Still just looking around?', 'Join the fan club. I saved you a spot and it is a really good one.'],
+    ['Plot twist: you are not in the fan club.', 'Time to change the ending. Join, pick a username, climb the ranking.'],
+    ['Be honest, you were going to join anyway.', 'Skip the suspense. Fan club, free, snacks not included.'],
+  ];
+  $n = $nudges[array_rand($nudges)]; ?>
+<div class="soon fan-join join-nudge"><p><strong><?= e($n[0]) ?></strong> <?= e($n[1]) ?></p>
+<p><a class="btn" href="/fans.php?v=join">Join the fan club</a> <a class="btn ghost" href="/fans.php">I'm already in</a></p></div>
+<?php endif; ?>
 
 <p class="hint">Find me on
   <a href="https://www.youtube.com/@Livedbyleah" target="_blank" rel="noopener">YouTube</a>,

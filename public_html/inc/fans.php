@@ -32,7 +32,7 @@ function current_fan(): ?array {
     }
     $cache = null;
     if (!empty($_SESSION['fan_id'])) {
-        $st = db()->prepare('SELECT * FROM fans WHERE id = ? AND confirmed = 1');
+        $st = db()->prepare('SELECT * FROM fans WHERE id = ? AND confirmed = 1 AND suspended = 0');
         $st->execute([(int)$_SESSION['fan_id']]);
         $row = $st->fetch();
         if ($row) {
@@ -178,17 +178,18 @@ function fan_count(): int {
 
 // Every confirmed fan, ranked. Points = sign-up (10) + game levels passed (1+2+3+4+5, so 15 for a full clear)
 // + approved screenshots. Ties go to whoever signed up first.
-function fan_ranking(): array {
+function fan_ranking(bool $withSuspended = false): array {
     $rows = db()->query('SELECT f.id, f.username, COALESCE(f.last_login, f.created_at) AS seen,
         COALESCE((SELECT SUM(CASE WHEN s.won = 1 THEN 15 ELSE (s.level - 1) * s.level / 2 END) FROM scores s WHERE s.fan_id = f.id AND s.game IN (\'surf\', \'road\')), 0)
         + COALESCE((SELECT CASE WHEN s.ms >= 12000 THEN 15 WHEN s.ms >= 8000 THEN 10 WHEN s.ms >= 5000 THEN 6 WHEN s.ms >= 2500 THEN 3 WHEN s.ms >= 1000 THEN 1 ELSE 0 END FROM scores s WHERE s.fan_id = f.id AND s.game = \'blocks\'), 0)
         + COALESCE((SELECT CASE WHEN s.ms >= 35000 THEN 15 WHEN s.ms >= 20000 THEN 10 WHEN s.ms >= 10000 THEN 6 WHEN s.ms >= 5000 THEN 3 WHEN s.ms >= 2000 THEN 1 ELSE 0 END FROM scores s WHERE s.fan_id = f.id AND s.game = \'bert\'), 0) AS lvl_pts,
         COALESCE((SELECT SUM(p.points) FROM proofs p WHERE p.fan_id = f.id AND p.status = \'approved\'), 0) AS soc_pts,
-        COALESCE((SELECT SUM(i.points) FROM ideas i WHERE i.fan_id = f.id AND i.status IN (\'chosen\', \'done\')), 0) AS idea_pts
-        FROM fans f WHERE f.confirmed = 1')->fetchAll();
+        COALESCE((SELECT SUM(i.points) FROM ideas i WHERE i.fan_id = f.id AND i.status IN (\'chosen\', \'done\')), 0) AS idea_pts,
+        f.bonus_points AS bonus_pts, f.bonus_note
+        FROM fans f WHERE f.confirmed = 1' . ($withSuspended ? '' : ' AND f.suspended = 0'))->fetchAll();
     foreach ($rows as &$r) {
         $r['id'] = (int)$r['id'];
-        $r['pts'] = SIGNUP_POINTS + (int)$r['lvl_pts'] + (int)$r['soc_pts'] + (int)$r['idea_pts'];
+        $r['pts'] = SIGNUP_POINTS + (int)$r['lvl_pts'] + (int)$r['soc_pts'] + (int)$r['idea_pts'] + (int)$r['bonus_pts'];
     }
     unset($r);
     usort($rows, fn($a, $b) => [$b['pts'], $a['id']] <=> [$a['pts'], $b['id']]);
@@ -251,7 +252,7 @@ function hof_summary(): array {
         if (!game_visible($g)) { continue; }   // hidden games (Bake Off for now) stay off the board
         $order = score_order($g);
         $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.km, s.pkey, f.last_login AS seen
-            FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE s.game = ' . db()->quote($g) . ' ORDER BY ' . $order)->fetchAll();
+            FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE (f.id IS NULL OR f.suspended = 0) AND s.game = ' . db()->quote($g) . ' ORDER BY ' . $order)->fetchAll();
         $rec = null; $mine = null;
         foreach ($rows as $i => $r) {
             $key = (string)$r['pkey'];
@@ -261,11 +262,29 @@ function hof_summary(): array {
             if ($rec === null && $key !== '' && $key[0] === 'u' && $r['name'] === $leah) { $rec = $r + ['rank' => $i + 1]; }
             if ($me !== '' && $key === ($g === 'surf' ? $me : $me . ':' . $g) ) { $mine = $i + 1; }
         }
-        $out['games'][$g] = ['label' => $label, 'top' => array_slice($rows, 0, 5), 'leah' => $rec, 'mine' => $mine, 'total' => count($rows), 'me' => $me !== ''];
+        $out['games'][$g] = ['label' => $label, 'top' => array_slice($rows, 0, 10), 'leah' => $rec, 'mine' => $mine, 'total' => count($rows), 'me' => $me !== ''];
     }
     uasort($pts, fn($a, $b) => $b['pts'] <=> $a['pts']);
     foreach ($pts as $p) { $out['champ'] = $p; break; }
     return $out;
+}
+
+// Shown when someone opens the top 10. Playful, never mean.
+const HOF_LAGGARD_LINES = [
+    'Care for the laggards? Here they are.',
+    'Ah, the cozy middle of the pack. Snacks are on the left.',
+    'Ranks 6 to 10: not last, not first, perfectly fabulous.',
+    'Still on the board, still legends. Just a few pixels behind.',
+    'The chasing pack! They are coming for the top 5.',
+    'Behold: the almost-famous.',
+    'The warm-up crew. Give them one more try and they will pass everyone.',
+    'These folks are one lucky run away from glory.',
+    'Plot armor engaged: ranks 6 to 10.',
+    'Fine, you can look at the rest. Be nice, they are trying their best!',
+];
+
+function hof_laggard_line(): string {
+    return HOF_LAGGARD_LINES[array_rand(HOF_LAGGARD_LINES)];
 }
 
 function hof_render(array $h): void {
@@ -281,14 +300,18 @@ function hof_render(array $h): void {
         if (!$d['top']) {
             echo '<p class="hint">No scores yet. Be the first!</p>';
         } else {
-            echo '<ol class="fanlist hofl">';
+            $boxId = 'more-' . e($g);
+            echo '<div class="more-box" id="' . $boxId . '"><ol class="fanlist hofl">';
             foreach ($d['top'] as $i => $r) {
+                if ($i === 5) { echo '<li class="extra laggard">' . e(hof_laggard_line()) . '</li>'; }
                 $isLeah = (string)$r['pkey'] !== '' && ((string)$r['pkey'])[0] === 'u' && $r['name'] === $leah;
-                echo '<li><span class="nm">' . ($medal[$i] ?? '#' . ($i + 1)) . ' ' . e($r['name']) . ($isLeah ? ' &#11088;' : '') . '</span><span class="seen">' . hof_result($g, $r) . '</span></li>';
+                echo '<li' . ($i >= 5 ? ' class="extra"' : '') . '><span class="nm">' . ($medal[$i] ?? '#' . ($i + 1)) . ' ' . e($r['name']) . ($isLeah ? ' &#11088;' : '') . '</span><span class="seen">' . hof_result($g, $r) . '</span></li>';
             }
             echo '</ol>';
+            if (count($d['top']) > 5) { echo '<p><button type="button" class="btn ghost" data-more="' . $boxId . '" data-open="Show top 10" data-close="Back to top 5" aria-expanded="false">Show top 10</button></p>'; }
+            echo '</div>';
         }
-        if ($d['leah'] && $d['leah']['rank'] > 5) {
+        if ($d['leah'] && $d['leah']['rank'] > 10) {
             echo '<p class="hint">&#11088; Leah\'s record: ' . hof_result($g, $d['leah']) . ' (#' . (int)$d['leah']['rank'] . ')</p>';
         } elseif (!$d['leah']) {
             echo '<p class="hint">&#11088; Leah\'s record to beat: coming soon</p>';

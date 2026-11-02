@@ -9,6 +9,7 @@ $nPosts = (int)db()->query('SELECT COUNT(*) FROM posts')->fetchColumn();
 $nFans = (int)db()->query('SELECT COUNT(*) FROM fans')->fetchColumn();
 $nPend = (int)db()->query("SELECT COUNT(*) FROM proofs WHERE status = 'pending'")->fetchColumn();
 $nIdea = (int)db()->query("SELECT COUNT(*) FROM ideas WHERE status = 'pending'")->fetchColumn();
+$nFc = (int)db()->query("SELECT COUNT(*) FROM fan_comments WHERE status = 'pending'")->fetchColumn();
 $nSup = (int)db()->query("SELECT COUNT(*) FROM support_requests WHERE status = 'pending'")->fetchColumn();
 
 admin_header('Dashboard');
@@ -20,6 +21,7 @@ admin_header('Dashboard');
   <a class="card" href="/admin/fans.php"><strong><?= $nFans ?></strong><span>Fans</span></a>
   <a class="card" href="/admin/proofs.php"><strong><?= $nPend ?></strong><span>Screenshots to review</span></a>
   <a class="card" href="/admin/ideas.php"><strong><?= $nIdea ?></strong><span>Ideas to review</span></a>
+  <a class="card" href="/admin/fancomments.php"><strong><?= $nFc ?></strong><span>Fan comments to review</span></a>
   <a class="card" href="/admin/support.php"><strong><?= $nSup ?></strong><span>Support requests</span></a>
 </div>
 <p><a href="/writing.php">Open Behind the Scenes</a> (public).</p>

@@ -23,21 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($act === 'unlock') {
             db()->prepare('UPDATE fans SET username_locked = 0 WHERE id = ?')->execute([$id]);
             flash($f['username'] . ' can change their username once more.');
-        } elseif ($act === 'delete') {
-            $pf = db()->prepare('SELECT file FROM proofs WHERE fan_id = ? AND file IS NOT NULL');
-            $pf->execute([$id]);
-            foreach ($pf->fetchAll(PDO::FETCH_COLUMN) as $fn) {
-                @unlink(__DIR__ . '/../data/proofs/' . basename((string)$fn));
-            }
-            db()->prepare('DELETE FROM fans WHERE id = ?')->execute([$id]);   // their scores and proofs go too (cascade)
-            flash('Fan removed.');
         }
     }
     redirect('/admin/fans.php');
 }
 
 $rank = [];
-foreach (fan_ranking() as $x) { $rank[$x['id']] = $x; }
+foreach (fan_ranking(true) as $x) { $rank[$x['id']] = $x; }
 $rows = db()->query('SELECT f.*, (SELECT COUNT(*) FROM scores s WHERE s.fan_id = f.id) AS plays FROM fans f ORDER BY f.id DESC')->fetchAll();
 admin_header('Fans');
 ?>
@@ -47,7 +39,7 @@ admin_header('Fans');
 <thead><tr><th>Rank</th><th>Username</th><th>Points</th><th>Email</th><th>Name</th><th>Email confirmed</th><th>Joined</th><th></th></tr></thead>
 <tbody>
 <?php foreach ($rows as $r): ?>
-  <tr><td><?= isset($rank[(int)$r['id']]) ? '#' . (int)$rank[(int)$r['id']]['rank'] : '-' ?></td><td><?= e($r['username']) ?><?= !empty($r['demo']) ? ' <em>(demo)</em>' : '' ?><?= $r['username_locked'] ? ' <span title="Username locked">&#128274;</span>' : '' ?></td><td><?= isset($rank[(int)$r['id']]) ? (int)$rank[(int)$r['id']]['pts'] : '-' ?></td><td><?= e($r['email']) ?></td>
+  <tr><td><?= isset($rank[(int)$r['id']]) ? '#' . (int)$rank[(int)$r['id']]['rank'] : '-' ?></td><td><a href="/admin/fan.php?id=<?= (int)$r['id'] ?>"><?= e($r['username']) ?></a><?= (int)$r['suspended'] ? ' <span class="badge">suspended</span>' : '' ?><?= !empty($r['demo']) ? ' <em>(demo)</em>' : '' ?><?= $r['username_locked'] ? ' <span title="Username locked">&#128274;</span>' : '' ?></td><td><?= isset($rank[(int)$r['id']]) ? (int)$rank[(int)$r['id']]['pts'] : '-' ?></td><td><?= e($r['email']) ?></td>
     <td><?= e(fan_full_name($r)) ?></td>
     <td><?= $r['confirmed'] ? 'Yes' : 'No' ?></td><td><?= e(substr($r['created_at'], 0, 10)) ?></td>
     <td class="actions">
@@ -58,7 +50,7 @@ admin_header('Fans');
         <form method="post"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$r['id'] ?>"><input type="hidden" name="action" value="unlock"><button type="submit">Unlock username</button></form>
       <?php endif; ?>
       <form method="post" onsubmit="return confirm('Reset this username to the default?');"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$r['id'] ?>"><input type="hidden" name="action" value="resetname"><button type="submit">Reset username</button></form>
-      <form method="post" onsubmit="return confirm('Remove this fan, their hall of fame entry and their screenshots?');"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$r['id'] ?>"><input type="hidden" name="action" value="delete"><button class="link-danger" type="submit">Remove</button></form>
+      <a class="btn ghost" href="/admin/fan.php?id=<?= (int)$r['id'] ?>">Manage</a>
     </td></tr>
 <?php endforeach; ?>
 </tbody></table></div>
