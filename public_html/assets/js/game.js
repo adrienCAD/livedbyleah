@@ -72,6 +72,7 @@
   var mode = 'start';              // start | beach | puzzle | surf | over | win
   var t = 0;                       // frame counter (animation)
   var clockMs = 0, clockRunning = false;
+  var RS = { shot: 0, dodged: 0, ufo: 0 };   // run stats for the points (sharks zapped / jumped, UFOs shot down)
   var lives = 3, level = 1, MAX_LIVES = 5;
   var runNonce = '';
   var lastTime = 0;
@@ -605,12 +606,12 @@
       for (var i = 0; i < S.bullets.length; i++) {
         var b = S.bullets[i], sy = waveY(S.wx + sh.x - SCREEN_X);
         if (Math.abs(b.x - sh.x) < 38 && b.y > sy - 60 && b.y < sy + 30) {
-          sh.alive = false; sh.dying = 0.5; S.bullets.splice(i, 1); S.resolved++; play('hit'); S.splash.push({ x: sh.x, y: sy, t: 0.5 });
+          sh.alive = false; sh.dying = 0.5; S.bullets.splice(i, 1); S.resolved++; RS.shot++; play('hit'); S.splash.push({ x: sh.x, y: sy, t: 0.5 });
           updateHud(); return;
         }
       }
       if (dx < 40 && playerLow && !sh.biting) { sh.biting = true; dead = true; loseLife('bite'); return; }
-      if (sh.x < S.px - 64 && !sh.passed) { sh.passed = true; S.resolved++; updateHud(); }
+      if (sh.x < S.px - 64 && !sh.passed) { sh.passed = true; S.resolved++; RS.dodged++; updateHud(); }
     });
     if (dead) { return; }
     S.sharks = S.sharks.filter(function (sh) { return sh.x > -80 && (sh.alive || sh.dying > 0); });
@@ -649,7 +650,7 @@
             S.bullets.splice(j, 1); u.hp--; u.flash = 0.2; play('hit');
             if (u.hp <= 0) {
               S.boom.push({ x: u.x, y: u.y, t: 0.9 }); play('boom');
-              S.hearts.push({ x: u.x, y: u.y, t: 0, a0: Math.random() * 6 });
+              S.hearts.push({ x: u.x, y: u.y, t: 0, a0: Math.random() * 6 }); RS.ufo++;
               S.ufoDone = true; S.ufo = null; S.abduct = 0;
             }
             break;
@@ -801,11 +802,11 @@
     var ol = document.getElementById('hof');
     if (!ol) { return; }
     ol.textContent = '';
-    if (!list || !list.length) { var li0 = document.createElement('li'); li0.className = 'hint'; li0.textContent = 'No times yet. Be the first!'; ol.appendChild(li0); return; }
+    if (!list || !list.length) { var li0 = document.createElement('li'); li0.className = 'hint'; li0.textContent = 'No scores yet. Be the first!'; ol.appendChild(li0); return; }
     list.forEach(function (r) {
       var li = document.createElement('li');
       if (r.mine) { li.className = 'me'; }
-      var tt = document.createElement('span'); tt.className = 't'; tt.textContent = fmt(r.ms);
+      var tt = document.createElement('span'); tt.className = 't'; tt.textContent = (r.pts || 0).toLocaleString('en-US') + ' pts';
       var lv = document.createElement('span'); lv.className = 'lv'; lv.textContent = r.won ? 'Cleared all 5' : 'Level ' + r.level;
       li.appendChild(document.createTextNode(r.name + ' '));
       li.appendChild(lv);
@@ -829,23 +830,31 @@
     var a = document.createElement('a'); a.href = '/fans.php?v=join'; a.textContent = 'Join the fan club to play under your own username.';
     parent.appendChild(a);
   }
+  // The points of a run, line by line (shown under the result).
+  function showBreakdown(noteEl, rows) {
+    if (!rows || !rows.length) { return; }
+    var ul = document.createElement('ul'); ul.className = 'pts-list';
+    rows.forEach(function (r) { var li = document.createElement('li'); li.textContent = r[0] + ': +' + r[1].toLocaleString('en-US'); ul.appendChild(li); });
+    noteEl.appendChild(ul);
+  }
   // Saves the result of a run (game over or win) under the player's name, then shows how it went.
   function saveRun(won, noteEl) {
     noteEl.textContent = '';
-    api({ action: 'submit', nonce: runNonce, ms: Math.round(clockMs), level: level, won: won }).then(function (d) {
+    api({ action: 'submit', nonce: runNonce, ms: Math.round(clockMs), level: level, won: won, shot: RS.shot, dodged: RS.dodged, ufo: RS.ufo, lives: Math.max(0, lives) }).then(function (d) {
       if (d.error) { noteEl.textContent = d.error; return; }
       setMe(d.me); renderHof(d.top);
       if (!d.saved) { noteEl.textContent = 'Clear the beach to get on the hall of fame.'; return; }
-      var txt = d.improved ? 'Saved to the hall of fame as ' + me.name + '.'
-        : 'Your best is still ' + (d.best.won ? 'all 5 levels' : 'level ' + d.best.level) + ' in ' + fmt(d.best.ms) + '.';
+      var txt = 'You scored ' + d.pts.toLocaleString('en-US') + ' points. ' + (d.improved ? 'Saved to the hall of fame as ' + me.name + '.'
+        : 'Your best is still ' + d.best.pts.toLocaleString('en-US') + ' points.');
       noteEl.textContent = txt;
+      showBreakdown(noteEl, d.breakdown);
       if (!me.fan) { joinLink(noteEl); }
     }).catch(function () { noteEl.textContent = 'Could not reach the server.'; });
   }
 
   function beginRun() {
     audio();
-    lives = 3; level = 1; clockMs = 0; clockRunning = true; runNonce = '';
+    lives = 3; level = 1; clockMs = 0; clockRunning = true; runNonce = ''; RS = { shot: 0, dodged: 0, ufo: 0 };
     keys.left = keys.right = keys.jump = keys.fire = false; jumpPressed = false;
     el.start.hidden = true; el.over.hidden = true; el.win.hidden = true;
     api({ action: 'start' }).then(function (d) { runNonce = d.nonce || ''; }).catch(function () { runNonce = ''; });

@@ -594,8 +594,12 @@
   function gameWon() {
     if (mode === 'win') { return; }
     mode = 'win'; SFX.level();
+    // crazy-stat bonuses for a full clear: no bonks at all, and glides you did not need
+    var flawless = ST.bonks === 0 ? 3000 : 0, spare = Math.max(0, glides) * 300;
+    score += flawless + spare;
     finalScore = score; finalLevel = 4; finalWon = true; finalMs = clockMs;
-    document.getElementById('winScore').textContent = 'Score ' + fmtN(finalScore) + ' in ' + fmt(finalMs);
+    document.getElementById('winScore').textContent = 'Score ' + fmtN(finalScore) + ' in ' + fmt(finalMs)
+      + (flawless || spare ? ' (includes ' + (flawless ? '+3,000 for zero bonks' : '') + (flawless && spare ? ' and ' : '') + (spare ? '+' + fmtN(spare) + ' for spare glides' : '') + ')' : '');
     document.getElementById('winWho').textContent = me.name ? 'Well stomped, ' + me.name + '!' : '';
     el.win.hidden = false;
     saveRun(document.getElementById('winNote'));

@@ -432,7 +432,7 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
 <?php if ($mine): ?>
 <div class="soon rankcard">
   <p><strong>You are fan #<?= (int)$mine['rank'] ?> with <?= (int)$mine['pts'] ?> points.</strong></p>
-  <p class="hint"><?= SIGNUP_POINTS ?> for joining + <?= (int)$mine['lvl_pts'] ?> for game levels + <?= (int)$mine['soc_pts'] ?> for approved screenshots<?= (int)$mine['idea_pts'] ? ' + ' . (int)$mine['idea_pts'] . ' for chosen ideas' : '' ?><?= (int)$mine['bonus_pts'] ? ' ' . ((int)$mine['bonus_pts'] > 0 ? '+' : '-') . ' ' . abs((int)$mine['bonus_pts']) . ' bonus from Leah' : '' ?>.
+  <p class="hint"><?= SIGNUP_POINTS ?> for joining + <?= (int)$mine['lvl_pts'] ?> for game levels + <?= (int)$mine['soc_pts'] ?> for approved screenshots<?= (int)$mine['play_pts'] ? ' + ' . (int)$mine['play_pts'] . ' for trying the games' : '' ?><?= (int)$mine['top_pts'] ? ' + ' . (int)$mine['top_pts'] . ' for the Hall of Fame top 5' : '' ?><?= (int)$mine['idea_pts'] ? ' + ' . (int)$mine['idea_pts'] . ' for chosen ideas' : '' ?><?= (int)$mine['bonus_pts'] ? ' ' . ((int)$mine['bonus_pts'] > 0 ? '+' : '-') . ' ' . abs((int)$mine['bonus_pts']) . ' bonus from Leah' : '' ?>.
   <?php if (trim((string)$mine['bonus_note']) !== ''): ?><br><em>Note from Leah: <?= e($mine['bonus_note']) ?></em><?php endif; ?>
   <?php if ($b): $s = intdiv((int)$b['ms'], 1000); ?>
     Best surf run: <?= $b['won'] ? 'cleared all 5 levels' : 'reached level ' . (int)$b['level'] ?> in <?= sprintf('%d:%02d', intdiv($s, 60), $s % 60) ?>.
@@ -460,6 +460,8 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
     <li><strong>Pass levels in the surf game and in Leah's Outrun:</strong> level 1 = 1 point, level 2 = 2 points, up to level 5 = 5 points (15 in total per game, each counted once). <a href="/games.php">Play now</a></li>
     <?php if (game_public('blocks')): ?><li><strong>Score in Bake Off:</strong> 1,000 = 1 point, 2,500 = 3, 5,000 = 6, 8,000 = 10, 12,000 = 15 (in total).</li><?php endif; ?>
     <li><strong>Score in Fossil Smash:</strong> 2,000 = 1 point, 5,000 = 3, 10,000 = 6, 20,000 = 10, 35,000 = 15 (in total).</li>
+    <li><strong>Try each game:</strong> <?= PLAY_FAN_PTS ?> points the first time you play each one</li>
+    <li><strong>Reach the top 5 of a game</strong> in the <a href="/halloffame.php">Hall of Fame</a>: <?= TOP_FAN_PTS[0] ?> points for 1st, <?= TOP_FAN_PTS[1] ?> for 2nd, <?= TOP_FAN_PTS[2] ?> for 3rd, <?= TOP_FAN_PTS[3] ?> for 4th, <?= TOP_FAN_PTS[4] ?> for 5th (per game, and they move when the ranking moves)</li>
     <li><strong>Get your idea chosen</strong> in <a href="/ideas.php">Ideas for Leah</a>: <?= IDEA_POINTS ?> points</li>
     <li><strong>Like a vlog</strong> on YouTube, Instagram or TikTok: <?= PROOF_POINTS['like'] ?> points each</li>
     <li><strong>Follow or subscribe</strong> on each platform: <?= PROOF_POINTS['follow'] ?> points each</li>

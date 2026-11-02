@@ -153,3 +153,10 @@ v1.5.0 (2026-10-27): Leah's Blocks becomes Bake Off: Leah's 7 kitchen pieces (sp
 - `/privacy-policy` and `/terms` (privacy.php, terms.php, rewrite rules in `.htaccess`), with Google sign-in sections. Contact email is set in Admin > Settings (`contact_email`); until set they point to the support form.
 - Go-live: commit, push, `./scripts/release.sh`, upload, check BUILD.txt. Then set the contact email in Admin > Settings and add the two URLs to the Google consent screen. Database migrates itself.
 - Next (v1.8.0): points rework (all games), Outrun certificate (Leah in blue shirt, cryptids, "Vámonos, muchachos!"), fan points for playing and top-5.
+
+## v1.8.0 (2026-11-02): built and tested locally, NOT committed, NOT deployed
+- Unified points for all games: `scores.pts` column; every Hall of Fame ranks by `pts DESC, ms ASC`. Formulas in `inc/points.php` (server computes from reported stats, with caps scaled to distance driven). Full clear is about 20-35k in each game.
+- Outrun: points instead of km (1.5/km, +1000 per country, +4000 Paris, dodged cryptids, batteries, longest slide, flawless bonus). Certificate: Leah in blue shirt, cryptid crew box (in-game sprites), "Vámonos, muchachos!" on the Mexico card.
+- Surf: shot/dodged/UFO/lives-left bonuses. Fossil Smash: +3000 no-bonk, +300 per spare glide.
+- Fan points: +3 per game first played (`game_plays`, counted at start), top-5 bonus 10/7/5/3/2 per visible game.
+- Migration converts old test scores once (legacy_points_sql). DB migrates itself.

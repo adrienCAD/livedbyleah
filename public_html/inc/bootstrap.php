@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 const SITE_NAME = 'Lived by Leah';
-const SITE_VERSION = '1.7.0';   // see CLAUDE.md for the version list
+const SITE_VERSION = '1.8.0';   // see CLAUDE.md for the version list
 const DB_PATH = __DIR__ . '/../data/site.sqlite';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -262,6 +262,22 @@ function db(): PDO {
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )');
         $pdo->exec('CREATE INDEX IF NOT EXISTS idea_comments_idea ON idea_comments(idea_id)');
+        // v1.8.0: every game ranks by points. `pts` = game points, `stats` = JSON with the run's stats and breakdown.
+        $scols = array_column($pdo->query('PRAGMA table_info(scores)')->fetchAll(), 'name');
+        if (!in_array('pts', $scols, true)) {
+            $pdo->exec('ALTER TABLE scores ADD COLUMN pts INTEGER NOT NULL DEFAULT 0');
+            require_once __DIR__ . '/points.php';
+            $pdo->exec('UPDATE scores SET pts = ' . legacy_points_sql());   // old rows get points once (they were test runs)
+        }
+        if (!in_array('stats', $scols, true)) {
+            $pdo->exec('ALTER TABLE scores ADD COLUMN stats TEXT');
+        }
+        $pdo->exec('CREATE TABLE IF NOT EXISTS game_plays (
+            fan_id INTEGER NOT NULL REFERENCES fans(id) ON DELETE CASCADE,
+            game TEXT NOT NULL,
+            plays INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (fan_id, game)
+        )');
         // v1.7.0: fan comments on vlogs / Behind the Scenes posts (Leah approves them first), and admin tools for fans.
         // vlog_id = the vlog the thread belongs to (a post linked to a vlog shares that vlog's thread); post_id = the post it was written on.
         $pdo->exec('CREATE TABLE IF NOT EXISTS fan_comments (

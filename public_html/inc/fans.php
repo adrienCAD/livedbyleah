@@ -2,6 +2,7 @@
 // Fan accounts: sign-up, login, email confirmation, password reset, usernames.
 // Fans are separate from admins (`users`). Session key: fan_id.
 declare(strict_types=1);
+require_once __DIR__ . '/points.php';
 
 function is_local_host(): bool {
     return (bool)preg_match('/^(127\.0\.0\.1|localhost)(:\d+)?$/', (string)($_SERVER['HTTP_HOST'] ?? ''));
@@ -187,9 +188,23 @@ function fan_ranking(bool $withSuspended = false): array {
         COALESCE((SELECT SUM(i.points) FROM ideas i WHERE i.fan_id = f.id AND i.status IN (\'chosen\', \'done\')), 0) AS idea_pts,
         f.bonus_points AS bonus_pts, f.bonus_note
         FROM fans f WHERE f.confirmed = 1' . ($withSuspended ? '' : ' AND f.suspended = 0'))->fetchAll();
+    // v1.8.0: bonus for playing each game once, and for standing in a game's top 5.
+    $play = []; $top = [];
+    $games = array_values(array_filter(array_keys(HOF_GAMES), 'game_visible'));
+    foreach (db()->query('SELECT fan_id, game FROM game_plays')->fetchAll() as $g) {
+        if (in_array($g['game'], $games, true)) { $play[(int)$g['fan_id']] = ($play[(int)$g['fan_id']] ?? 0) + PLAY_FAN_PTS; }
+    }
+    foreach ($games as $g) {
+        $q = db()->query('SELECT s.fan_id FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE (f.id IS NULL OR f.suspended = 0) AND s.game = ' . db()->quote($g) . ' ORDER BY ' . score_order($g) . ' LIMIT 5');
+        foreach ($q->fetchAll(PDO::FETCH_COLUMN) as $i => $fid) {
+            if ($fid !== null) { $top[(int)$fid] = ($top[(int)$fid] ?? 0) + TOP_FAN_PTS[$i]; }
+        }
+    }
     foreach ($rows as &$r) {
         $r['id'] = (int)$r['id'];
-        $r['pts'] = SIGNUP_POINTS + (int)$r['lvl_pts'] + (int)$r['soc_pts'] + (int)$r['idea_pts'] + (int)$r['bonus_pts'];
+        $r['play_pts'] = $play[$r['id']] ?? 0;
+        $r['top_pts'] = $top[$r['id']] ?? 0;
+        $r['pts'] = SIGNUP_POINTS + (int)$r['lvl_pts'] + (int)$r['soc_pts'] + (int)$r['idea_pts'] + (int)$r['bonus_pts'] + $r['play_pts'] + $r['top_pts'];
     }
     unset($r);
     usort($rows, fn($a, $b) => [$b['pts'], $a['id']] <=> [$a['pts'], $b['id']]);
@@ -219,27 +234,23 @@ const SCORE_ORDER = 's.won DESC, s.level DESC, s.ms ASC, s.id ASC';
 const ROAD_CUM = [0, 600, 2600, 5300, 6800, 7700];   // Leah's Outrun: km at the end of each level
 const ROAD_COUNTRY = ['Costa Rica', 'Mexico', 'the USA', 'Canada', 'France'];
 
-// Hall of fame order per game: Blocks by score, Outrun by km (bonuses included), Surf by clear/level/time.
+// Hall of fame order: points in every game.
 function score_order(string $game): string {
-    if ($game === 'blocks' || $game === 'bert') { return 's.ms DESC, s.id ASC'; }
-    if ($game === 'road') { return 's.km DESC, s.ms ASC, s.id ASC'; }
-    return SCORE_ORDER;
+    return 's.pts DESC, s.ms ASC, s.id ASC';   // v1.8.0: every game ranks by points (ties: faster run first)
 }
 const HOF_GAMES = ['surf' => 'Surf Cleanup', 'road' => "Leah's Outrun", 'blocks' => "Bake Off", 'bert' => 'Fossil Smash'];
 const BERT_ELEMENTS = ['Triassic', 'Jurassic', 'Cretaceous', 'Meteor Day'];
 
 function hof_result(string $game, array $r): string {
-    if ($game === 'blocks') {
-        return number_format((int)$r['ms']) . ' pts &middot; ' . (int)$r['level'] . ' lines';
-    }
+    $pts = number_format((int)($r['pts'] ?? 0)) . ' pts';
+    if ($game === 'blocks') { return $pts . ' &middot; ' . (int)$r['level'] . ' lines'; }
     if ($game === 'bert') {
-        return number_format((int)$r['ms']) . ' pts &middot; ' . ((int)$r['won'] === 1 ? 'Cleared all 4' : 'reached ' . BERT_ELEMENTS[max(1, min(4, (int)$r['level'])) - 1]);
+        return $pts . ' &middot; ' . ((int)$r['won'] === 1 ? 'Cleared all 4' : 'reached ' . BERT_ELEMENTS[max(1, min(4, (int)$r['level'])) - 1]);
     }
     if ($game === 'road') {
-        return number_format((int)$r['km']) . ' km &middot; ' . ((int)$r['won'] === 1 ? 'Cleared all 5' : 'reached ' . ROAD_COUNTRY[max(1, min(5, (int)$r['level'])) - 1]);
+        return $pts . ' &middot; ' . ((int)$r['won'] === 1 ? 'Cleared all 5' : 'reached ' . ROAD_COUNTRY[max(1, min(5, (int)$r['level'])) - 1]);
     }
-    $sec = intdiv((int)$r['ms'], 1000);
-    return ((int)$r['won'] === 1 ? 'Cleared all 5' : 'Level ' . (int)$r['level']) . ' &middot; ' . sprintf('%d:%02d', intdiv($sec, 60), $sec % 60);
+    return $pts . ' &middot; ' . ((int)$r['won'] === 1 ? 'Cleared all 5' : 'Level ' . (int)$r['level']);
 }
 
 // Everything the summary needs: top 5 per game, Leah's record, the viewer's rank, and the overall champion.
@@ -251,7 +262,7 @@ function hof_summary(): array {
     foreach (HOF_GAMES as $g => $label) {
         if (!game_visible($g)) { continue; }   // hidden games (Bake Off for now) stay off the board
         $order = score_order($g);
-        $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.km, s.pkey, f.last_login AS seen
+        $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.km, s.pts, s.pkey, f.last_login AS seen
             FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE (f.id IS NULL OR f.suspended = 0) AND s.game = ' . db()->quote($g) . ' ORDER BY ' . $order)->fetchAll();
         $rec = null; $mine = null;
         foreach ($rows as $i => $r) {

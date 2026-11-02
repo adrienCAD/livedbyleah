@@ -77,7 +77,7 @@ admin_header('Fan: ' . $f['username']);
 <h2>Points</h2>
 <?php if ($rk): ?>
 <p><strong><?= (int)$rk['pts'] ?> points</strong><?= (int)$f['suspended'] ? ' (not shown in rankings while suspended)' : ' (fan #' . (int)$rk['rank'] . ')' ?>:
-  <?= SIGNUP_POINTS ?> joining + <?= (int)$rk['lvl_pts'] ?> game levels + <?= (int)$rk['soc_pts'] ?> screenshots + <?= (int)$rk['idea_pts'] ?> chosen ideas + <?= (int)$f['bonus_points'] ?> bonus.</p>
+  <?= SIGNUP_POINTS ?> joining + <?= (int)$rk['lvl_pts'] ?> game levels + <?= (int)$rk['soc_pts'] ?> screenshots + <?= (int)$rk['idea_pts'] ?> chosen ideas + <?= (int)$rk['play_pts'] ?> playing games + <?= (int)$rk['top_pts'] ?> top 5 + <?= (int)$f['bonus_points'] ?> bonus.</p>
 <?php else: ?><p class="hint">This fan has not confirmed their email yet, so there are no points.</p><?php endif; ?>
 <form method="post" class="form">
   <?= csrf_field() ?><input type="hidden" name="action" value="bonus"><input type="hidden" name="id" value="<?= $id ?>">

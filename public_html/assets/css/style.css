@@ -387,3 +387,6 @@ a.yc-src:hover { background: var(--pollen); }
 
 .site-legal { margin: 14px 0 0; font-size: 12px; } .site-legal a { color: var(--ink); opacity: .75; }
 .legal-links { margin-top: 28px; }
+
+.pts-list { list-style: none; padding: 0; margin: 6px 0 0; font-size: 13px; text-align: left; display: inline-block; }
+.pts-list li { padding: 1px 0; }

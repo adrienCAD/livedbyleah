@@ -98,11 +98,11 @@ if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
 
 <section class="hof">
   <h2>Hall of fame</h2>
-  <p class="hint">Ranked by kilometers driven (+500 km for each new country, +2,000 km for reaching Paris), then driving time. <span id="hofJoin"><a href="/fans.php?v=join">Join the fan club</a> to play under your own username.</span></p>
+  <p class="hint">Ranked by points: 1.5 per km, +1,000 for each new country, +4,000 for Paris, plus bonuses for dodged cryptids, batteries, your longest slide and a flawless run. <span id="hofJoin"><a href="/fans.php?v=join">Join the fan club</a> to play under your own username.</span></p>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/road.js?v=8"></script><script src="/assets/js/fullscreen.js?v=1"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/road.js?v=9"></script><script src="/assets/js/fullscreen.js?v=1"></script>'); return; ?>
 <?php endif; ?>
 <?php if ($g === 'bert'): ?>
 <h1>Fossil Smash</h1>
@@ -150,11 +150,11 @@ if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
 
 <section class="hof">
   <h2>Hall of fame</h2>
-  <p class="hint">Ranked by score. Fan points: 2,000 = 1, 5,000 = 3 in total, up to 15 points at 35,000. Clear all 4 elements for the certificate. <span id="hofJoin"><a href="/fans.php?v=join">Join the fan club</a> to play under your own username.</span></p>
+  <p class="hint">Ranked by points (bonuses for zero bonks and spare glides on a full clear). Clear all 4 elements for the certificate. <span id="hofJoin"><a href="/fans.php?v=join">Join the fan club</a> to play under your own username.</span></p>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/bert.js?v=3"></script><script src="/assets/js/fullscreen.js?v=1"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/bert.js?v=4"></script><script src="/assets/js/fullscreen.js?v=1"></script>'); return; ?>
 <?php endif; ?>
 <?php if ($g === 'blocks'): ?>
 <h1>Bake Off</h1>
@@ -195,7 +195,7 @@ if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
 
 <section class="hof">
   <h2>Hall of fame</h2>
-  <p class="hint">Ranked by score. Fan points: 1,000 = 1, 2,500 = 3 in total, up to 15 points at 12,000. <span id="hofJoin"><a href="/fans.php?v=join">Join the fan club</a> to play under your own username.</span></p>
+  <p class="hint">Ranked by points. <span id="hofJoin"><a href="/fans.php?v=join">Join the fan club</a> to play under your own username.</span></p>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
@@ -245,8 +245,8 @@ if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
 
 <section class="hof">
   <h2>Hall of fame</h2>
-  <p class="hint">Ranked by level reached, then best time. <span id="hofJoin"><a href="/fans.php?v=join">Join the fan club</a> to play under your own username.</span></p>
+  <p class="hint">Ranked by points: 2,000 per level, +3,000 and a speed bonus for clearing all 5, plus points for sharks zapped or jumped, UFOs shot down and lives left. <span id="hofJoin"><a href="/fans.php?v=join">Join the fan club</a> to play under your own username.</span></p>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/game.js?v=5"></script><script src="/assets/js/fullscreen.js?v=1"></script>'); ?>
+<?php page_footer('<script src="/assets/js/game.js?v=6"></script><script src="/assets/js/fullscreen.js?v=1"></script>'); ?>

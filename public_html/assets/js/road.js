@@ -460,7 +460,7 @@
     load('/assets/img/jeep-l45.png?v=4', function (im) { JEEP[0] = im; });    // held more than 0.5 s, left (Leah's 45 view, slide with smoke)
     load('/assets/img/jeep-r45.png?v=4', function (im) { JEEP[4] = im; });    // held more than 0.5 s, right
     load('/assets/img/jeep-side.png?v=3', function (im) { JEEPSIDE = im; });
-    load('/assets/img/jeep-cert.png?v=3', function (im) { JEEPCERT = im; });
+    load('/assets/img/jeep-cert.png?v=4', function (im) { JEEPCERT = im; });
   })();
 
   // ------------------------------------------------------------------ distant backgrounds (640 wide, tiled; horizon at HZ)
@@ -605,7 +605,7 @@
     { name: 'Costa Rica', sub: 'Pura vida!', len: 2650, start: 36, cp: 14, traffic: 24, curve: 3, hill: 1400, seed: 101, cr: ['sloth', 'frog'], gate: 'BIENVENIDOS A MÉXICO',
       sky: ['#2f8fe0', '#4aa6ea', '#6abcf2', '#8fd0f6', '#b6e2f8', '#dff3fb'], zones: ['crBeach', 'crMount', 'crJungle', 'crBeach', 'crJungle'],
       signs: [['PURA VIDA!', 'SLOW DOWN'], ['OBEY THE SIGNS', "(OR DON'T)"], ['SPEED LIMIT:', 'AS FAST AS LEAH'], ['NEXT CHARGER:', 'TRUST ME'], ['MONOS: PLEASE', 'DO NOT FEED'], ['VOLCANO 20 KM', 'NO LAVA. PROMISE'], ['SLOTH JAM', 'NEXT 3 HOURS'], ['MEXICO', 'THAT WAY ->']] },
-    { name: 'Mexico', sub: '¡Vámonos!', len: 2750, start: 38, cp: 14, traffic: 34, curve: 4, hill: 2200, seed: 202, cr: ['dama', 'chupa'], gate: 'WELCOME TO THE USA',
+    { name: 'Mexico', sub: 'Vámonos, muchachos!', len: 2750, start: 38, cp: 14, traffic: 34, curve: 4, hill: 2200, seed: 202, cr: ['dama', 'chupa'], gate: 'WELCOME TO THE USA',
       sky: ['#3a7ad0', '#5a96dc', '#82b2e6', '#f0c88a', '#f8d89a', '#fff0c0'], zones: ['mxJungle', 'mxBeach', 'mxMount', 'mxPyr', 'mxDesert'],
       signs: [['TOPES!', '(BIG BUMPS)'], ['TACOS 2 KM', 'KEEP DRIVING'], ['¡CUIDADO!', 'CHUPACABRA'], ['NO CLIMBING', 'THE PYRAMIDS'], ['¿YA LLEGAMOS?', 'NO.'], ['SIESTA ZONE', 'DRIVE QUIETLY'], ['GOATS: SAFE', 'FOR NOW'], ['USA', 'NEXT EXIT']] },
     { name: 'USA', sub: 'Houston to New York', len: 2900, start: 41, cp: 13, traffic: 46, curve: 4, hill: 2800, seed: 303, cr: ['bigfoot', 'jackalope'], gate: 'BIENVENUE AU CANADA',
@@ -631,12 +631,13 @@
   var segs = [], total = 0, cars = [], bgs = [], bgX = 0, zoneLen = 1, events = [], lastZone = 0;
   var pos = 0, speed = 0, playerX = 0, steerV = 0, turnDir = 0, turnT = 0, turnLvl = 0, dropT = 0, hardTurn = false, skidT = 0, puffs = [], lift = 0, boostT = 0, crashT = 0, timeLeft = 0, lvlMs = 0, clockMs = 0, cardT = 0, finT = 0, shipT = 0;
   var toast = '', toastT = 0, flash = 0;
-  var cpDone = [], cpSegs = [], finishSeg = 0, runNonce = '', finalMs = 0, finalKm = 0, god = false, tick = 0;
+  var cpDone = [], cpSegs = [], finishSeg = 0, runNonce = '', finalMs = 0, finalKm = 0, finalPts = 0, slideT = 0, god = false, tick = 0;
   var me = { name: 'Driver', fan: false };
   var ST = null;
   function resetStats() {
     ST = { sight: {}, bumpedBy: {},
-      dodged: 0, bumped: 0, batt: 0, boosts: 0, crashes: 0, top: 0, passed: 0, slothsPassed: 0 };
+      dodged: 0, bumped: 0, batt: 0, boosts: 0, crashes: 0, top: 0, passed: 0, slothsPassed: 0, slide: 0 };
+    slideT = 0;
     Object.keys(CRY).forEach(function (k) { ST.sight[k] = 0; ST.bumpedBy[k] = 0; });
   }
   resetStats();
@@ -801,6 +802,7 @@
     else { dropT -= dt; if (dropT <= 0) { turnLvl = 0; turnDir = 0; turnT = 0; } else { turnLvl = Math.min(turnLvl, 1); } }
     hardTurn = driving && tdir !== 0 && turnT >= HARD_T && speed > MAXS * 0.15;
     skidT -= dt;
+    if (hardTurn) { slideT += dt; ST.slide = Math.max(ST.slide, Math.floor(slideT * 10)); } else { slideT = 0; }   // longest slide, in tenths of a second
     if (hardTurn) {
       if (skidT <= 0) { SFX.skid(); skidT = 0.42; }
       var sj = JEEP[tdir < 0 ? 0 : 4], sx0 = W / 2 - sj.width / 2, sy0 = H - sj.height - 2 - lift;
@@ -935,7 +937,7 @@
     list.forEach(function (r) {
       var li = document.createElement('li');
       if (r.mine) { li.className = 'me'; }
-      var tt = document.createElement('span'); tt.className = 't'; tt.textContent = fmtN(r.km) + ' km';
+      var tt = document.createElement('span'); tt.className = 't'; tt.textContent = fmtN(r.pts) + ' pts';
       var lv = document.createElement('span'); lv.className = 'lv'; lv.textContent = reached(r.level, r.won) + ' · ' + fmt(r.ms);
       li.appendChild(document.createTextNode(r.name + ' ')); li.appendChild(lv); li.appendChild(tt);
       if (r.seen) { var sn = document.createElement('span'); sn.className = 'seen'; sn.textContent = 'last seen ' + r.seen; li.appendChild(sn); }
@@ -947,15 +949,26 @@
     fetch('/api/scores.php?game=road', { credentials: 'same-origin' }).then(function (r) { return r.json(); })
       .then(function (d) { setMe(d.me); renderHof(d.top); }).catch(function () { renderHof([]); });
   }
+  // Game points (the server works out the same total from the stats; keep the numbers in step with inc/points.php)
+  function ptsFor(baseKm, lv, won) {
+    return Math.round(baseKm * 1.5) + Math.max(0, lv - 1) * 1000 + (won ? 4000 : 0) + Math.min(60, ST.dodged) * 150 + Math.min(100, ST.batt) * 50
+      + Math.min(80, ST.slide) * 30 + (won && ST.bumped === 0 ? 2500 : 0);
+  }
+  function showBreakdown(noteEl, rows) {
+    if (!rows || !rows.length) { return; }
+    var ul = document.createElement('ul'); ul.className = 'pts-list';
+    rows.forEach(function (r) { var li = document.createElement('li'); li.textContent = r[0] + ': +' + fmtN(r[1]); ul.appendChild(li); });
+    noteEl.appendChild(ul);
+  }
   function hofKm(km, lv, won) { return Math.floor(km) + (lv - 1) * LEVEL_BONUS + (won ? WIN_BONUS : 0); }
   function saveRun(won, noteEl) {
     noteEl.textContent = '';
-    api({ action: 'submit', nonce: runNonce, ms: Math.round(clockMs), level: level, won: won, km: Math.floor(finalKm) }).then(function (d) {
+    api({ action: 'submit', nonce: runNonce, ms: Math.round(clockMs), level: level, won: won, km: Math.floor(finalKm), dodged: ST.dodged, batt: ST.batt, slide: ST.slide, bumped: ST.bumped }).then(function (d) {
       if (d.error) { noteEl.textContent = d.error; return; }
       setMe(d.me); renderHof(d.top);
       if (!d.saved) { return; }
-      noteEl.textContent = d.improved ? 'Saved to the hall of fame as ' + me.name + ' (' + fmtN(d.best.km) + ' km with bonuses).'
-        : 'Your best is still ' + fmtN(d.best.km) + ' km.';
+      noteEl.textContent = 'You scored ' + fmtN(d.pts) + ' points. ' + (d.improved ? 'Saved to the hall of fame as ' + me.name + '.' : 'Your best is still ' + fmtN(d.best.pts) + ' points.');
+      showBreakdown(noteEl, d.breakdown);
       if (!me.fan) {
         noteEl.appendChild(document.createTextNode(' '));
         var a = document.createElement('a'); a.href = '/fans.php?v=join'; a.textContent = 'Join the fan club to play under your own username.'; noteEl.appendChild(a);
@@ -981,15 +994,15 @@
     loadLevel(1);
   }
   function gameOver() {
-    mode = 'over'; speed = 0; finalKm = kmNow();
+    mode = 'over'; speed = 0; finalKm = kmNow(); finalPts = ptsFor(finalKm, level, false);
     document.getElementById('overMsg').textContent = SNARK[snarkIdx++ % SNARK.length];
-    document.getElementById('overInfo').textContent = 'You drove ' + fmtN(finalKm) + ' km and reached ' + COUNTRY[level - 1] + ' in ' + fmt(clockMs) + '.';
+    document.getElementById('overInfo').textContent = 'You scored ' + fmtN(finalPts) + ' points: ' + fmtN(finalKm) + ' km driven, reached ' + COUNTRY[level - 1] + ' in ' + fmt(clockMs) + '.';
     el.over.hidden = false;
     saveRun(false, document.getElementById('overNote'));
   }
   function gameWon() {
-    mode = 'win'; finalMs = Math.round(clockMs); level = TOTAL; finalKm = CUM[5]; SFX.win();
-    document.getElementById('winTime').textContent = 'Your trip: ' + fmtN(finalKm) + ' km in ' + fmt(finalMs);
+    mode = 'win'; finalMs = Math.round(clockMs); level = TOTAL; finalKm = CUM[5]; finalPts = ptsFor(finalKm, TOTAL, true); SFX.win();
+    document.getElementById('winTime').textContent = 'Your trip: ' + fmtN(finalPts) + ' points (' + fmtN(finalKm) + ' km in ' + fmt(finalMs) + ')';
     document.getElementById('winWho').textContent = 'Playing as ' + me.name + '.';
     document.getElementById('winNote').textContent = '';
     el.win.hidden = false;
@@ -1165,7 +1178,7 @@
     g.fillStyle = '#10202e'; g.fillRect(bx - 2, 18, bw2 + 4, 6); g.fillStyle = '#6798C0'; g.fillRect(bx, 20, bw2, 2);
     g.fillStyle = '#FDC921'; g.fillRect(bx + Math.round((bw2 - 4) * pr), 18, 5, 6);
     [1 / 3, 2 / 3].forEach(function (f) { g.fillStyle = '#f2f2f2'; g.fillRect(bx + Math.round(bw2 * f), 19, 1, 4); });
-    g.textAlign = 'right'; g.font = 'bold 9px monospace'; g.fillStyle = '#10202e'; g.fillText(fmtN(kmNow()) + ' km', 313, 35); g.fillStyle = '#ffffff'; g.fillText(fmtN(kmNow()) + ' km', 312, 34);
+    g.textAlign = 'right'; g.font = 'bold 9px monospace'; g.fillStyle = '#10202e'; var pn = fmtN(ptsFor(kmNow(), level, false)) + ' pts'; g.fillText(pn, 313, 35); g.fillStyle = '#ffffff'; g.fillText(pn, 312, 34);
 
     // title card, toast
     g.textAlign = 'center';
@@ -1278,15 +1291,15 @@
     x.fillStyle = '#6798C0'; x.fillText(name, CW / 2, 365);
     x.fillStyle = '#1E3248'; x.font = '20px sans-serif';
     x.fillText('drove Leah\'s electric Jeep ' + fmtN(CUM[5]) + ' km from Costa Rica to Paris, through Mexico, the USA and Canada,', CW / 2, 420);
-    x.fillText('without running out of battery, in all 5 levels of Leah\'s Outrun.', CW / 2, 448);
+    x.fillText('without running out of battery, in all 5 levels of Leah\'s Outrun, and scored ' + fmtN(finalPts) + ' points.', CW / 2, 448);
     function stat(col, row, label, val) {
       var bx = col ? 640 : 110, by = 520 + row * 29;
       x.textAlign = 'left'; x.font = '18px sans-serif'; x.fillStyle = '#1E3248'; x.fillText(label, bx, by, 300);
       x.textAlign = 'right'; x.font = 'bold 18px sans-serif'; x.fillStyle = '#6798C0'; x.fillText(val, bx + 450, by, 220);
     }
     x.textAlign = 'left'; x.font = '24px ' + pix; x.fillStyle = '#1E3248'; x.fillText('TRIP STATS', 110, 488); x.fillText('CRYPTID REPORT', 640, 488);
-    var left = [['Kilometers driven', fmtN(CUM[5]) + ' km'], ['Total time', fmt(ms)], ['Top speed', ST.top + ' mph'], ['Batteries collected', String(ST.batt)],
-      ['Boosts used', String(ST.boosts)], ['Crashes', String(ST.crashes)], ['Countries visited', '5 of 5']];
+    var left = [['TOTAL POINTS', fmtN(finalPts)], ['Distance driven', fmtN(CUM[5]) + ' km'], ['Total time', fmt(ms)], ['Top speed', ST.top + ' mph'], ['Batteries collected', String(ST.batt)],
+      ['Longest slide', (ST.slide / 10).toFixed(1) + ' s'], ['Crashes', String(ST.crashes)]];
     left.forEach(function (r, k) { stat(0, k, r[0], r[1]); });
     var right = [];
     Object.keys(CRY).forEach(function (k) { if (ST.sight[k] > 0) { right.push([CRY[k].plural + ' spotted', String(ST.sight[k])]); } });
@@ -1295,20 +1308,27 @@
     // goofy stats: 4 at random
     var pool = goofyPool(), chosen = [];
     while (chosen.length < 4 && pool.length) { chosen.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]); }
-    x.fillStyle = '#FFF1B8'; x.fillRect(100, 870, CW - 200, 190); x.strokeStyle = '#FDC921'; x.lineWidth = 3; x.strokeRect(100, 870, CW - 200, 190);
-    x.textAlign = 'center'; x.font = '24px ' + pix; x.fillStyle = '#1E3248'; x.fillText('ALSO VERY IMPORTANT', CW / 2, 905);
+    x.fillStyle = '#FFF1B8'; x.fillRect(100, 760, CW - 200, 190); x.strokeStyle = '#FDC921'; x.lineWidth = 3; x.strokeRect(100, 760, CW - 200, 190);
+    x.textAlign = 'center'; x.font = '24px ' + pix; x.fillStyle = '#1E3248'; x.fillText('ALSO VERY IMPORTANT', CW / 2, 795);
     for (i = 0; i < chosen.length; i++) {
-      x.font = '19px sans-serif'; x.fillStyle = '#1E3248'; x.fillText(chosen[i][0] + ': ' + chosen[i][1], CW / 2, 942 + i * 30, CW - 240);
+      x.font = '19px sans-serif'; x.fillStyle = '#1E3248'; x.fillText(chosen[i][0] + ': ' + chosen[i][1], CW / 2, 832 + i * 30, CW - 240);
     }
-    // Leah in the Jeep (front-left view, leaning out with a thumbs up) and a cryptid who came to say hi
-    x.imageSmoothingEnabled = JEEPCERT ? false : true;
-    var cj = JEEPCERT || JEEP[2], cw = JEEPCERT ? 370 : cj.width * 2, chh = Math.round(cw * cj.height / cj.width);
-    x.drawImage(cj, 90, 1262 - chh, cw, chh);
+    // Leah in the Jeep (blue shirt, thumbs up) on the left, the cryptid crew on the right
     x.imageSmoothingEnabled = true;
-    var w2 = CRY.bigfoot.fr[0]; x.drawImage(w2, CW - 240, 1090, w2.width * 1.5, w2.height * 1.5);
+    var cj = JEEPCERT || JEEP[2], cw = JEEPCERT ? 370 : cj.width * 2, chh = Math.round(cw * cj.height / cj.width);
+    x.drawImage(cj, 95, 1240 - chh, cw, chh);
+    var crew = [['chupa', 'CHUPACABRA', 1.15], ['bigfoot', 'BIGFOOT', 1.1], ['loup', 'LOUP-GAROU', 1.05]], cx = 600, bx0 = 590, by0 = 985, bw0 = 520, bh0 = 255;
+    x.fillStyle = '#FFF8DC'; x.fillRect(bx0, by0, bw0, bh0); x.strokeStyle = '#1E3248'; x.lineWidth = 3; x.setLineDash([8, 6]); x.strokeRect(bx0, by0, bw0, bh0); x.setLineDash([]);
+    x.textAlign = 'center'; x.font = '24px ' + pix; x.fillStyle = '#1E3248'; x.fillText('THE CRYPTID CREW', bx0 + bw0 / 2, by0 + 34);
+    crew.forEach(function (m) {
+      var sp = CRY[m[0]].fr[0], sc = m[2] * 0.95, w3 = sp.width * sc, h3 = sp.height * sc;
+      x.drawImage(sp, cx + (166 - w3) / 2, by0 + 205 - h3, w3, h3);
+      x.font = '16px ' + pix; x.fillStyle = '#1E3248'; x.fillText(m[1], cx + 83, by0 + 235);
+      cx += 168;
+    });
     x.textAlign = 'center'; x.fillStyle = '#1E3248'; x.font = '24px ' + pix;
-    x.fillText(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), CW / 2 + 40, 1160);
-    x.fillText('livedbyleah.com', CW / 2 + 40, 1196);
+    x.font = '20px ' + pix;
+    x.fillText(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + '  \u00b7  livedbyleah.com', 280, 1004, 460);
     c.toBlob(function (blob) {
       var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'outrun-certificate.png';
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
