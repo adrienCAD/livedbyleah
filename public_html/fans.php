@@ -4,6 +4,7 @@ declare(strict_types=1);
 require __DIR__ . '/inc/bootstrap.php';
 require __DIR__ . '/inc/layout.php';
 require __DIR__ . '/inc/fans.php';
+require __DIR__ . '/inc/google.php';
 
 $errors = [];
 $view = (string)($_GET['v'] ?? '');          // '' (login/profile) | join | forgot
@@ -70,6 +71,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             redirect('/fans.php');
         }
+    } elseif ($action === 'google_finish') {
+        $view = 'google';
+        $gp = $_SESSION['g_pending'] ?? null;
+        if (!is_array($gp) || $gp['t'] < time() - 900) {
+            unset($_SESSION['g_pending']);
+            flash('That took a while. Please press "Continue with Google" again.');
+            redirect('/fans.php');
+        }
+        $first = trim((string)preg_replace('/\s+/u', ' ', (string)($_POST['first_name'] ?? '')));
+        $last = trim((string)preg_replace('/\s+/u', ' ', (string)($_POST['last_name'] ?? '')));
+        $old = ['first_name' => $first, 'last_name' => $last];
+        if (empty($_POST['age13'])) {
+            $errors[] = 'You need to be 13 or older to join the fan club.';
+        }
+        if (!preg_match('/^[\p{L}][\p{L} .\'-]{0,19}$/u', $first)) {
+            $errors[] = 'Enter your first name (letters only, up to 20).';
+        }
+        if (!preg_match('/^[\p{L}][\p{L} .\'-]{0,29}$/u', $last)) {
+            $errors[] = 'Enter your last name (letters only, up to 30).';
+        }
+        if (!$errors) {
+            $st = db()->prepare('SELECT 1 FROM fans WHERE email = ? OR google_sub = ?');
+            $st->execute([$gp['email'], $gp['sub']]);
+            if ($st->fetchColumn()) {
+                unset($_SESSION['g_pending']);
+                flash('That Google account already has a fan account. Press "Continue with Google" to log in.');
+                redirect('/fans.php');
+            }
+            $initial = mb_strtoupper(mb_substr($last, 0, 1));
+            db()->prepare('INSERT INTO fans (email, password_hash, first_name, last_name, last_initial, username, confirmed, google_sub, has_password) VALUES (?, ?, ?, ?, ?, ?, 1, ?, 0)')
+                ->execute([$gp['email'], password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT), $first, $last, $initial, default_username($first, $initial), $gp['sub']]);
+            $id = (int)db()->lastInsertId();
+            unset($_SESSION['g_pending']);
+            fan_sign_in($id);
+            flash('Welcome to the fan club!');
+            redirect('/fans.php');
+        }
     } elseif ($action === 'login') {
         $pass = (string)($_POST['password'] ?? '');
         $st = db()->prepare('SELECT * FROM fans WHERE email = ?');
@@ -93,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 db()->prepare('UPDATE fans SET fails = ?, locked_until = ? WHERE id = ?')
                     ->execute([$fails >= 8 ? 0 : $fails, $fails >= 8 ? time() + 300 : 0, $f['id']]);
             }
-            $errors[] = 'Wrong email or password.';
+            $errors[] = ($f && !(int)$f['has_password']) ? 'This account uses Google. Press "Continue with Google" to log in.' : 'Wrong email or password.';
         }
         $old['email'] = $email;
     } elseif ($action === 'resend') {
@@ -128,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = $e;
         } else {
             // Using the emailed link proves the email is theirs, so it also confirms the account.
-            db()->prepare('UPDATE fans SET password_hash = ?, reset_hash = NULL, reset_expires = 0, confirmed = 1, fails = 0, locked_until = 0 WHERE id = ?')
+            db()->prepare('UPDATE fans SET password_hash = ?, has_password = 1, reset_hash = NULL, reset_expires = 0, confirmed = 1, fails = 0, locked_until = 0 WHERE id = ?')
                 ->execute([password_hash($pass, PASSWORD_DEFAULT), $id]);
             flash('Password updated. Log in with your new password.');
             redirect('/fans.php');
@@ -182,12 +220,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $view = 'settings';
         $me = current_fan();
         $pass = (string)($_POST['new_password'] ?? '');
-        if (!password_verify((string)($_POST['current_password'] ?? ''), $me['password_hash'])) {
+        if ((int)$me['has_password'] && !password_verify((string)($_POST['current_password'] ?? ''), $me['password_hash'])) {
             $errors[] = 'Your current password is not right.';
         } elseif ($e = password_error($pass)) {
             $errors[] = $e;
         } else {
-            db()->prepare('UPDATE fans SET password_hash = ? WHERE id = ?')->execute([password_hash($pass, PASSWORD_DEFAULT), $me['id']]);
+            db()->prepare('UPDATE fans SET password_hash = ?, has_password = 1 WHERE id = ?')->execute([password_hash($pass, PASSWORD_DEFAULT), $me['id']]);
             flash('Password updated.');
             redirect('/fans.php?v=settings');
         }
@@ -260,8 +298,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'delete_account' && current_fan()) {
         $view = 'settings';
         $me = current_fan();
-        if (!password_verify((string)($_POST['current_password'] ?? ''), $me['password_hash'])) {
-            $errors[] = 'Your password is not right, so the account was not deleted.';
+        $okDel = (int)$me['has_password'] ? password_verify((string)($_POST['current_password'] ?? ''), $me['password_hash'])
+            : strtoupper(trim((string)($_POST['current_password'] ?? ''))) === 'DELETE';
+        if (!$okDel) {
+            $errors[] = (int)$me['has_password'] ? 'Your password is not right, so the account was not deleted.' : 'Type DELETE to confirm. The account was not deleted.';
         } else {
             $st = db()->prepare('SELECT file FROM proofs WHERE fan_id = ? AND file IS NOT NULL');
             $st->execute([$me['id']]);
@@ -338,15 +378,18 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
 </form>
 <?php endif; ?>
 
-<h2>Change password</h2>
+<h2><?= (int)$fan['has_password'] ? 'Change password' : 'Add a password (optional)' ?></h2>
+<?php if (!(int)$fan['has_password']): ?><p class="hint">You log in with Google. Add a password only if you also want to log in with your email.</p><?php endif; ?>
 <form method="post" action="/fans.php?v=settings" class="form">
   <?= csrf_field() ?><input type="hidden" name="action" value="password">
+  <?php if ((int)$fan['has_password']): ?>
   <label for="cur">Current password</label>
   <input id="cur" name="current_password" type="password" required autocomplete="current-password">
+  <?php endif; ?>
   <label for="new">New password</label>
   <input id="new" name="new_password" type="password" required minlength="10" maxlength="64" autocomplete="new-password">
   <p class="hint"><?= $tip ?></p>
-  <button class="btn" type="submit">Change password</button>
+  <button class="btn" type="submit"><?= (int)$fan['has_password'] ? 'Change password' : 'Save password' ?></button>
 </form>
 
 <h2>Log out</h2>
@@ -359,8 +402,13 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
 <form method="post" action="/fans.php?v=settings" class="form" onsubmit="return confirm('Delete your account and your hall of fame entry? This cannot be undone.');">
   <?= csrf_field() ?><input type="hidden" name="action" value="delete_account">
   <p class="hint">This removes your account, your email and your hall of fame entry for good.</p>
+  <?php if ((int)$fan['has_password']): ?>
   <label for="delpw">Your password</label>
   <input id="delpw" name="current_password" type="password" required autocomplete="current-password">
+  <?php else: ?>
+  <label for="delpw">Type DELETE to confirm</label>
+  <input id="delpw" name="current_password" required autocomplete="off">
+  <?php endif; ?>
   <button class="btn ghost" type="submit">Delete my account</button>
 </form>
 
@@ -382,7 +430,7 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
 <?php if ($mine): ?>
 <div class="soon rankcard">
   <p><strong>You are fan #<?= (int)$mine['rank'] ?> with <?= (int)$mine['pts'] ?> points.</strong></p>
-  <p class="hint"><?= SIGNUP_POINTS ?> for joining + <?= (int)$mine['lvl_pts'] ?> for game levels + <?= (int)$mine['soc_pts'] ?> for approved screenshots.
+  <p class="hint"><?= SIGNUP_POINTS ?> for joining + <?= (int)$mine['lvl_pts'] ?> for game levels + <?= (int)$mine['soc_pts'] ?> for approved screenshots<?= (int)$mine['idea_pts'] ? ' + ' . (int)$mine['idea_pts'] . ' for chosen ideas' : '' ?>.
   <?php if ($b): $s = intdiv((int)$b['ms'], 1000); ?>
     Best surf run: <?= $b['won'] ? 'cleared all 5 levels' : 'reached level ' . (int)$b['level'] ?> in <?= sprintf('%d:%02d', intdiv($s, 60), $s % 60) ?>.
   <?php else: ?>
@@ -399,8 +447,7 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
 <?php endforeach; ?>
 </ol>
 
-<h2>Hall of fame</h2>
-<?php hof_render(hof_summary()); ?>
+<p class="hint">Game results live in the <a href="/halloffame.php">Hall of Fame</a>.</p>
 
 <h2>How to climb the ranking</h2>
 <div class="soon">
@@ -408,7 +455,9 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
   <ul>
     <li><strong>Join the club:</strong> <?= SIGNUP_POINTS ?> points</li>
     <li><strong>Pass levels in the surf game and in Leah's Outrun:</strong> level 1 = 1 point, level 2 = 2 points, up to level 5 = 5 points (15 in total per game, each counted once). <a href="/games.php">Play now</a></li>
-    <li><strong>Score in Bake Off:</strong> 1,000 = 1 point, 2,500 = 3, 5,000 = 6, 8,000 = 10, 12,000 = 15 (in total).</li>
+    <?php if (game_public('blocks')): ?><li><strong>Score in Bake Off:</strong> 1,000 = 1 point, 2,500 = 3, 5,000 = 6, 8,000 = 10, 12,000 = 15 (in total).</li><?php endif; ?>
+    <li><strong>Score in Fossil Smash:</strong> 2,000 = 1 point, 5,000 = 3, 10,000 = 6, 20,000 = 10, 35,000 = 15 (in total).</li>
+    <li><strong>Get your idea chosen</strong> in <a href="/ideas.php">Ideas for Leah</a>: <?= IDEA_POINTS ?> points</li>
     <li><strong>Like a vlog</strong> on YouTube, Instagram or TikTok: <?= PROOF_POINTS['like'] ?> points each</li>
     <li><strong>Follow or subscribe</strong> on each platform: <?= PROOF_POINTS['follow'] ?> points each</li>
     <li><strong>Comment on a vlog:</strong> <?= PROOF_POINTS['comment'] ?> points each</li>
@@ -462,6 +511,22 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
 <?php endif; ?>
 
 
+<?php elseif ($view === 'google' && !$fan && !empty($_SESSION['g_pending'])): /* ---------------- Google: last step ---------------- */
+    $gp = $_SESSION['g_pending']; ?>
+<h2>Almost in!</h2>
+<p>You are joining with your Google account <strong><?= e($gp['email']) ?></strong>. Check your name and you are done.</p>
+<form method="post" action="/fans.php?v=google" class="form">
+  <?= csrf_field() ?><input type="hidden" name="action" value="google_finish">
+  <label for="gfn">First name</label>
+  <input id="gfn" name="first_name" value="<?= e($old['first_name'] ?? $gp['first']) ?>" maxlength="20" required autocomplete="given-name">
+  <label for="gln">Last name</label>
+  <input id="gln" name="last_name" value="<?= e($old['last_name'] ?? $gp['last']) ?>" maxlength="30" required autocomplete="family-name">
+  <p class="hint">Only Leah and the admins can see your full name. Everyone else sees your first name and the first letter of your last name, like "Mia K." You can pick a nickname once, later.</p>
+  <label><input type="checkbox" name="age13" value="1" required style="width:auto"> I am 13 years old or older.</label>
+  <button class="btn" type="submit">Join the fan club</button>
+  <p class="hint"><a href="/fans.php">Cancel</a></p>
+</form>
+
 <?php elseif ($resetOk): /* ---------------- choose new password ---------------- */ ?>
 <h2>Choose a new password</h2>
 <form method="post" class="form">
@@ -474,6 +539,7 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
 
 <?php elseif ($view === 'join'): /* ---------------- join ---------------- */ ?>
 <h2>Join the fan club</h2>
+<?php if (google_enabled()): ?><p><a class="btn google" href="/auth/google.php">Join with Google</a></p><p class="hint">Or sign up with your email:</p><?php endif; ?>
 <form method="post" class="form">
   <?= csrf_field() ?><input type="hidden" name="action" value="join">
   <label for="fn">First name</label>
@@ -507,9 +573,9 @@ page_header($onAccount ? 'My account' : 'Fan Fest', $onAccount ? 'account' : 'fa
   <p><strong>Hey, you are not a fan yet!</strong> Join up and share the incredible fun of living with Leah.</p>
   <p><a class="btn" href="/fans.php?v=join">Join the fan club</a></p>
 </div>
-<h2>Hall of fame</h2>
-<?php hof_render(hof_summary()); ?>
+<p class="hint">Want to see who is on top? Check the <a href="/halloffame.php">Hall of Fame</a>.</p>
 <h2>Already a fan? Log in</h2>
+<?php if (google_enabled()): ?><p><a class="btn google" href="/auth/google.php">Continue with Google</a></p><p class="hint">Or log in with your email:</p><?php endif; ?>
 <form method="post" class="form">
   <?= csrf_field() ?><input type="hidden" name="action" value="login">
   <label for="le">Email</label>

@@ -162,6 +162,7 @@ function time_tag(?string $utc): string {
 // ---------------------------------------------------------------- points and ranking
 const SIGNUP_POINTS = 10;
 const PROOF_POINTS = ['like' => 5, 'follow' => 10, 'comment' => 10];
+const IDEA_POINTS = 25;   // a fan's idea that Leah chooses (stored per idea, so changing this does not touch old ideas)
 const PROOF_PLATFORMS = ['youtube' => 'YouTube', 'instagram' => 'Instagram', 'tiktok' => 'TikTok'];
 
 function proof_action_label(string $platform, string $action): string {
@@ -182,11 +183,12 @@ function fan_ranking(): array {
         COALESCE((SELECT SUM(CASE WHEN s.won = 1 THEN 15 ELSE (s.level - 1) * s.level / 2 END) FROM scores s WHERE s.fan_id = f.id AND s.game IN (\'surf\', \'road\')), 0)
         + COALESCE((SELECT CASE WHEN s.ms >= 12000 THEN 15 WHEN s.ms >= 8000 THEN 10 WHEN s.ms >= 5000 THEN 6 WHEN s.ms >= 2500 THEN 3 WHEN s.ms >= 1000 THEN 1 ELSE 0 END FROM scores s WHERE s.fan_id = f.id AND s.game = \'blocks\'), 0)
         + COALESCE((SELECT CASE WHEN s.ms >= 35000 THEN 15 WHEN s.ms >= 20000 THEN 10 WHEN s.ms >= 10000 THEN 6 WHEN s.ms >= 5000 THEN 3 WHEN s.ms >= 2000 THEN 1 ELSE 0 END FROM scores s WHERE s.fan_id = f.id AND s.game = \'bert\'), 0) AS lvl_pts,
-        COALESCE((SELECT SUM(p.points) FROM proofs p WHERE p.fan_id = f.id AND p.status = \'approved\'), 0) AS soc_pts
+        COALESCE((SELECT SUM(p.points) FROM proofs p WHERE p.fan_id = f.id AND p.status = \'approved\'), 0) AS soc_pts,
+        COALESCE((SELECT SUM(i.points) FROM ideas i WHERE i.fan_id = f.id AND i.status IN (\'chosen\', \'done\')), 0) AS idea_pts
         FROM fans f WHERE f.confirmed = 1')->fetchAll();
     foreach ($rows as &$r) {
         $r['id'] = (int)$r['id'];
-        $r['pts'] = SIGNUP_POINTS + (int)$r['lvl_pts'] + (int)$r['soc_pts'];
+        $r['pts'] = SIGNUP_POINTS + (int)$r['lvl_pts'] + (int)$r['soc_pts'] + (int)$r['idea_pts'];
     }
     unset($r);
     usort($rows, fn($a, $b) => [$b['pts'], $a['id']] <=> [$a['pts'], $b['id']]);
@@ -246,6 +248,7 @@ function hof_summary(): array {
     $out = ['games' => [], 'champ' => null];
     $pts = [];
     foreach (HOF_GAMES as $g => $label) {
+        if (!game_visible($g)) { continue; }   // hidden games (Bake Off for now) stay off the board
         $order = score_order($g);
         $rows = db()->query('SELECT COALESCE(f.username, s.name) AS name, s.ms, s.level, s.won, s.km, s.pkey, f.last_login AS seen
             FROM scores s LEFT JOIN fans f ON f.id = s.fan_id WHERE s.game = ' . db()->quote($g) . ' ORDER BY ' . $order)->fetchAll();
@@ -354,4 +357,11 @@ function demo_remove(): int {
     db()->exec('DELETE FROM support_requests WHERE fan_id IN (SELECT id FROM fans WHERE demo = 1)');
     db()->exec('DELETE FROM fans WHERE demo = 1');
     return $n;
+}
+
+// Logs a fan in (password or Google) and records the visit.
+function fan_sign_in(int $id): void {
+    session_regenerate_id(true);
+    $_SESSION['fan_id'] = $id;
+    db()->prepare('UPDATE fans SET fails = 0, locked_until = 0, prev_login = last_login, last_login = datetime("now") WHERE id = ?')->execute([$id]);
 }

@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 function page_header(string $title, string $active, string $extraHead = ''): void {
     $tabs = [
-        'vlogs' => ['/vlogs.php', 'Watch Vlogs'],
-        'games' => ['/games.php', 'Play Games'],
-        'fans'  => ['/fans.php', 'Fan Fest'],
+        'home'    => ['/', 'Home'],
+        'vlogs'   => ['/vlogs.php', 'Watch Vlogs'],
+        'games'   => ['/games.php', 'Play Games'],
+        'hof'     => ['/halloffame.php', 'Hall of Fame'],
+        'fans'    => ['/fans.php', 'Fan Fest'],
+        'ideas'   => ['/ideas.php', 'Ideas for Leah'],
+        'writing' => ['/writing.php', 'Behind the Scenes'],   // public, read-only (Leah and admins write in the admin)
     ];
-    if (is_admin()) {
-        $tabs['writing'] = ['/writing.php', 'Writing Process'];   // visible to Leah and admins only
-    }
     $account = !empty($_SESSION['fan_id']);   // "My account" sits at the bottom of the menu, signed-in fans only
     ?>
 <!doctype html>
@@ -21,14 +22,14 @@ function page_header(string $title, string $active, string $extraHead = ''): voi
 <title><?= e($title) ?> | <?= e(SITE_NAME) ?></title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23FDC921'/%3E%3C/svg%3E">
 <link rel="preload" href="/assets/fonts/shantell-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/css/style.css?v=13">
+<link rel="stylesheet" href="/assets/css/style.css?v=14">
 <?= $extraHead ?>
 </head>
 <body>
 <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">Menu</button>
 <div class="shell">
   <nav class="sidebar" id="sidebar" aria-label="Main">
-    <a class="brand" href="/vlogs.php"><span class="brand-top">Lived by</span><span class="brand-name">Leah</span></a>
+    <a class="brand" href="/"><span class="brand-top">Lived by</span><span class="brand-name">Leah</span></a>
     <ul>
       <?php foreach ($tabs as $key => [$href, $label]): ?>
         <li><a href="<?= e($href) ?>"<?= $key === $active ? ' class="active" aria-current="page"' : '' ?>><?= e($label) ?></a></li>
@@ -66,7 +67,7 @@ function admin_header(string $title): void {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title><?= e($title) ?> | Admin</title>
-<link rel="stylesheet" href="/assets/css/style.css?v=13">
+<link rel="stylesheet" href="/assets/css/style.css?v=14">
 </head>
 <body class="admin">
 <div class="admin-wrap">
@@ -75,7 +76,9 @@ function admin_header(string $title): void {
     <nav>
       <a href="/admin/index.php">Dashboard</a>
       <a href="/admin/vlogs.php">Vlogs</a>
-      <a href="/admin/posts.php">Writing posts</a>
+      <a href="/admin/posts.php">Behind the Scenes</a>
+      <?php $pi = (int)db()->query("SELECT COUNT(*) FROM ideas WHERE status = 'pending'")->fetchColumn(); ?>
+      <a href="/admin/ideas.php">Ideas<?= $pi ? ' (' . $pi . ')' : '' ?></a>
       <a href="/admin/comments.php">Comments</a>
       <a href="/admin/fans.php">Fans</a>
       <?php $pp = (int)db()->query("SELECT COUNT(*) FROM proofs WHERE status = 'pending'")->fetchColumn(); ?>
@@ -83,8 +86,9 @@ function admin_header(string $title): void {
       <?php $ps = (int)db()->query("SELECT COUNT(*) FROM support_requests WHERE status = 'pending'")->fetchColumn(); ?>
       <a href="/admin/support.php">Support<?= $ps ? ' (' . $ps . ')' : '' ?></a>
       <a href="/admin/scores.php">Hall of fame</a>
+      <a href="/admin/users.php">Admins</a>
       <a href="/admin/settings.php">Settings</a>
-      <a href="/vlogs.php">View site</a>
+      <a href="/">View site</a>
       <a href="/admin/logout.php">Log out</a>
     </nav>
   </header>

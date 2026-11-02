@@ -423,6 +423,13 @@
     list.sort(function (a, b) { return a.r - b.r; });
     list.forEach(function (o) { if (o.bagel) { drawBagel(); } else { drawMon(o); } });
     drawFx();
+    // lives as hearts, top-right corner under SMASH TO (the page HUD covers the top-left); empty slots shown faintly up to 3
+    if (mode !== 'idle') {
+      var nh = Math.max(3, Math.min(MAX_LIVES, lives)), hw = 6 + nh * 12;
+      g.fillStyle = 'rgba(16,32,46,.7)'; g.fillRect(W - 4 - hw, 28, hw, 16);
+      for (var li = 0; li < nh; li++) { g.globalAlpha = li < lives ? 1 : 0.25; g.drawImage(SPR.heart, W - 4 - hw + 3 + li * 12, 31); }
+      g.globalAlpha = 1;
+    }
     // target colour reminder
     g.fillStyle = 'rgba(16,32,46,.7)'; g.fillRect(W - 70, 4, 66, 22);
     g.font = 'bold 7px monospace'; g.fillStyle = '#ffffff'; g.textAlign = 'left'; g.fillText('SMASH TO:', W - 66, 17);
@@ -564,7 +571,7 @@
   function hud() {
     if (!el.score) { return; }
     el.score.textContent = 'Score ' + fmtN(score);
-    el.lives.textContent = 'Lives ' + Math.max(0, lives);
+    if (el.lives) { el.lives.textContent = 'Lives ' + Math.max(0, lives); }
     el.level.textContent = ELEM[level - 1] + ' ' + round + '/3';
     el.glide.textContent = 'Glides ' + glides;
   }

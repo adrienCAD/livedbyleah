@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 const SITE_NAME = 'Lived by Leah';
-const SITE_VERSION = '1.5.0';   // see CLAUDE.md for the version list
+const SITE_VERSION = '1.6.0';   // see CLAUDE.md for the version list
 const DB_PATH = __DIR__ . '/../data/site.sqlite';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -212,6 +212,56 @@ function db(): PDO {
             resolved_at TEXT
         )');
         $pdo->exec('CREATE INDEX IF NOT EXISTS support_fan ON support_requests(fan_id, status)');
+        // v1.6.0: Behind the Scenes is public. Every post is published unless Leah unticks it in admin.
+        $pocols = array_column($pdo->query('PRAGMA table_info(posts)')->fetchAll(), 'name');
+        if (!in_array('published', $pocols, true)) {
+            $pdo->exec('ALTER TABLE posts ADD COLUMN published INTEGER NOT NULL DEFAULT 1');
+        }
+        // v1.6.0: admin invites. A new admin gets a one-time link to choose a password (only its hash is stored).
+        $ucols = array_column($pdo->query('PRAGMA table_info(users)')->fetchAll(), 'name');
+        if (!in_array('invite_hash', $ucols, true)) {
+            $pdo->exec('ALTER TABLE users ADD COLUMN invite_hash TEXT');
+        }
+        if (!in_array('invite_expires', $ucols, true)) {
+            $pdo->exec('ALTER TABLE users ADD COLUMN invite_expires INTEGER NOT NULL DEFAULT 0');
+        }
+        // v1.6.0: "Continue with Google" for fans. google_sub = Google's account id. has_password = 0 for Google-only fans.
+        $fcols = array_column($pdo->query('PRAGMA table_info(fans)')->fetchAll(), 'name');
+        if (!in_array('google_sub', $fcols, true)) {
+            $pdo->exec('ALTER TABLE fans ADD COLUMN google_sub TEXT');
+        }
+        if (!in_array('has_password', $fcols, true)) {
+            $pdo->exec('ALTER TABLE fans ADD COLUMN has_password INTEGER NOT NULL DEFAULT 1');
+        }
+        $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS fans_google ON fans(google_sub) WHERE google_sub IS NOT NULL');
+        // v1.6.0: Ideas for Leah. Fans suggest, like and comment. status: pending (only Leah sees it), open, chosen, done, declined.
+        $pdo->exec('CREATE TABLE IF NOT EXISTS ideas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fan_id INTEGER NOT NULL REFERENCES fans(id) ON DELETE CASCADE,
+            title TEXT NOT NULL,
+            body TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT "pending",
+            points INTEGER NOT NULL DEFAULT 0,
+            leah_note TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            decided_at TEXT
+        )');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS ideas_status ON ideas(status)');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS idea_likes (
+            idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+            fan_id INTEGER NOT NULL REFERENCES fans(id) ON DELETE CASCADE,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (idea_id, fan_id)
+        )');
+        $pdo->exec('CREATE TABLE IF NOT EXISTS idea_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+            fan_id INTEGER NOT NULL REFERENCES fans(id) ON DELETE CASCADE,
+            body TEXT NOT NULL,
+            hidden INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS idea_comments_idea ON idea_comments(idea_id)');
     }
     return $pdo;
 }
@@ -307,3 +357,14 @@ function clean_url(string $url): ?string {
 function user_count(): int {
     return (int)db()->query('SELECT COUNT(*) FROM users')->fetchColumn();
 }
+
+// Games that are switched off for the public (Leah and admins still see them). Bake Off is hidden
+// until Leah says it is ready; Admin > Settings has the switch (setting game_blocks_public = 1).
+function game_public(string $g): bool {
+    return $g !== 'blocks' || setting('game_blocks_public', '0') === '1';
+}
+
+function game_visible(string $g): bool {
+    return game_public($g) || is_admin();
+}
+

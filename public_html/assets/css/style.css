@@ -287,3 +287,55 @@ ol.fanlist { counter-reset: none; }
   .bert-touch button { min-height: 56px; font-size: 26px; }
   .bert-touch [data-key="glide"] { grid-row: span 2; font-size: 17px; }
 }
+
+/* ---------------- v1.6.0: home, hall of fame page, ideas, badges, Google button ---------------- */
+.badge { display: inline-block; font-family: var(--font-body); font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--frost); color: var(--ink); vertical-align: middle; }
+.btn.google { background: #fff; }
+.btn.google::before { content: "G"; display: inline-block; font-weight: 800; color: #4285F4; margin-right: 8px; }
+form.inline { display: inline; margin: 0; }
+
+.hero { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 28px; align-items: center; margin-bottom: 18px; }
+.hero-logo { width: 100%; height: auto; transform: rotate(-3deg); }
+.hero-kicker { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--bluegrey); margin: 0 0 4px; }
+.hero h1 { margin-bottom: 12px; }
+.hero .lede { margin-bottom: 14px; }
+.stats { list-style: none; padding: 0; margin: 0 0 32px; display: flex; flex-wrap: wrap; gap: 12px; }
+.stats li { background: #FFF6D6; border: 2px solid var(--ink); border-radius: 12px; padding: 8px 16px; font-weight: 700; }
+.stats strong { font-family: var(--font-display); font-size: 26px; margin-right: 4px; font-variant-numeric: tabular-nums; }
+.home-vlogs { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 32px; }
+.home-vlog { text-decoration: none; color: var(--ink); }
+.home-vlog .vlog-thumb { aspect-ratio: 4 / 5; }
+.hv-title { display: block; font-weight: 700; font-size: 15px; margin-top: 8px; line-height: 1.35; }
+.tour { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 32px; }
+.tour-card { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: var(--ink); border: 2px solid var(--ink); border-radius: 14px; padding: 14px 16px; background: #fff; box-shadow: 4px 4px 0 var(--ink); transition: transform .12s, box-shadow .12s; }
+.tour-card:hover, .tour-card:focus-visible { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+.tc-title { font-family: var(--font-display); font-weight: 800; font-size: 20px; }
+.tc-text { font-size: 15px; color: var(--muted); }
+.tc-v { background: #FFF6D6; } .tc-g { background: #E3F4FA; } .tc-h { background: #FFF1B8; }
+.tc-f { background: #F2E8FF; } .tc-i { background: #E6F5EA; } .tc-b { background: #FDEDE4; }
+.steps { max-width: 65ch; padding-left: 22px; margin: 0 0 24px; display: grid; gap: 6px; }
+@media (max-width: 760px) {
+  .hero { grid-template-columns: 1fr; gap: 10px; }
+  .hero-logo { max-width: 200px; }
+  .home-vlogs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .hv-title { font-size: 13px; }
+}
+
+.ideas { display: grid; gap: 14px; max-width: 720px; margin-bottom: 32px; }
+.idea { background: #fff; border: 2px solid var(--ink); border-radius: 14px; padding: 12px 16px; }
+.idea.st-chosen { border-color: #1E7A3A; box-shadow: 4px 4px 0 #9AD3AA; }
+.idea.st-done { border-color: var(--bluegrey); box-shadow: 4px 4px 0 var(--frost); }
+.idea header { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.idea h3 { margin: 0; font-size: 19px; }
+.idea.st-chosen .badge { background: #9AD3AA; }
+.idea-body { margin: 6px 0 8px; overflow-wrap: anywhere; }
+.leah-note { background: #FFF1B8; border-left: 4px solid var(--pollen); padding: 6px 10px; border-radius: 4px; font-size: 15px; }
+.idea > footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.like { font: inherit; font-weight: 700; font-size: 15px; background: var(--porcelain); border: 2px solid var(--ink); border-radius: 999px; padding: 3px 12px; color: var(--ink); cursor: pointer; }
+span.like { cursor: default; opacity: .8; }
+.like.on { background: #FCD3DC; color: #B3261E; }
+.idea-comments { margin-top: 8px; }
+.idea-comments summary { cursor: pointer; font-weight: 700; font-size: 14px; color: var(--muted); }
+.idea-comments .comment { margin-top: 8px; }
+.idea-comments .comment footer form { display: inline; }
+.comment-form { margin: 8px 0 0; }

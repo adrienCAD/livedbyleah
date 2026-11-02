@@ -1,5 +1,5 @@
 <?php
-// Admin: write, edit and delete Writing Process posts.
+// Admin: write, edit and delete Behind the Scenes posts (public page /writing.php). Untick Published to hide one.
 declare(strict_types=1);
 require __DIR__ . '/../inc/bootstrap.php';
 require __DIR__ . '/../inc/layout.php';
@@ -22,16 +22,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = trim((string)($_POST['title'] ?? ''));
         $body = trim((string)($_POST['body'] ?? ''));
         $vlogId = (int)($_POST['vlog_id'] ?? 0) ?: null;
+        $pub = !empty($_POST['published']) ? 1 : 0;
         if ($title === '' || $body === '') {
             flash('Add a title and some text.');
         } elseif (mb_strlen($title) > 200 || mb_strlen($body) > 5000) {
             flash('Too long. Title up to 200 characters, text up to 5000.');
         } elseif ($id > 0) {
-            $pdo->prepare('UPDATE posts SET title=?, body=?, vlog_id=? WHERE id=?')->execute([$title, $body, $vlogId, $id]);
+            $pdo->prepare('UPDATE posts SET title=?, body=?, vlog_id=?, published=? WHERE id=?')->execute([$title, $body, $vlogId, $pub, $id]);
             flash('Post saved.');
         } else {
-            $pdo->prepare('INSERT INTO posts (title, body, vlog_id) VALUES (?, ?, ?)')->execute([$title, $body, $vlogId]);
-            flash('Post published.');
+            $pdo->prepare('INSERT INTO posts (title, body, vlog_id, published) VALUES (?, ?, ?, ?)')->execute([$title, $body, $vlogId, $pub]);
+            flash($pub ? 'Post published.' : 'Post saved (hidden).');
         }
         redirect('/admin/posts.php');
     }
@@ -46,9 +47,10 @@ if (isset($_GET['edit'])) {
     $editing = $s->fetch() ?: null;
 }
 
-admin_header('Writing posts');
+admin_header('Behind the Scenes');
 ?>
-<h1>Writing posts</h1>
+<h1>Behind the Scenes</h1>
+<p class="hint">These posts are public on <a href="/writing.php">Behind the Scenes</a>. Untick Published to keep one private.</p>
 
 <h2><?= $editing ? 'Edit post' : 'New post' ?></h2>
 <form method="post" class="form">
@@ -66,8 +68,9 @@ admin_header('Writing posts');
       <option value="<?= (int)$v['id'] ?>"<?= $editing && (int)$editing['vlog_id'] === (int)$v['id'] ? ' selected' : '' ?>><?= e($v['title']) ?></option>
     <?php endforeach; ?>
   </select>
+  <label><input type="checkbox" name="published" value="1" style="width:auto"<?= !$editing || (int)$editing['published'] ? ' checked' : '' ?>> Published (everyone can read it)</label>
   <div class="row">
-    <button class="btn" type="submit"><?= $editing ? 'Save changes' : 'Publish' ?></button>
+    <button class="btn" type="submit"><?= $editing ? 'Save changes' : 'Save' ?></button>
     <?php if ($editing): ?><a class="btn ghost" href="/admin/posts.php">Cancel</a><?php endif; ?>
   </div>
 </form>
@@ -75,12 +78,13 @@ admin_header('Writing posts');
 <h2>All posts (<?= count($posts) ?>)</h2>
 <div class="table-wrap">
 <table>
-  <thead><tr><th>Title</th><th>Date</th><th></th></tr></thead>
+  <thead><tr><th>Title</th><th>Date</th><th>Public</th><th></th></tr></thead>
   <tbody>
   <?php foreach ($posts as $p): ?>
     <tr>
       <td><?= e($p['title']) ?></td>
       <td><?= e(substr($p['created_at'], 0, 10)) ?></td>
+      <td><?= (int)$p['published'] ? 'Yes' : 'Hidden' ?></td>
       <td class="actions">
         <a href="/admin/posts.php?edit=<?= (int)$p['id'] ?>">Edit</a>
         <form method="post" onsubmit="return confirm('Delete this post?');">

@@ -7,47 +7,54 @@ require __DIR__ . '/inc/fans.php';
 
 $g = (string)($_GET['g'] ?? '');
 $g = in_array($g, ['surf', 'road', 'blocks', 'bert'], true) ? $g : '';
+$hiddenMsg = '';
+if ($g !== '' && !game_visible($g)) {   // Bake Off is resting for now (admins and Leah can still play it)
+    $hiddenMsg = 'Bake Off is back in the oven for a bit. It will be back soon!';
+    $g = '';
+}
 $ROAD_NAME = "Leah's Outrun";   // test name; the trademark-safe name is "Leah's Road Trip"
 
 page_header('Play Games', 'games');
-if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
+if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
 <h1>Play Games</h1>
-<p class="lede">Pick a game. Every game has its own hall of fame, and the levels you pass or the scores you reach earn fan points.</p>
+<?php if ($hiddenMsg): ?><p class="notice"><?= e($hiddenMsg) ?></p><?php endif; ?>
+<p class="lede">I drew the art for all of these, so be nice. Pass levels or rack up points and you get fan points too. Your best runs go in the <a href="/halloffame.php">Hall of Fame</a>.</p>
 <div class="gamecards">
   <a class="gamecard" href="/games.php?g=surf">
     <img src="/assets/img/games/surf.jpg" width="640" height="360" alt="Surf Cleanup: Leah surfing a wave" loading="lazy">
     <span class="gc-title">Surf Cleanup</span>
-    <span class="gc-text">Clean the beach, build a water gun and surf five waves past sharks and UFOs.</span>
+    <span class="gc-text">Pick up the trash on the beach, build a water gun, then go surf. There are sharks. And UFOs. Don't ask.</span>
   </a>
   <a class="gamecard" href="/games.php?g=road">
-    <img src="/assets/img/games/road.jpg" width="640" height="349" alt="<?= e($ROAD_NAME) ?>: Leah's green Jeep on Route 1" loading="lazy">
+    <img src="/assets/img/games/road-crt.jpg" width="640" height="349" alt="<?= e($ROAD_NAME) ?>: Leah's green Jeep on Route 1, on an old TV screen" loading="lazy">
     <span class="gc-title"><?= e($ROAD_NAME) ?></span>
-    <span class="gc-text">Drive Leah's electric Jeep from Costa Rica to Paris. Watch out for cryptids!</span>
+    <span class="gc-text">Take my green Jeep from Costa Rica all the way to Paris. Keep an eye on the battery, and on Bigfoot.</span>
   </a>
+  <?php if (game_visible('blocks')): ?>
   <a class="gamecard" href="/games.php?g=blocks">
     <img src="/assets/img/games/bakeoff.png?v=2" width="640" height="360" alt="Bake Off: Leah's kitchen pieces falling onto a checkered board" loading="lazy">
-    <span class="gc-title">Bake Off</span>
-    <span class="gc-text">Stack Leah's kitchen pieces, clear the dishes and chase the top score.</span>
+    <span class="gc-title">Bake Off<?php if (!game_public('blocks')): ?> <small class="badge">hidden from fans</small><?php endif; ?></span>
+    <span class="gc-text">My kitchen stuff is falling from the sky. Stack it, clear the dishes, don't let it pile up.</span>
   </a>
+  <?php endif; ?>
   <a class="gamecard" href="/games.php?g=bert">
     <img src="/assets/img/games/bert.png?v=2" width="640" height="360" alt="Fossil Smash: Bagel the brachiosaurus stomping a pyramid of fossil stones" loading="lazy">
     <span class="gc-title">Fossil Smash</span>
-    <span class="gc-text">Stomp Bagel across the Triassic, Jurassic, Cretaceous and Meteor Day. Smash every stone and dodge the critters!</span>
+    <span class="gc-text">This is Bagel. Help him stomp every stone on the pyramid without getting squashed by a meteor. Or a T. rex.</span>
   </a>
 </div>
-<h2>Hall of fame</h2>
-<?php hof_render(hof_summary()); ?>
+<p><a class="btn ghost" href="/halloffame.php">See the Hall of Fame</a></p>
 <?php page_footer(); return; endif; ?>
 <nav class="gametabs" aria-label="Choose a game">
   <a href="/games.php">&larr; All games</a>
   <a href="/games.php?g=surf"<?= $g === 'surf' ? ' class="on" aria-current="page"' : '' ?>>Surf Cleanup</a>
   <a href="/games.php?g=road"<?= $g === 'road' ? ' class="on" aria-current="page"' : '' ?>><?= e($ROAD_NAME) ?></a>
-  <a href="/games.php?g=blocks"<?= $g === 'blocks' ? ' class="on" aria-current="page"' : '' ?>>Bake Off</a>
+  <?php if (game_visible('blocks')): ?><a href="/games.php?g=blocks"<?= $g === 'blocks' ? ' class="on" aria-current="page"' : '' ?>>Bake Off</a><?php endif; ?>
   <a href="/games.php?g=bert"<?= $g === 'bert' ? ' class="on" aria-current="page"' : '' ?>>Fossil Smash</a>
 </nav>
 <?php if ($g === 'road'): ?>
 <h1><?= e($ROAD_NAME) ?></h1>
-<p class="lede">Drive Leah's neon-green electric Jeep from Costa Rica through Mexico, the USA and Canada, then take the cargo ship to France and finish in Paris. Your timer is your battery: reach each checkpoint, grab green batteries, hit the arrows for a boost, and watch out for cryptids crossing the road. You are ranked by kilometers driven, with a bonus for every new country.</p>
+<p class="lede">Road trip in my neon-green Jeep: Costa Rica, Mexico, the USA, Canada, then a boat ride to France and all the way to Paris. The timer is your battery, so hit the checkpoints and grab the green batteries. Arrows on the road give you a boost. Cryptids cross the road sometimes. Yes, really. The further you drive, the higher you rank.</p>
 
 <div class="game" id="game">
   <div class="game-hud game-hud-road">
@@ -99,12 +106,11 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
 <?php endif; ?>
 <?php if ($g === 'bert'): ?>
 <h1>Fossil Smash</h1>
-<p class="lede">Hop Bagel the brachiosaurus across a pyramid of fossil stones and smash every one to clear the round. Four ages (Triassic, Jurassic, Cretaceous, Meteor Day), three rounds each. Dodge meteors, fireballs, raptors and pterodactyls, catch the trilobites, ride the clouds back to the top, and glide on a big leaf over trouble twice per level.</p>
+<p class="lede">Bagel is my little brachiosaurus and he loves stomping. Hop him around the pyramid and smash every stone to finish the round. You go through the Triassic, the Jurassic, the Cretaceous and then Meteor Day (good luck). Meteors, fireballs, raptors and pterodactyls are all out to get him. Grab the trilobites, ride a cloud back to the top, and use the big leaf to glide when it gets messy.</p>
 
 <div class="game bert-game" id="game">
   <div class="game-hud game-hud-road">
     <span id="hudScore">Score 0</span>
-    <span id="hudLives">Lives 3</span>
     <span id="hudLevel">Triassic 1/3</span>
     <span id="hudGlide">Glides 2</span>
     <button type="button" id="muteBtn" class="hud-btn" aria-pressed="false" aria-label="Mute sound">Sound on</button>
@@ -148,11 +154,11 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/bert.js?v=2"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/bert.js?v=3"></script>'); return; ?>
 <?php endif; ?>
 <?php if ($g === 'blocks'): ?>
 <h1>Bake Off</h1>
-<p class="lede">Stack the falling kitchen pieces, clear full rows of dishes and climb the hall of fame. Rotate with the up arrow, drop with the down arrow, and save a piece with C or Shift.</p>
+<p class="lede">My kitchen stuff keeps falling, so stack it neatly and clear full rows of dishes. Up turns a piece, down drops it, and C or Shift saves one for later.</p>
 
 <div class="game blocks-game" id="game">
   <div class="game-hud game-hud-road">
@@ -196,7 +202,7 @@ if ($g === ''):   /* ---------------- the three games ---------------- */ ?>
 <?php page_footer('<script src="/assets/js/blocks.js?v=7"></script>'); return; ?>
 <?php endif; ?>
 <h1>Surf cleanup</h1>
-<p class="lede">Clean the beach, collect the shells, build a water gun, then surf five waves and beat the sharks. You are ranked by the highest level you reach, then by your time. Fans play under their own username.</p>
+<p class="lede">First clean up the beach and find the shells, then build your water gun and paddle out. Five waves, a lot of sharks, and a UFO that really wants to take you home. The higher the level you reach, the better your rank. Faster is better too.</p>
 
 <div class="game" id="game">
   <div class="game-hud">

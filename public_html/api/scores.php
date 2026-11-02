@@ -43,6 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $game = (string)($in0['game'] ?? '');
 }
 $game = isset(GAMES[$game]) ? $game : 'surf';
+if (!game_visible($game)) {   // a hidden game (Bake Off for now): only Leah and admins can see or save scores
+    http_response_code(403);
+    echo json_encode(['error' => 'This game is not open yet.', 'top' => []]);
+    exit;
+}
 $cfg = GAMES[$game];
 $myKey = $game === 'surf' ? $me['pkey'] : $me['pkey'] . ':' . $game;   // one best result per player per game
 $runKey = $game === 'surf' ? 'run' : 'run_' . $game;

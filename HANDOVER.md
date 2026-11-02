@@ -2,13 +2,17 @@
 
 Read CLAUDE.md first for permanent architecture and rules. This file records the current status, open items, known issues and history. Keep the restart prompt at the bottom current.
 
-## Status (as of 2026-11-01, site version 1.5.0)
+## Status (as of 2026-11-01, site version 1.6.0 built, 1.5.0 live)
 - `main` on GitHub = v1.5.0 (site code last changed in 7187d93). Working tree clean. Local `data/site.sqlite` deleted.
 - **Deployed 2026-11-01** with `scripts/release.sh` from commit c50b2f9; `BUILD.txt` on the server confirms version 1.5.0 and that commit. Check `public_html/BUILD.txt` for what is live.
 - **Confirmed live by Adrien (2026-10-28): all updates through v1.5.0 work** (fan club, emails, screenshot uploads, Surf Cleanup, Outrun with the 30/45 Jeep, Bake Off, Fossil Smash, hall of fame). Nothing is waiting to be deployed.
 - The PRD artifact (https://claude.ai/artifact/MbrxkAeARiMFxm95G6LK3D) is at **Draft v7** (site 1.3.0). It does NOT yet cover v1.4.0, v1.4.1 or Bake Off. Adrien was offered "Draft v8" and has not answered. Show the text first, he approves with "go".
 
-## Recent progress (this session, all merged to main)
+## v1.6.0: built and tested locally, NOT committed, NOT deployed (2026-11-01)
+- Home page, Hall of Fame section, Ideas for Leah (likes, comments, 25 points per chosen idea), Behind the Scenes public (all existing posts published), admin invites (Admin > Admins), Google sign-in for fans (needs Google credentials in Admin > Settings), Bake Off hidden (switch in Admin > Settings), Leah-voice game texts, Outrun CRT card, Fossil Smash hearts + Bagel eyes. Details in CLAUDE.md "v1.6.0 additions".
+- Tested: every page, idea submit/approve/choose/points, likes, comments, link filter, Bake Off hide/show, post hide, invite link + one-time use + login, Google last step (with a faked Google profile; the real Google round trip cannot be tested until credentials exist), upgrade from a v1.5.0 database.
+
+## Recent progress (earlier sessions, all merged to main)
 - **v1.3.0** L-Bert, the 4th game (hopping pyramid, original characters).
 - **v1.4.0** renamed **Fossil Smash**: dinosaur theme. Hero Bagel (blue brachiosaurus, Leah's art), Leah's meteor and 2 fireball frames, levels Triassic / Jurassic / Cretaceous / Meteor Day, fossil stones (sand, bone, amber with prints), critters pterodactyl, trilobite, egg-thief raptor, T. rex boss, new hub card and certificate.
 - **v1.4.1** Outrun Jeep uses Leah's five pictures: short press = 30 view, hold over 1 s = 45 view (hard turn: steering x1.25, speed capped at 92% of top, grey tire smoke, squeal every 0.42 s).
@@ -17,6 +21,7 @@ Read CLAUDE.md first for permanent architecture and rules. This file records the
 - Git note: Leah/Adrien push art straight to `main`. If `git push` is rejected, `git fetch`, `git merge origin/main`, push again.
 
 ## Open items (priority order)
+0. v1.6.0: commit, push, `./scripts/release.sh`, deploy. Then Admin > Admins > invite "Aguakiller" and open the link. Then create the Google OAuth client and paste it in Admin > Settings. Leah reviews the Home and game texts, and Bagel's new eyes (send her original Bagel art if the eyes should match it).
 1. Real playtests by Leah and fans for difficulty: Surf Cleanup Level 5 (what killed her?), Outrun (cryptids, battery), Fossil Smash (4 levels, boss), Bake Off. All balance so far is from scripted tests only.
 2. PRD Draft v8 (see Status).
 3. Replace placeholder art with Leah's: Surf shells (4), shark, UFO; Outrun scenery, roadside sprites, cryptids, signs, cars, cargo ship; Fossil Smash critters (pterodactyl, trilobite, raptor, T. rex) and hub card (`bert.png` is a screenshot); Bake Off has no placeholders.
