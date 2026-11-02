@@ -11,7 +11,7 @@
   var W = 320, H = 180, HZ = 76;                       // canvas size and horizon line (HZ changes for a moment while landmarks are drawn)
   var ROAD_W = 2000, SEG = 200, CAM_H = 1000, DRAW = 160, RUMBLE = 3;
   var CAM_D = 1 / Math.tan(50 * Math.PI / 180);        // field of view 100
-  var HARD_T = 1.0;                                    // hold left/right longer than this (s) for a hard turn
+  var HARD_T = 0.5;                                    // hold left/right longer than this (0.5 s) for a hard turn
   var MAXS = SEG * 60;                                 // top speed (units per second) = 60 segments per second
   var PLAYER_Z = CAM_H * CAM_D;
   var ACCEL = MAXS / 4.5, BRAKE = -MAXS * 0.9, DECEL = -MAXS / 6, OFFDECEL = -MAXS / 2.2, OFFLIMIT = MAXS / 4, CENTRI = 0.3;
@@ -457,8 +457,8 @@
     load('/assets/img/jeep-rear.png?v=4', function (im) { JEEP[2] = im; });   // straight: view from behind
     load('/assets/img/jeep-l30.png?v=4', function (im) { JEEP[1] = im; });    // short press left (Leah's 30 view)
     load('/assets/img/jeep-r30.png?v=4', function (im) { JEEP[3] = im; });    // short press right
-    load('/assets/img/jeep-l45.png?v=4', function (im) { JEEP[0] = im; });    // held more than 1 s, left (Leah's 45 view, slide with smoke)
-    load('/assets/img/jeep-r45.png?v=4', function (im) { JEEP[4] = im; });    // held more than 1 s, right
+    load('/assets/img/jeep-l45.png?v=4', function (im) { JEEP[0] = im; });    // held more than 0.5 s, left (Leah's 45 view, slide with smoke)
+    load('/assets/img/jeep-r45.png?v=4', function (im) { JEEP[4] = im; });    // held more than 0.5 s, right
     load('/assets/img/jeep-side.png?v=3', function (im) { JEEPSIDE = im; });
     load('/assets/img/jeep-cert.png?v=3', function (im) { JEEPCERT = im; });
   })();
@@ -795,7 +795,7 @@
     if (keys.left && !keys.right) { steerV = Math.max(-1, steerV - dt * 3.2); }
     else if (keys.right && !keys.left) { steerV = Math.min(1, steerV + dt * 3.2); }
     else { steerV = steerV > 0 ? Math.max(0, steerV - dt * 5) : Math.min(0, steerV + dt * 5); }
-    // Jeep view: quick press = 30 view, held more than 1 s = 45 view (hard turn: slide, smoke, faster steering, a little slower), released = view from behind
+    // Jeep view: quick press = 30 view, held more than 0.5 s = 45 view (hard turn: slide, smoke, faster steering, a little slower), released = view from behind
     var tdir = keys.left && !keys.right ? -1 : keys.right && !keys.left ? 1 : 0;
     if (tdir !== 0) { if (tdir !== turnDir) { turnDir = tdir; turnT = 0; } turnT += dt; turnLvl = turnT >= HARD_T ? 2 : 1; dropT = 0.1; }
     else { dropT -= dt; if (dropT <= 0) { turnLvl = 0; turnDir = 0; turnT = 0; } else { turnLvl = Math.min(turnLvl, 1); } }

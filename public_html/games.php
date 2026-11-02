@@ -26,7 +26,7 @@ if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
     <span class="gc-text">Pick up the trash on the beach, build a water gun, then go surf. There are sharks. And UFOs. Don't ask.</span>
   </a>
   <a class="gamecard" href="/games.php?g=road">
-    <img src="/assets/img/games/road-crt.jpg" width="640" height="349" alt="<?= e($ROAD_NAME) ?>: Leah's green Jeep on Route 1, on an old TV screen" loading="lazy">
+    <img src="/assets/img/games/road-hand.jpg" width="640" height="349" alt="<?= e($ROAD_NAME) ?>: a hand-drawn picture of Leah's green Jeep on Route 1" loading="lazy">
     <span class="gc-title"><?= e($ROAD_NAME) ?></span>
     <span class="gc-text">Take my green Jeep from Costa Rica all the way to Paris. Keep an eye on the battery, and on Bigfoot.</span>
   </a>
@@ -102,7 +102,7 @@ if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/road.js?v=7"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/road.js?v=8"></script><script src="/assets/js/fullscreen.js?v=1"></script>'); return; ?>
 <?php endif; ?>
 <?php if ($g === 'bert'): ?>
 <h1>Fossil Smash</h1>
@@ -154,7 +154,7 @@ if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/bert.js?v=3"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/bert.js?v=3"></script><script src="/assets/js/fullscreen.js?v=1"></script>'); return; ?>
 <?php endif; ?>
 <?php if ($g === 'blocks'): ?>
 <h1>Bake Off</h1>
@@ -199,7 +199,7 @@ if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/blocks.js?v=7"></script>'); return; ?>
+<?php page_footer('<script src="/assets/js/blocks.js?v=7"></script><script src="/assets/js/fullscreen.js?v=1"></script>'); return; ?>
 <?php endif; ?>
 <h1>Surf cleanup</h1>
 <p class="lede">First clean up the beach and find the shells, then build your water gun and paddle out. Five waves, a lot of sharks, and a UFO that really wants to take you home. The higher the level you reach, the better your rank. Faster is better too.</p>
@@ -249,4 +249,4 @@ if ($g === ''):   /* ---------------- the game cards ---------------- */ ?>
   <ol id="hof"><li class="hint">Loading...</li></ol>
 </section>
 
-<?php page_footer('<script src="/assets/js/game.js?v=5"></script>'); ?>
+<?php page_footer('<script src="/assets/js/game.js?v=5"></script><script src="/assets/js/fullscreen.js?v=1"></script>'); ?>
